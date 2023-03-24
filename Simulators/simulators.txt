@@ -2,4 +2,4 @@ huge fungi simulator
 
 fungus distribution simulator
 
-vrm//vines region simulator
+vrm/vines region simulator
