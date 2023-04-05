@@ -1,4 +1,5 @@
-nether tree farm diagonistics calculator
+- to do:
+nether tree farm diagnostics calculator
 
 nth order fungus distribution calculator
 
