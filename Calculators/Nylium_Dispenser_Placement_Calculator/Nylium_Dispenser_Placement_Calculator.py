@@ -1,6 +1,6 @@
 # a program that finds the optimal position to place n dispensers on a custom size grid of nylium
 # (generally less than 5x5)
-
+# TO-DO: add avg bonemeal used stat and fungus and bonemeal generated/used per dispenser stat
 
 width = int(input("Enter Width of Nylium Grid: "))
 length = int(input("Enter Length of Nylium Grid: "))
@@ -32,12 +32,12 @@ def selection_chance(x1, y1):
 
 for i in range(dispensers):
     # chance of dispenser being able to fire from lack of foliage above it
-    C = (1 - nyliumGrid[coordinates[i][1]][coordinates[i][0]])
-    for y in range(length):
-        for x in range(width):
+    C = (1 - nyliumGrid[coordinates[i][0]][coordinates[i][1]])
+    for x in range(width):
+        for y in range(length):
             S = selection_chance(x - coordinates[i][0], y - coordinates[i][1])
-            B = nyliumGrid[y][x] * C * S
-            nyliumGrid[y][x] = round(nyliumGrid[y][x] + C * S - B, 5)
+            B = nyliumGrid[x][y] * C * S
+            nyliumGrid[x][y] = round(nyliumGrid[x][y] + C * S - B, 5)
 
 # Print the resulting array
 for i in range(width):
@@ -46,7 +46,7 @@ for i in range(width):
 total = 0
 for x in range(width):
     for y in range(length):
-        total += nyliumGrid[y][x]
+        total += nyliumGrid[x][y]
 
 print(f'total: {total}')
 
@@ -54,8 +54,8 @@ print("For dispensers in the following order, placed at:")
 blockGrid = [[0 for i in range(length)] for j in range(width)]
 dis = 1
 for i in range(dispensers):
-    x = coordinates[i][1]
-    y = coordinates[i][0]
+    x = coordinates[i][0]
+    y = coordinates[i][1]
     blockGrid[x][y] = dis
     dis += 1
 
