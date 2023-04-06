@@ -1,13 +1,18 @@
+# current bug is that every time you recalculate it creates brand new labels that sit on top of the old ones
+# so update that shit lol
+# also add variable cycle speed math and trunk distribution as well as a selfsus rating into bm required
+
 import tkinter as tk
 from tkinter import filedialog
 import tkinter.font as font
-import tkinter.ttk as ttk
 
+import calculate_layout
 
 bg_colour = '#191919'
 fg_colour = '#FFFFFF'
 bg_widget_colour = '#323231'
 fg_button_colour = '#323231'
+subheading_colour = '#FA873A'
 
 width = 650
 height = 350
@@ -16,7 +21,7 @@ root = tk.Tk()
 root.title("Stemlight: Nether Tree Farm Rates Calculator")
 root.iconbitmap('ikon.ico')
 root.configure(bg=bg_colour)
-root.geometry(f"{width}x{height}")
+# root.geometry(f"{width}x{height}")
 
 # Calculate the position of the window to center it on the screen
 screen_width = root.winfo_screenwidth()
@@ -29,39 +34,86 @@ root.geometry(f"+{x}+{y}")
 
 main_font = font.Font(family='Segoe UI Semibold', size=11)
 button_font = font.Font(family='Segoe UI Semibold', size=11)
+subheading_font = font.Font(family='Segoe UI Semibold', size=12)
 
 
-def calculate():
+def calculate(dispenser_value, dispenser_fire_value, hat_frequency_value, trunk_frequency_value, trunk_height_value,
+              layer2_dispenser_value, trunk_start_value, infinite_dispenser_value, ):
+    yes_options = {'y', 'yes', 'on', '1'}
+    fungus_growth_chance = 0.4
+    layout_values = calculate_layout.schematic_to_efficiency(schematic_path_val.get())
+    stem_rates, shroom_rates, wart_rates, bm_produced, bm_used, bm_required, total_drop_rates = 0, 0, 0, 0, 0, 0, 0
+    stems_per_cycle, shrooms_per_cycle, warts_per_cycle, stem_eff, shroom_eff, wart_eff = \
+        layout_values[0], layout_values[1], layout_values[2], layout_values[3], layout_values[4], layout_values[5]
+
+    # total dispenser fires per hour
+    hourly_cycles = 72000 / dispenser_fire_value
+
+    # fungus growth chance per cycle
+    if infinite_dispenser_value.lower() in yes_options:
+        growth_chance = 1
+    else:
+        growth_chance = 1 - (1 - fungus_growth_chance) ** dispenser_value
+
+    # fungus used per hour
+    fungus = growth_chance * hourly_cycles
+
+    # upper bound bonemeal used per hour (fraction is bonemeal required to produce 1 crimson fungus)
+    bm_used = (1 / fungus_growth_chance + 11423 / 14608) * fungus
+
+    # stems, shroomlights and wart blocks produced per hour
+    stem_rates, shroom_rates, wart_rates = fungus * stems_per_cycle, fungus * shrooms_per_cycle,\
+                                           fungus * warts_per_cycle
+
+    # bonemeal produced per hour from just wart blocks. it takes 137/17 (~8.05882352941) wart blocks to make 1 bonemeal
+    bm_produced = wart_rates * 17 / 137
+
+    # bonemeal required per hour
+    bm_required = bm_used - bm_produced
+
+    # total production of the farm per hour
+    total_rates = stem_rates + shroom_rates + wart_rates
+
+    if layer2_dispenser_value.lower() in yes_options:
+        stem_rates -= fungus
+
+    output_value_labels = [
+        f"{stem_rates}",
+        f"{shroom_rates}",
+        f"{wart_rates}",
+        f"{fungus}",
+        f"{bm_produced}",
+        f"{bm_used}",
+        f"{bm_required}",
+        f"{stem_eff}",
+        f"{shroom_eff}",
+        f"{wart_eff}",
+        f"{total_rates}",
+    ]
+
+    # Create the output labels
+    for k, label_text2 in enumerate(output_labels):
+        # Create a label for the output
+        label2 = tk.Label(root, text=label_text2, bg=bg_colour, fg=fg_colour, font=main_font)
+        label2.grid(row=k, column=2, padx=10, pady=10)
+
+        # Store the label in the dictionary for later use
+        labels[k + 6] = label2
+
+        # Create a label for the output value
+        output = tk.Label(root, text=f"{output_value_labels[k]}", bg=bg_colour, fg=fg_colour, font=main_font)
+        output.grid(row=k, column=3, padx=10, pady=10)
+
     print('calculated :D')
 
 
+schematic_path_val = tk.StringVar(value='empty_layout.litematic')
+
+
 def open_file_explorer():
-    filename = filedialog.askopenfilename()
-    print(filename)
-
-
-# Function to create input entry boxes based on combobox selection
-def create_inputs():
-    # Remove any previously created input entry boxes
-    for key in adv_labels:
-        adv_labels[key].grid_forget()
-
-    # Get the selected input entry name from the combobox
-    selected_input = combobox.get()
-
-    # Create the entry boxes and labels for the selected input entry
-    for k in range(4):
-        # Create a label for the entry box
-        label_text = f"{selected_input}{k + 1}"
-        label = tk.Label(root, text=label_text, bg=bg_colour, fg=fg_colour, font=main_font)
-        label.grid(row=len(input_labels) + k + 1, column=0, padx=10, pady=10)
-
-        # Store the label in the dictionary for later use
-        adv_labels[k + 1] = label
-
-        # Create an entry box for the number
-        entry = tk.Entry(root, width=10)
-        entry.grid(row=len(input_labels) + k + 1, column=1, padx=10, pady=10)
+    file_path = filedialog.askopenfilename()
+    print(file_path)
+    return file_path
 
 
 # Create a dictionary to store the labels
@@ -72,85 +124,107 @@ input_labels = ["Dispensers",
                 "Dispenser Fire Frequency (gt)",
                 "Hat Harvesting Frequency (gt)",
                 "Trunk Harvesting Frequency (gt)",
-                "Trunk Height"]
+                "Trunk Height",
+                "Advanced Options",
+                "Layer 2 Dispenser",
+                "Trunk Harvesting Starting Layer",
+                "Infinite Dispensers"
+                ]
 
 # Create the entry boxes and labels for inputs
 for i, label_text in enumerate(input_labels):
-    # Create a label for the entry box
-    label = tk.Label(root, text=label_text, bg=bg_colour, fg=fg_colour, font=main_font)
-    label.grid(row=i, column=0, padx=10, pady=10)
+    if i != 5:
+        # Create a label for the entry box
+        label = tk.Label(root, text=label_text, bg=bg_colour, fg=fg_colour, font=main_font)
+        label.grid(row=i, column=0, padx=10, pady=10)
+
+        # Create an entry box for the number
+        entry = tk.Entry(root, width=10)
+        entry.grid(row=i, column=1, padx=10, pady=10)
+    else:
+        label = tk.Label(root, bg=bg_colour, fg=fg_colour, font=main_font)
+        label.grid(row=i, column=0, padx=10, pady=10)
 
     # Store the label in the dictionary for later use
     labels[i + 1] = label
 
-    # Create an entry box for the number
-    entry = tk.Entry(root, width=10)
-    entry.grid(row=i, column=1, padx=10, pady=10)
+schematic_path = tk.Button(root, text="Encoded Layout .litematic", bg='#D42121', font=button_font,
+                           command=lambda: schematic_path_val.set(open_file_explorer()))
+schematic_path.grid(row=len(input_labels), column=0, padx=10, pady=10)
 
-# Create the dropdown menu label
-adv_options_label = tk.Label(root, text="Advanced Options", bg=bg_colour, fg=fg_colour, font=main_font)
-adv_options_label.grid(row=len(input_labels), column=0, padx=10, pady=10)
-
-# Create the combobox widget with the input entry names
-input_entry_names = ["Layer 2 Dispensers", "Trunk Start", "C", "D"]
-combobox = ttk.Combobox(root, values=input_entry_names)
-combobox.grid(row=len(input_labels), column=1, padx=10, pady=10)
-
-# Dictionary to store the advanced options input labels
-adv_labels = {}
-
-# Create a button to create the input entry boxes when the combobox is selected
-adv_button = tk.Button(root, text="Create Inputs", command=create_inputs)
-adv_button.grid(row=len(input_labels), column=2, padx=10, pady=10)
-
-
-browse_button = tk.Button(root, text="Encoded Layout .litematic", bg='#D42121', font=button_font,
-                          command=open_file_explorer)
-browse_button.grid(row=len(input_labels)+1, column=0, padx=10, pady=10)
+# Create a button to calculate the outputs
+calculate_button = tk.Button(root, text="Calculate!", font=button_font,
+                             command=lambda: calculate(dispenser_val.get(), dispenser_fire_val.get(),
+                                                       hat_frequency_val.get(), trunk_frequency_val.get(),
+                                                       trunk_height_val.get(), layer2_dispenser_val.get(),
+                                                       trunk_start_val.get(), infinite_dispenser_val.get()
+                                                       ),
+                             bg="#00a7a3", fg="black")
+calculate_button.grid(row=len(input_labels), column=1, padx=10, pady=10)
 
 # Create the labels for outputs
 output_labels = ["Stems/h",
                  "Shrooms/h",
                  "Wart Blocks/h",
+                 "Fungus Used/h",
                  "Bonemeal Produced/h",
                  "Bonemeal Used/h",
                  "Bonemeal Required/h",
-                 "Total Drops/h"]
+                 "Stem Efficiency",
+                 "Shroomlight Efficiency",
+                 "Wart Block Efficiency",
+                 "Total Drops/h"
+                 ]
 
-# Create the output labels
-for i, label_text in enumerate(output_labels):
-    # Create a label for the output
-    label = tk.Label(root, text=label_text)
-    label.grid(row=i, column=2, padx=10, pady=10)
-
-    # Store the label in the dictionary for later use
-    labels[i + 6] = label
-
-    # Create a label for the output value
-    output = tk.Label(root, text="0")
-    output.grid(row=i, column=3, padx=10, pady=10)
-
-# Create a button to calculate the outputs
-calculate_button = tk.Button(root, text="Calculate!", font=button_font, command=calculate, bg="#00a7a3", fg="black")
-calculate_button.grid(row=len(input_labels)+1, column=1, padx=10, pady=10)
-
-# Create Entry widgets
-dispenser_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font)
+# Create Entry widgets and link them to the variables
+dispenser_val = tk.IntVar(value=0)
+dispenser_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
+                           textvariable=dispenser_val)
 dispenser_entry.grid(row=0, column=1, padx=10, pady=10)
 
-dispenser_fire_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font)
+dispenser_fire_val = tk.IntVar(value=0)
+dispenser_fire_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
+                                textvariable=dispenser_fire_val)
 dispenser_fire_entry.grid(row=1, column=1, padx=10, pady=10)
 
-hat_frequency_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font)
+hat_frequency_val = tk.IntVar(value=0)
+hat_frequency_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
+                               textvariable=hat_frequency_val)
 hat_frequency_entry.grid(row=2, column=1, padx=10, pady=10)
 
-trunk_harvesting_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font)
-trunk_harvesting_entry.grid(row=3, column=1, padx=10, pady=10)
+trunk_frequency_val = tk.IntVar(value=0)
+trunk_frequency_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
+                                 textvariable=trunk_frequency_val)
+trunk_frequency_entry.grid(row=3, column=1, padx=10, pady=10)
 
-trunk_height_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font)
+trunk_height_val = tk.IntVar(value=0)
+trunk_height_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
+                              textvariable=trunk_height_val)
 trunk_height_entry.grid(row=4, column=1, padx=10, pady=10)
 
+# creating the 'Advanced Options:' subheading
+advanced_label = tk.Label(root, text=" Advanced Options: ", bg=subheading_colour, fg=fg_colour, font=subheading_font)
+advanced_label.grid(row=5, column=0, padx=10, pady=10, sticky="W")
 
+layer2_dispenser_val = tk.StringVar(value='0')
+layer2_dispenser_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
+                                  textvariable=layer2_dispenser_val)
+layer2_dispenser_entry.grid(row=6, column=1, padx=10, pady=10)
+
+credit_label = tk.Label(root, text="Made by ncolyer", bg=bg_widget_colour, fg=fg_colour, font=main_font)
+credit_label.grid(row=len(input_labels) + 1, column=0, padx=10, pady=10)
+
+trunk_start_val = tk.IntVar(value=0)
+trunk_start_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
+                             textvariable=trunk_start_val)
+trunk_start_entry.grid(row=7, column=1, padx=10, pady=10)
+
+infinite_dispenser_val = tk.StringVar(value='0')
+infinite_dispenser_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
+                                    textvariable=infinite_dispenser_val)
+infinite_dispenser_entry.grid(row=8, column=1, padx=10, pady=10)
+
+"""
 # Create the output labels
 for i, label_text in enumerate(output_labels):
     # Create a label for the output
@@ -162,5 +236,6 @@ for i, label_text in enumerate(output_labels):
     # Create a label for the output value
     output = tk.Label(root, text="0", bg=bg_colour, fg=fg_colour, font=main_font)
     output.grid(row=i, column=3, padx=10, pady=10)
+"""
 
 root.mainloop()
