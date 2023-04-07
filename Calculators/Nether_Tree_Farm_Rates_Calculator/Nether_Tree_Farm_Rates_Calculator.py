@@ -169,7 +169,9 @@ for i, label_text in enumerate(input_labels):
     # store the label in the dictionary for later use
     labels[i + 1] = label
 
-schematic_path = tk.Button(root, text="Encoded Layout .litematic", bg='#D42121', font=button_font,
+# in the future make it so the file input button text changes to the current inputted schematic
+schematic_path_val = tk.StringVar(value="Encoded Layout .litematic__________")
+schematic_path = tk.Button(root, text=schematic_path_val.get()[:-10], bg='#D42121', font=button_font,
                            command=lambda: schematic_path_val.set(open_file_explorer()))
 schematic_path.grid(row=len(input_labels), column=0, padx=10, pady=10)
 

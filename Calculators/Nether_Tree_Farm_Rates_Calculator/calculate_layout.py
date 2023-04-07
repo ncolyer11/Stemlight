@@ -7,6 +7,7 @@ for that nether tree farm layout
 
 # if the below import function is underlined in red run `pip install litemapy`
 from litemapy import Schematic
+import time
 # importing heatmap data array
 import heatmap_data
 
@@ -15,6 +16,15 @@ import heatmap_data
 def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
     schem = Schematic.load(f"{path}")
     reg = list(schem.regions.values())[0]
+
+    start_time = time.time()
+
+    # skipping unnecessary calculations if layout schematic is empty
+    if schem == 'empty_layout.litematic':
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print("\nElapsed time:", elapsed_time, "seconds")
+        return 0, 0, 0, 0, 0, 0
 
     # function for accessing a single element/cell in the above array
     def get_cell_value(sheet_name2, row_number, column_number):
@@ -26,13 +36,15 @@ def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
         average_shroomlights += comp_probability(get_cell_value(1, row2, col2), hat_cycles2)  # 1: shroomlight heatmap
         return average_stems, average_shroomlights
 
+    # function that calculates the complimentary probability of an event
     def comp_probability(success_chance, attempts):
         return 1 - (1 - success_chance) ** attempts
 
     # initialising variables
     Xrange, Yrange, Zrange = reg.xrange(), reg.yrange(), reg.zrange()
     avg_shroomlights, avg_wart_blocks, avg_stems = 0, 0, 0
-    valid_encoding_blocks = {'red_concrete', 'blue_concrete', 'cyan_concrete', 'light_blue_concrete'}
+    valid_encoding_blocks = {'minecraft:red_concrete', 'minecraft:blue_concrete', 'minecraft:cyan_concrete',
+                             'minecraft:light_blue_concrete'}
 
     for y in Yrange:
         for x in Xrange:
@@ -72,8 +84,12 @@ def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
                     avg_wart_blocks += comp_probability(get_cell_value(vrm, row, col), hat_cycles)
 
     # finding the efficiencies of the layout factoring in the varying cycles
-    stem_E = trunk_cycles * avg_stems * 24 / 221
-    shroomlight_E = hat_cycles * avg_shroomlights / 2.03192455026454
-    wart_block_E = hat_cycles * avg_wart_blocks / 62.045721996296 + trunk_cycles * avg_wart_blocks / 0.97951
+    stem_E = (avg_stems * 24 / 221) / trunk_cycles
+    shroomlight_E = (avg_shroomlights / 2.03192455026454) / hat_cycles
+    wart_block_E = (avg_wart_blocks / 63.0252319962964 ** 2) * (62.045721996296 / hat_cycles + 0.97951 / trunk_cycles)
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print("\nElapsed time:", elapsed_time, "seconds")
 
     return avg_stems, avg_shroomlights, avg_wart_blocks, stem_E, shroomlight_E, wart_block_E
