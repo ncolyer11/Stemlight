@@ -7,6 +7,7 @@ import tkinter.font as font
 
 import calculate_layout
 
+
 bg_colour = '#191919'
 fg_colour = '#FFFFFF'
 bg_widget_colour = '#323231'
@@ -35,6 +36,17 @@ root.geometry(f"+{x}+{y}")
 main_font = font.Font(family='Segoe UI Semibold', size=11)
 button_font = font.Font(family='Segoe UI Semibold', size=11)
 subheading_font = font.Font(family='Segoe UI Semibold', size=12)
+
+# Create the toolbar
+toolbar = tk.Menu(root)
+root.config(menu=toolbar)
+
+# Add a File menu to the toolbar
+file_menu = tk.Menu(toolbar, tearoff=0)
+toolbar.add_cascade(label="File", menu=file_menu)
+
+# Add an Exit command to the File menu
+file_menu.add_command(label="Exit", command=root.quit)
 
 
 def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, trunk_frequency_value,
@@ -98,32 +110,24 @@ def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, t
     if layer2_dispenser_value.lower() in yes_options and stem_rates > fungus:
         stem_rates -= fungus
 
+    dp = 0
     output_value_labels = [
-        f"{stem_rates}",
-        f"{shroom_rates}",
-        f"{wart_rates}",
-        f"{fungus}",
-        f"{bm_produced}",
-        f"{bm_used}",
-        f"{bm_required}",
-        f"{stem_eff}",
-        f"{shroom_eff}",
-        f"{wart_eff}",
-        f"{total_rates}",
+        f"{round(stem_rates, dp)}",
+        f"{round(shroom_rates, dp)}",
+        f"{round(wart_rates, dp)}",
+        f"{round(fungus, dp)}",
+        f"{round(bm_produced, dp)}",
+        f"{round(bm_used, dp)}",
+        f"{round(bm_required, dp)}",
+        f"{round(stem_eff, dp)}",
+        f"{round(shroom_eff, dp)}",
+        f"{round(wart_eff, dp)}",
+        f"{round(total_rates, dp)}"
     ]
 
-    # create the output labels
-    for k, label_text2 in enumerate(output_labels):
-        # create a label for the output
-        label2 = tk.Label(root, text=label_text2, bg=bg_colour, fg=fg_colour, font=main_font)
-        label2.grid(row=k, column=2, padx=10, pady=10)
-
-        # store the label in the dictionary for later use
-        labels[k + 6] = label2
-
-        # create a label for the output value
-        output = tk.Label(root, text=f"{output_value_labels[k]}", bg=bg_colour, fg=fg_colour, font=main_font)
-        output.grid(row=k, column=3, padx=10, pady=10)
+    # update the output label values
+    for label_num in range(0, 11):
+        labels[label_num + 16]['text'] = output_value_labels[label_num]
 
     print('calculated :D')
 
@@ -169,6 +173,7 @@ for i, label_text in enumerate(input_labels):
     # store the label in the dictionary for later use
     labels[i + 1] = label
 
+# in the future make it so the file input button text changes to the current inputted schematic
 schematic_path = tk.Button(root, text="Encoded Layout .litematic", bg='#D42121', font=button_font,
                            command=lambda: schematic_path_val.set(open_file_explorer()))
 schematic_path.grid(row=len(input_labels), column=0, padx=10, pady=10)
@@ -197,6 +202,17 @@ output_labels = ["Stems/h",
                  "Wart Block Efficiency",
                  "Total Drops/h"
                  ]
+
+# create a dictionary to store the labels
+labels = {}
+for k, label_text2 in enumerate(output_labels):
+    label2 = tk.Label(root, text=label_text2, bg=bg_colour, fg=fg_colour, font=main_font)
+    label2.grid(row=k, column=2, padx=10, pady=10)
+    labels[k] = label2
+
+    output = tk.Label(root, text="", bg=bg_colour, fg=fg_colour, font=main_font)
+    output.grid(row=k, column=3, padx=10, pady=10)
+    labels[k + 16] = output
 
 # create entry widgets and link them to the variables
 dispenser_val = tk.IntVar(value=3)
