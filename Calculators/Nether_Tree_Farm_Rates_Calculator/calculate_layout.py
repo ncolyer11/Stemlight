@@ -30,7 +30,7 @@ def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
         return cell_values[(sheet_name2, row_number, column_number)]
 
     # function that computes the instantaneous value of the avg stems and shroomlights of the layout
-    def stems_and_shrooms(average_stems, average_shroomlights, row2, col2, hat_cycles2, trunk_cycles2, x_val, z_val):
+    def stems_and_shrooms(average_stems, average_shroomlights, row2, col2, hat_cycles2, trunk_cycles2):
         average_stems += comp_probability(get_cell_value('stems', row2, col2), trunk_cycles2)
         average_shroomlights += comp_probability(get_cell_value('shroomlights', row2, col2), hat_cycles2)
         return average_stems, average_shroomlights
@@ -46,7 +46,6 @@ def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
         for x in Xrange:
             for z in Zrange:
                 block = reg.getblock(x, y, z)
-
                 X, Y, Z = x, y, z
                 if min(Xrange) < 0:
                     X += 6
@@ -56,54 +55,33 @@ def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
                     Z += 6
 
                 # 3D data is stored in 'slices' on a 2D spreadsheet, hence some math is needed to convert between them
-                if block.blockid == "minecraft:air":
-                    continue
-
                 col = X + (7 * Z) + 1
                 row = 27 - Y
 
-                if block.blockid == "minecraft:red_concrete":
-                    if X == 0 and Z == 0:
-                        avg_stems, avg_shroomlights = stems_and_shrooms(avg_stems, avg_shroomlights, row, col,
-                                                                        hat_cycles, trunk_cycles, X, Z)
-                        avg_wart_blocks += comp_probability(get_cell_value('vrm0', row, col), trunk_cycles)
-                    else:
-                        avg_stems, avg_shroomlights = stems_and_shrooms(avg_stems, avg_shroomlights, row, col,
-                                                                        hat_cycles, trunk_cycles, X, Z)
-                        avg_wart_blocks += comp_probability(get_cell_value('vrm0', row, col), hat_cycles)
-
+                # setting vrm value
+                if block.blockid == "minecraft:air":
+                    continue
+                elif block.blockid == "minecraft:red_concrete":
+                    vrm = 'vrm0'
                 elif block.blockid == "minecraft:blue_concrete":
-                    if X == 0 and Z == 0:
-                        avg_stems, avg_shroomlights = stems_and_shrooms(avg_stems, avg_shroomlights, row, col,
-                                                                        hat_cycles, trunk_cycles, X, Z)
-                        avg_wart_blocks += comp_probability(get_cell_value('vrm1', row, col), trunk_cycles)
-                    else:
-                        avg_stems, avg_shroomlights = stems_and_shrooms(avg_stems, avg_shroomlights, row, col,
-                                                                        hat_cycles, trunk_cycles, X, Z)
-                        avg_wart_blocks += comp_probability(get_cell_value('vrm1', row, col), hat_cycles)
-
+                    vrm = 'vrm1'
                 elif block.blockid == "minecraft:cyan_concrete":
-                    if X == 0 and Z == 0:
-                        avg_stems, avg_shroomlights = stems_and_shrooms(avg_stems, avg_shroomlights, row, col,
-                                                                        hat_cycles, trunk_cycles, X, Z)
-                        avg_wart_blocks += comp_probability(get_cell_value('vrm2', row, col), trunk_cycles)
-                    else:
-                        avg_stems, avg_shroomlights = stems_and_shrooms(avg_stems, avg_shroomlights, row, col,
-                                                                        hat_cycles, trunk_cycles, X, Z)
-                        avg_wart_blocks += comp_probability(get_cell_value('vrm2', row, col), hat_cycles)
-
+                    vrm = 'vrm2'
                 elif block.blockid == "minecraft:light_blue_concrete":
-                    if X == 0 and Z == 0:
-                        avg_stems, avg_shroomlights = stems_and_shrooms(avg_stems, avg_shroomlights, row, col,
-                                                                        hat_cycles, trunk_cycles, X, Z)
-                        avg_wart_blocks += comp_probability(get_cell_value('vrm3', row, col), trunk_cycles)
-                    else:
-                        avg_stems, avg_shroomlights = stems_and_shrooms(avg_stems, avg_shroomlights, row, col,
-                                                                        hat_cycles, trunk_cycles, X, Z)
-                        avg_wart_blocks += comp_probability(get_cell_value('vrm3', row, col), hat_cycles)
+                    vrm = 'vrm3'
 
-    stem_E = 24 * avg_stems / 221
-    shroomlight_E = avg_shroomlights / 2.03192455026454
-    wart_block_E = avg_wart_blocks / 63.0252319962964
+                # calculating stems and shroomlight values
+                avg_stems, avg_shroomlights = stems_and_shrooms(avg_stems, avg_shroomlights, row, col,
+                                                                hat_cycles, trunk_cycles)
+                # calculating wart block values
+                if X == 0 and Z == 0:
+                    avg_wart_blocks += comp_probability(get_cell_value(vrm, row, col), trunk_cycles)
+                else:
+                    avg_wart_blocks += comp_probability(get_cell_value(vrm, row, col), hat_cycles)
+
+    # finding the efficiencies of the layout factoring in the varying cycles
+    stem_E = trunk_cycles * avg_stems * 24 / 221
+    shroomlight_E = hat_cycles * avg_shroomlights / 2.03192455026454
+    wart_block_E = hat_cycles * avg_wart_blocks / 62.045721996296 + trunk_cycles * avg_wart_blocks / 0.97951
 
     return avg_stems, avg_shroomlights, avg_wart_blocks, stem_E, shroomlight_E, wart_block_E
