@@ -1,6 +1,5 @@
 # current bug is that every time you recalculate it creates brand new labels that sit on top of the old ones
 # so update that shit lol
-# also add variable cycle speed math and trunk distribution as well as a selfsus rating into bm required
 
 import tkinter as tk
 from tkinter import filedialog

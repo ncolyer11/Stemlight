@@ -1,5 +1,5 @@
 """
-program that takes an input of a 7x27x7 (XYZ) schematic in the .litematic format, representing the blocks a given
+a helper function that takes an input of a 7x27x7 (XYZ) schematic in the .litematic format, representing the blocks a given
 nether tree farm layout harvests per cycle, and decodes the 3D data inside that file to compare it to pre-calculated
 heatmaps in a .xlsx file to work out the average stems, shroomlights and wart blocks harvested per cycle for that
 nether tree farm layout
