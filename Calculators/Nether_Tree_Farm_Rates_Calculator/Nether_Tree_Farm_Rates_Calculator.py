@@ -7,7 +7,6 @@ import tkinter.font as font
 
 import calculate_layout
 
-
 bg_colour = '#191919'
 fg_colour = '#FFFFFF'
 bg_widget_colour = '#323231'
@@ -37,16 +36,26 @@ main_font = font.Font(family='Segoe UI Semibold', size=11)
 button_font = font.Font(family='Segoe UI Semibold', size=11)
 subheading_font = font.Font(family='Segoe UI Semibold', size=12)
 
-# Create the toolbar
+dp = tk.StringVar(value="0")
+
+
+def set_dp(value):
+    dp.set(value)
+
+
 toolbar = tk.Menu(root)
 root.config(menu=toolbar)
 
-# Add a File menu to the toolbar
 file_menu = tk.Menu(toolbar, tearoff=0)
 toolbar.add_cascade(label="File", menu=file_menu)
-
-# Add an Exit command to the File menu
 file_menu.add_command(label="Exit", command=root.quit)
+
+dp_menu = tk.Menu(toolbar, tearoff=0)
+toolbar.add_cascade(label="Decimal Places", menu=dp_menu)
+
+
+for dp_row in range(0, 6):
+    dp_menu.add_radiobutton(label=dp_row, variable=dp, value=dp_row, command=lambda row=dp_row: set_dp(row))
 
 
 def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, trunk_frequency_value,
@@ -110,26 +119,26 @@ def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, t
     if layer2_dispenser_value.lower() in yes_options and stem_rates > fungus:
         stem_rates -= fungus
 
-    dp = 0
+    d_p = int(dp.get())
     output_value_labels = [
-        f"{round(stem_rates, dp)}",
-        f"{round(shroom_rates, dp)}",
-        f"{round(wart_rates, dp)}",
-        f"{round(fungus, dp)}",
-        f"{round(bm_produced, dp)}",
-        f"{round(bm_used, dp)}",
-        f"{round(bm_required, dp)}",
-        f"{round(stem_eff, dp)}",
-        f"{round(shroom_eff, dp)}",
-        f"{round(wart_eff, dp)}",
-        f"{round(total_rates, dp)}"
+        f"{round(stem_rates, d_p)}",
+        f"{round(shroom_rates, d_p)}",
+        f"{round(wart_rates, d_p)}",
+        f"{round(fungus, d_p)}",
+        f"{round(bm_produced, d_p)}",
+        f"{round(bm_used, d_p)}",
+        f"{round(bm_required, d_p)}",
+        f"{round(stem_eff, d_p)}",
+        f"{round(shroom_eff, d_p)}",
+        f"{round(wart_eff, d_p)}",
+        f"{round(total_rates, d_p)}"
     ]
 
     # update the output label values
     for label_num in range(0, 11):
         labels[label_num + 16]['text'] = output_value_labels[label_num]
 
-    print('calculated :D')
+    # print('calculated :D')
 
 
 schematic_path_val = tk.StringVar(value='empty_layout.litematic')
@@ -261,6 +270,5 @@ infinite_dispenser_val = tk.StringVar(value='0')
 infinite_dispenser_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
                                     textvariable=infinite_dispenser_val)
 infinite_dispenser_entry.grid(row=8, column=1, padx=10, pady=10)
-
 
 root.mainloop()
