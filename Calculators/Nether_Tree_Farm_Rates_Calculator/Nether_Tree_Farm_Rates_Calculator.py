@@ -14,22 +14,23 @@ bg_widget_colour = '#323231'
 fg_button_colour = '#323231'
 subheading_colour = '#FA873A'
 
-width = 650
-height = 350
-
 root = tk.Tk()
 root.title("Stemlight: Nether Tree Farm Rates Calculator")
 root.iconbitmap('ikon.ico')
 root.configure(bg=bg_colour)
-# root.geometry(f"{width}x{height}")
 
-# Calculate the position of the window to center it on the screen
+# call update_idletasks to make sure widgets have been created
+root.update_idletasks()
+width = root.winfo_reqwidth()
+height = root.winfo_reqheight()
+
+# calculate the position of the window to center it on the screen
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
-x = (screen_width // 2) - (width // 2)
-y = (screen_height // 2) - (height // 2)
+x = (screen_width // 2) - 2 * width
+y = (screen_height // 2) - round(3 * height / 2)
 
-# Set the window position
+# set the window position
 root.geometry(f"+{x}+{y}")
 
 main_font = font.Font(family='Segoe UI Semibold', size=11)
@@ -37,17 +38,30 @@ button_font = font.Font(family='Segoe UI Semibold', size=11)
 subheading_font = font.Font(family='Segoe UI Semibold', size=12)
 
 
-def calculate(dispenser_value, dispenser_fire_value, hat_frequency_value, trunk_frequency_value, trunk_height_value,
-              layer2_dispenser_value, trunk_start_value, infinite_dispenser_value, ):
+def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, trunk_frequency_value,
+              trunk_height_value, layer2_dispenser_value, trunk_start_value, infinite_dispenser_value):
     yes_options = {'y', 'yes', 'on', '1'}
+
+    # huge fungus related constants
     fungus_growth_chance = 0.4
-    layout_values = calculate_layout.schematic_to_efficiency(schematic_path_val.get())
-    stem_rates, shroom_rates, wart_rates, bm_produced, bm_used, bm_required, total_drop_rates = 0, 0, 0, 0, 0, 0, 0
+    trunk_distribution = 7 * [1 / 120, 0] + 3 * [11 / 120, 0.1] + 4 * [11 / 120] + 3 * [0.0]
+    cumulative_trunk_distribution = [0.0] * (len(trunk_distribution) + 1)
+    for index in range(1, len(cumulative_trunk_distribution)):
+        cumulative_trunk_distribution[index] = (cumulative_trunk_distribution[index - 1] +
+                                                trunk_distribution[index - 1])
+    # reversing the order of the list
+    cumulative_trunk_distribution = cumulative_trunk_distribution[::-1]
+
+    # dispenser, trunk and hat cycles
+    hourly_cycles = 72000 / dispenser_frequency_value
+    trunk_cycles = max(1, trunk_frequency_value / dispenser_frequency_value)
+    hat_cycles = max(1, hat_frequency_value / dispenser_frequency_value)
+
+    # schematic to layout efficiency
+    layout_values = calculate_layout.schematic_to_efficiency(schematic_path_val.get(), hat_cycles, trunk_cycles)
+    # stem_rates, shroom_rates, wart_rates, bm_produced, bm_used, bm_required, total_drop_rates = 0, 0, 0, 0, 0, 0, 0
     stems_per_cycle, shrooms_per_cycle, warts_per_cycle, stem_eff, shroom_eff, wart_eff = \
         layout_values[0], layout_values[1], layout_values[2], layout_values[3], layout_values[4], layout_values[5]
-
-    # total dispenser fires per hour
-    hourly_cycles = 72000 / dispenser_fire_value
 
     # fungus growth chance per cycle
     if infinite_dispenser_value.lower() in yes_options:
@@ -62,8 +76,15 @@ def calculate(dispenser_value, dispenser_fire_value, hat_frequency_value, trunk_
     bm_used = (1 / fungus_growth_chance + 11423 / 14608) * fungus
 
     # stems, shroomlights and wart blocks produced per hour
-    stem_rates, shroom_rates, wart_rates = fungus * stems_per_cycle, fungus * shrooms_per_cycle,\
-                                           fungus * warts_per_cycle
+    if schematic_path_val.get() == 'empty_layout.litematic':
+        stems_per_cycle = 0
+        layer = trunk_start_value - 1
+        while layer < trunk_height_value:
+            stems_per_cycle += cumulative_trunk_distribution[layer]
+            layer += 1
+
+    stem_rates = fungus / trunk_cycles * stems_per_cycle
+    shroom_rates, wart_rates = fungus / hat_cycles * shrooms_per_cycle, fungus / hat_cycles * warts_per_cycle
 
     # bonemeal produced per hour from just wart blocks. it takes 137/17 (~8.05882352941) wart blocks to make 1 bonemeal
     bm_produced = wart_rates * 17 / 137
@@ -74,7 +95,8 @@ def calculate(dispenser_value, dispenser_fire_value, hat_frequency_value, trunk_
     # total production of the farm per hour
     total_rates = stem_rates + shroom_rates + wart_rates
 
-    if layer2_dispenser_value.lower() in yes_options:
+    # accounts for stems obstructed by a second dispenser, including the edge case of harvesting only layer 1 stems
+    if layer2_dispenser_value.lower() in yes_options and stem_rates > fungus:
         stem_rates -= fungus
 
     output_value_labels = [
@@ -91,16 +113,16 @@ def calculate(dispenser_value, dispenser_fire_value, hat_frequency_value, trunk_
         f"{total_rates}",
     ]
 
-    # Create the output labels
+    # create the output labels
     for k, label_text2 in enumerate(output_labels):
-        # Create a label for the output
+        # create a label for the output
         label2 = tk.Label(root, text=label_text2, bg=bg_colour, fg=fg_colour, font=main_font)
         label2.grid(row=k, column=2, padx=10, pady=10)
 
-        # Store the label in the dictionary for later use
+        # store the label in the dictionary for later use
         labels[k + 6] = label2
 
-        # Create a label for the output value
+        # create a label for the output value
         output = tk.Label(root, text=f"{output_value_labels[k]}", bg=bg_colour, fg=fg_colour, font=main_font)
         output.grid(row=k, column=3, padx=10, pady=10)
 
@@ -116,53 +138,54 @@ def open_file_explorer():
     return file_path
 
 
-# Create a dictionary to store the labels
+# create a dictionary to store the labels
 labels = {}
 
-# Define the labels for each entry box
+# define the labels for each entry box
 input_labels = ["Dispensers",
                 "Dispenser Fire Frequency (gt)",
                 "Hat Harvesting Frequency (gt)",
                 "Trunk Harvesting Frequency (gt)",
-                "Trunk Height",
+                "Trunk Harvesting Top Layer",
                 "Advanced Options",
                 "Layer 2 Dispenser",
-                "Trunk Harvesting Starting Layer",
+                "Trunk Harvesting Bottom Layer",
                 "Infinite Dispensers"
                 ]
 
-# Create the entry boxes and labels for inputs
+# create the entry boxes and labels for inputs
 for i, label_text in enumerate(input_labels):
     if i != 5:
-        # Create a label for the entry box
+        # create a label for the entry box
         label = tk.Label(root, text=label_text, bg=bg_colour, fg=fg_colour, font=main_font)
         label.grid(row=i, column=0, padx=10, pady=10)
 
-        # Create an entry box for the number
+        # create an entry box for the number
         entry = tk.Entry(root, width=10)
         entry.grid(row=i, column=1, padx=10, pady=10)
     else:
         label = tk.Label(root, bg=bg_colour, fg=fg_colour, font=main_font)
         label.grid(row=i, column=0, padx=10, pady=10)
 
-    # Store the label in the dictionary for later use
+    # store the label in the dictionary for later use
     labels[i + 1] = label
 
 schematic_path = tk.Button(root, text="Encoded Layout .litematic", bg='#D42121', font=button_font,
                            command=lambda: schematic_path_val.set(open_file_explorer()))
 schematic_path.grid(row=len(input_labels), column=0, padx=10, pady=10)
 
-# Create a button to calculate the outputs
+# create a button to calculate the outputs
 calculate_button = tk.Button(root, text="Calculate!", font=button_font,
-                             command=lambda: calculate(dispenser_val.get(), dispenser_fire_val.get(),
+                             command=lambda: calculate(dispenser_val.get(), dispenser_frequency_val.get(),
                                                        hat_frequency_val.get(), trunk_frequency_val.get(),
                                                        trunk_height_val.get(), layer2_dispenser_val.get(),
-                                                       trunk_start_val.get(), infinite_dispenser_val.get()
-                                                       ),
+                                                       trunk_start_val.get(), infinite_dispenser_val.get())
+                             if dispenser_frequency_val.get() > 0 else print("Please enter a non-zero value for"
+                                                                             " dispenser frequency"),
                              bg="#00a7a3", fg="black")
 calculate_button.grid(row=len(input_labels), column=1, padx=10, pady=10)
 
-# Create the labels for outputs
+# create the labels for outputs
 output_labels = ["Stems/h",
                  "Shrooms/h",
                  "Wart Blocks/h",
@@ -176,28 +199,28 @@ output_labels = ["Stems/h",
                  "Total Drops/h"
                  ]
 
-# Create Entry widgets and link them to the variables
-dispenser_val = tk.IntVar(value=0)
+# create entry widgets and link them to the variables
+dispenser_val = tk.IntVar(value=3)
 dispenser_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
                            textvariable=dispenser_val)
 dispenser_entry.grid(row=0, column=1, padx=10, pady=10)
 
-dispenser_fire_val = tk.IntVar(value=0)
-dispenser_fire_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
-                                textvariable=dispenser_fire_val)
-dispenser_fire_entry.grid(row=1, column=1, padx=10, pady=10)
+dispenser_frequency_val = tk.IntVar(value=4)
+dispenser_frequency_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
+                                     textvariable=dispenser_frequency_val)
+dispenser_frequency_entry.grid(row=1, column=1, padx=10, pady=10)
 
-hat_frequency_val = tk.IntVar(value=0)
+hat_frequency_val = tk.IntVar(value=4)
 hat_frequency_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
                                textvariable=hat_frequency_val)
 hat_frequency_entry.grid(row=2, column=1, padx=10, pady=10)
 
-trunk_frequency_val = tk.IntVar(value=0)
+trunk_frequency_val = tk.IntVar(value=4)
 trunk_frequency_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
                                  textvariable=trunk_frequency_val)
 trunk_frequency_entry.grid(row=3, column=1, padx=10, pady=10)
 
-trunk_height_val = tk.IntVar(value=0)
+trunk_height_val = tk.IntVar(value=1)
 trunk_height_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
                               textvariable=trunk_height_val)
 trunk_height_entry.grid(row=4, column=1, padx=10, pady=10)
@@ -214,7 +237,7 @@ layer2_dispenser_entry.grid(row=6, column=1, padx=10, pady=10)
 credit_label = tk.Label(root, text="Made by ncolyer", bg=bg_widget_colour, fg=fg_colour, font=main_font)
 credit_label.grid(row=len(input_labels) + 1, column=0, padx=10, pady=10)
 
-trunk_start_val = tk.IntVar(value=0)
+trunk_start_val = tk.IntVar(value=1)
 trunk_start_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
                              textvariable=trunk_start_val)
 trunk_start_entry.grid(row=7, column=1, padx=10, pady=10)
@@ -224,18 +247,5 @@ infinite_dispenser_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_c
                                     textvariable=infinite_dispenser_val)
 infinite_dispenser_entry.grid(row=8, column=1, padx=10, pady=10)
 
-"""
-# Create the output labels
-for i, label_text in enumerate(output_labels):
-    # Create a label for the output
-    label = tk.Label(root, text=label_text, bg=bg_colour, fg=fg_colour, font=main_font)
-    label.grid(row=i, column=2, padx=10, pady=10)
-    # Store the label in the dictionary for later use
-    labels[i + 6] = label
-
-    # Create a label for the output value
-    output = tk.Label(root, text="0", bg=bg_colour, fg=fg_colour, font=main_font)
-    output.grid(row=i, column=3, padx=10, pady=10)
-"""
 
 root.mainloop()
