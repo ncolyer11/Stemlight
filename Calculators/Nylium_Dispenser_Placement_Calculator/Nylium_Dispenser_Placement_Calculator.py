@@ -29,10 +29,11 @@ def selection_chance(x1, y1):
     return 1 - (1 - P / 81) ** 9
     # return P
 
-
+bonemeal_used = 0
 for i in range(dispensers):
     # chance of dispenser being able to fire from lack of foliage above it
     C = (1 - nyliumGrid[coordinates[i][0]][coordinates[i][1]])
+    bonemeal_used += C
     for x in range(width):
         for y in range(length):
             S = selection_chance(x - coordinates[i][0], y - coordinates[i][1])
@@ -48,7 +49,9 @@ for x in range(width):
     for y in range(length):
         total += nyliumGrid[x][y]
 
-print(f'total: {total}')
+print(f'total items: {total}')
+print(f'crimson fungi: {total / 9}')
+print(f'bonemeal_used: {bonemeal_used}')
 
 print("For dispensers in the following order, placed at:")
 blockGrid = [[0 for i in range(length)] for j in range(width)]
