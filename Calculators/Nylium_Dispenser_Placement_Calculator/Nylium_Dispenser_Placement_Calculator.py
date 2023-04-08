@@ -29,6 +29,7 @@ def selection_chance(x1, y1):
     return 1 - (1 - P / 81) ** 9
     # return P
 
+
 bonemeal_used = 0
 for i in range(dispensers):
     # chance of dispenser being able to fire from lack of foliage above it

@@ -1,4 +1,4 @@
-# THIS IS OUTDATED AND PURELY JUST TO SHOW HOW COOL V2 IS COMPARED TO V1 (this file)
+# THIS IS OUTDATED AND PURELY JUST TO SHOW HOW COOL V3* IS COMPARED TO V1 (this file)
 from litemapy import Schematic
 import openpyxl
 import time
