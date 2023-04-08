@@ -11,6 +11,7 @@ from litemapy import Schematic
 import tkinter as tk
 from tkinter import filedialog
 import time
+import sys
 # importing heatmap data array
 import heatmap_data
 
@@ -31,7 +32,8 @@ reg = list(schem.regions.values())[0]
 if len(reg.xrange()) == 7 and len(reg.yrange()) == 27 and len(reg.zrange()) == 7:
     print("\nSchematic loaded succesfully :)\n")
 else:
-    print("\nSizeError: Ensure the volume of your schematic measures 7x27x7.\n")
+    print("\nSizeError: Ensure the volume of your schematic measures 7x27x7.")
+    sys.exit(1)
 
 start_time = time.time()
 
