@@ -1,6 +1,3 @@
-# current bug is that every time you recalculate it creates brand new labels that sit on top of the old ones
-# so update that shit lol
-
 import tkinter as tk
 from tkinter import filedialog
 import tkinter.font as font
