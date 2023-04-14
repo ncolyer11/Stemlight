@@ -109,12 +109,12 @@ def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, t
     # bonemeal required per hour
     bm_required = bm_used - bm_produced
 
-    # total production of the farm per hour
-    total_rates = stem_rates + shroom_rates + wart_rates
-
     # accounts for stems obstructed by a second dispenser, including the edge case of harvesting only layer 1 stems
     if layer2_dispenser_value.lower() in yes_options and stem_rates > fungus:
         stem_rates -= fungus
+
+    # total production of the farm per hour
+    total_rates = stem_rates + shroom_rates + wart_rates
 
     d_p = int(dp.get())
     output_value_labels = [
