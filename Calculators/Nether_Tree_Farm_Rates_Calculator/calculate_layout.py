@@ -84,7 +84,7 @@ def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
                     avg_wart_blocks += comp_probability(get_cell_value(vrm, row, col), hat_cycles)
 
     # finding the efficiencies of the layout factoring in the varying cycles
-    stem_E = (avg_stems * 24 / 221) / trunk_cycles
+    stem_E = (avg_stems / (221 / 24)) / trunk_cycles
     shroomlight_E = (avg_shroomlights / 2.03192455026454) / hat_cycles
     wart_block_E = (avg_wart_blocks / 63.0252319962964 ** 2) * (62.045721996296 / hat_cycles + 0.97951 / trunk_cycles)
 
