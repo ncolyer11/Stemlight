@@ -76,7 +76,6 @@ def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, t
 
     # schematic to layout efficiency
     layout_values = calculate_layout.schematic_to_efficiency(schematic_path_val.get(), hat_cycles, trunk_cycles)
-    # stem_rates, shroom_rates, wart_rates, bm_produced, bm_used, bm_required, total_drop_rates = 0, 0, 0, 0, 0, 0, 0
     stems_per_cycle, shrooms_per_cycle, warts_per_cycle, stem_eff, shroom_eff, wart_eff = \
         layout_values[0], layout_values[1], layout_values[2], layout_values[3], layout_values[4], layout_values[5]
 
