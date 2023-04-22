@@ -13,7 +13,7 @@ from tkinter import filedialog
 import time
 import sys
 # importing heatmap data array
-import heatmap_data
+from assets import heatmap_data
 
 # create hidden root window
 root = tk.Tk()

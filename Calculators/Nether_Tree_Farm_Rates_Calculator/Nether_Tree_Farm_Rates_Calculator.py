@@ -12,7 +12,7 @@ subheading_colour = '#FA873A'
 
 root = tk.Tk()
 root.title("Stemlight: Nether Tree Farm Rates Calculator")
-root.iconbitmap('ikon.ico')
+root.iconbitmap('../../assets/ikon.ico')
 root.configure(bg=bg_colour)
 
 # call update_idletasks to make sure widgets have been created
