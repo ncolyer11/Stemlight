@@ -4,11 +4,11 @@ import tkinter.font as font
 
 import calculate_layout
 
-bg_colour = '#191919'
-fg_colour = '#FFFFFF'
-bg_widget_colour = '#323231'
-fg_button_colour = '#323231'
-subheading_colour = '#FA873A'
+bg_colour = "#191919"
+fg_colour = "#FFFFFF"
+bg_widget_colour = "#323231"
+fg_button_colour = "#323231"
+subheading_colour = "#FA873A"
 
 root = tk.Tk()
 root.title("Stemlight: Nether Tree Farm Rates Calculator")
@@ -49,7 +49,6 @@ file_menu.add_command(label="Exit", command=root.quit)
 
 dp_menu = tk.Menu(toolbar, tearoff=0)
 toolbar.add_cascade(label="Decimal Places", menu=dp_menu)
-
 
 for dp_row in range(0, 6):
     dp_menu.add_radiobutton(label=dp_row, variable=dp, value=dp_row, command=lambda row=dp_row: set_dp(row))
@@ -148,16 +147,17 @@ def open_file_explorer():
 labels = {}
 
 # define the labels for each entry box
-input_labels = ["Dispensers",
-                "Dispenser Fire Frequency (gt)",
-                "Hat Harvesting Frequency (gt)",
-                "Trunk Harvesting Frequency (gt)",
-                "Trunk Harvesting Top Layer",
-                "Advanced Options",
-                "Layer 2 Dispenser",
-                "Trunk Harvesting Bottom Layer",
-                "Infinite Dispensers"
-                ]
+input_labels = [
+    "Dispensers",
+    "Dispenser Fire Frequency (gt)",
+    "Hat Harvesting Frequency (gt)",
+    "Trunk Harvesting Frequency (gt)",
+    "Trunk Harvesting Top Layer",
+    "Advanced Options",
+    "Layer 2 Dispenser",
+    "Trunk Harvesting Bottom Layer",
+    "Infinite Dispensers"
+]
 
 # create the entry boxes and labels for inputs
 for i, label_text in enumerate(input_labels):
@@ -177,7 +177,7 @@ for i, label_text in enumerate(input_labels):
     labels[i + 1] = label
 
 # in the future make it so the file input button text changes to the current inputted schematic
-schematic_path = tk.Button(root, text="Encoded Layout .litematic", bg='#D42121', font=button_font,
+schematic_path = tk.Button(root, text="Encoded Layout .litematic", bg="#D42121", font=button_font,
                            command=lambda: schematic_path_val.set(open_file_explorer()))
 schematic_path.grid(row=len(input_labels), column=0, padx=10, pady=10)
 
@@ -193,18 +193,19 @@ calculate_button = tk.Button(root, text="Calculate!", font=button_font,
 calculate_button.grid(row=len(input_labels), column=1, padx=10, pady=10)
 
 # create the labels for outputs
-output_labels = ["Stems/h",
-                 "Shrooms/h",
-                 "Wart Blocks/h",
-                 "Fungus Used/h",
-                 "Bonemeal Produced/h",
-                 "Bonemeal Used/h",
-                 "Bonemeal Required/h",
-                 "Stem Efficiency",
-                 "Shroomlight Efficiency",
-                 "Wart Block Efficiency",
-                 "Total Drops/h"
-                 ]
+output_labels = [
+    "Stems/h",
+    "Shrooms/h",
+    "Wart Blocks/h",
+    "Fungus Used/h",
+    "Bonemeal Produced/h",
+    "Bonemeal Used/h",
+    "Bonemeal Required/h",
+    "Stem Efficiency",
+    "Shroomlight Efficiency",
+    "Wart Block Efficiency",
+    "Total Drops/h"
+]
 
 # create a dictionary to store the labels
 labels = {}
