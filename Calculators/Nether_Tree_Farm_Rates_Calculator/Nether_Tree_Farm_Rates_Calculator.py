@@ -7,7 +7,7 @@ import calculate_layout
 
 root = tk.Tk()
 root.title("Stemlight: Nether Tree Farm Rates Calculator")
-root.iconbitmap('../../Assets/ikon.ico')
+root.iconbitmap('../Assets/ikon.ico')
 root.configure(bg=colours.bg)
 
 # call update_idletasks to make sure widgets have been created
@@ -87,7 +87,7 @@ def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, t
     bm_used = (1 / fungus_growth_chance + (18000 - 11423) / 14608) * fungus
 
     # stems, shroomlights and wart blocks produced per hour
-    if schematic_path_val.get() == '../../Assets/empty_layout.litematic':
+    if schematic_path_val.get() == '../Assets/empty_layout.litematic':
         stems_per_cycle = 0
         layer = trunk_start_value - 1
         while layer < trunk_height_value:
@@ -130,7 +130,7 @@ def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, t
         labels[label_num + 16]['text'] = output_value_labels[label_num]
 
 
-schematic_path_val = tk.StringVar(value='../../Assets/empty_layout.litematic')
+schematic_path_val = tk.StringVar(value='../Assets/empty_layout.litematic')
 
 
 def open_file_explorer():

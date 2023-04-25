@@ -8,7 +8,7 @@ from Assets import colours
 
 # Define function to open a Python file
 def open_file(folder, file_name):
-    os.system(f"python ../{folder}/{file_name}")
+    os.system(f"python {folder}/{file_name}")
 
 
 def open_file_single_instance(folder, file):
@@ -19,7 +19,7 @@ def open_file_single_instance(folder, file):
 # Create main window
 root = tk.Tk()
 root.title("Stemlight: Main Menu")
-root.iconbitmap('../../Assets/ikon.ico')
+root.iconbitmap('../Assets/ikon.ico')
 root.configure(bg=colours.bg)
 
 main_font = font.Font(family='Segoe UI Semibold', size=11)
