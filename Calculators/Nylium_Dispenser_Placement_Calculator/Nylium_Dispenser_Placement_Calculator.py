@@ -1,6 +1,10 @@
 # a program that finds the optimal position to place n dispensers on a custom size grid of nylium
 # (generally less than 5x5)
-# TO-DO: add avg bonemeal used stat and fungus and bonemeal generated/used per dispenser stat
+# TO-DO: add GUI, use a horizontal and vertical slider that are n + 1 long adjacent to a grid of n x n checkboxes
+# where the order you click the checkboxes is the order the dispensers fire in (add reset selection button)
+# label input for number of cycles
+# sidebar with a list of all dispensers and another adjacent checkbox to select whether or not the block above the
+# dispenser is cleared every cycle
 
 width = int(input("Enter Width of Nylium Grid: "))
 length = int(input("Enter Length of Nylium Grid: "))
