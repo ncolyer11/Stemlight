@@ -3,6 +3,8 @@ import tkinter.font as font
 import threading
 import os
 
+from Assets import colours
+
 
 # Define function to open a Python file
 def open_file(folder, file_name):
@@ -14,18 +16,13 @@ def open_file_single_instance(folder, file):
     thread.start()
 
 
-bg_colour = "#191919"
-fg_colour = "#FFFFFF"
-bg_widget_colour = "#323231"
-fg_button_colour = "#323231"
-subheading_colour = "#FA873A"
-menu_button_colours = ["#D42121", "#00a7a3"]
-
 # Create main window
 root = tk.Tk()
 root.title("Stemlight: Main Menu")
-root.iconbitmap('../../assets/ikon.ico')
-root.configure(bg=bg_colour)
+root.iconbitmap('../../Assets/ikon.ico')
+root.configure(bg=colours.bg)
+
+main_font = font.Font(family='Segoe UI Semibold', size=11)
 
 
 def create_gradient(start_color, end_color, width, height):
@@ -56,7 +53,6 @@ def resize_canvas(event, canvas, start_color, end_color):
 
     # Update the size of the canvas
     canvas.config(width=width, height=height)
-
     # Delete the existing gradient
     canvas.delete("gradient")
 
@@ -69,7 +65,7 @@ def resize_canvas(event, canvas, start_color, end_color):
         canvas.create_rectangle(0, y, width, y + 1, fill=color, outline="", tags="gradient")
 
 
-create_gradient("#87CEEB", "#1E90FF", 500, 200)
+create_gradient(colours.menu_gradient[0], colours.menu_gradient[1], 500, 200)
 
 # Create menu
 toolbar = tk.Menu(root)
@@ -78,11 +74,6 @@ root.config(menu=toolbar)
 file_menu = tk.Menu(toolbar, tearoff=0)
 toolbar.add_cascade(label="File", menu=file_menu)
 file_menu.add_command(label="Exit", command=root.quit)
-
-# fonts
-main_font = font.Font(family='Segoe UI Semibold', size=11)
-button_font = font.Font(family='Segoe UI Semibold', size=11)
-subheading_font = font.Font(family='Segoe UI Semibold', size=12)
 
 # Define file names and button labels
 file_names = [
@@ -102,7 +93,7 @@ folder_names = [
 button_labels = [
     "Layout Efficiency",
     "Farm Rates",
-    "Nylium Dispenser Placement",
+    "Fungus Distribution",
     "Trunk Distribution"
 ]
 
@@ -111,7 +102,8 @@ for i in range(len(file_names)):
     button = tk.Button(root, text=button_labels[i],
                        command=lambda file=file_names[i], folder=folder_names[i]: open_file_single_instance(folder,
                                                                                                             file))
-    button.config(bg=bg_colour, fg=fg_colour, font=main_font, padx=5, pady=5, width=22, height=2)
+    button.config(activebackground=button.cget('bg'), bg=colours.bg, fg=colours.fg, font=main_font,
+                  padx=5, pady=5, width=22, height=2)
     button.grid(row=i // 2, column=i % 2, padx=8, pady=5)
 
 # Set equal weights to all rows in the grid

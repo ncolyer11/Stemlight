@@ -9,7 +9,7 @@ for that nether tree farm layout
 from litemapy import Schematic
 import time
 # importing heatmap data array
-from assets import heatmap_data
+from Assets import heatmap_data
 
 
 # taking file input from user and checking to see if the path and schematic size is valid

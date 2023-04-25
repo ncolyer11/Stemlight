@@ -2,18 +2,13 @@ import tkinter as tk
 from tkinter import filedialog
 import tkinter.font as font
 
+from Assets import colours
 import calculate_layout
-
-bg_colour = "#191919"
-fg_colour = "#FFFFFF"
-bg_widget_colour = "#323231"
-fg_button_colour = "#323231"
-subheading_colour = "#FA873A"
 
 root = tk.Tk()
 root.title("Stemlight: Nether Tree Farm Rates Calculator")
-root.iconbitmap('../../assets/ikon.ico')
-root.configure(bg=bg_colour)
+root.iconbitmap('../../Assets/ikon.ico')
+root.configure(bg=colours.bg)
 
 # call update_idletasks to make sure widgets have been created
 root.update_idletasks()
@@ -29,7 +24,7 @@ y = (screen_height // 2) - round(3 * height / 2)
 # set the window position
 root.geometry(f"+{x}+{y}")
 
-main_font = font.Font(family='Segoe UI Semibold', size=11)
+main_font = font.Font(family='Segoe UI', size=11)
 button_font = font.Font(family='Segoe UI Semibold', size=11)
 subheading_font = font.Font(family='Segoe UI Semibold', size=12)
 
@@ -51,7 +46,8 @@ dp_menu = tk.Menu(toolbar, tearoff=0)
 toolbar.add_cascade(label="Decimal Places", menu=dp_menu)
 
 for dp_row in range(0, 6):
-    dp_menu.add_radiobutton(label=dp_row, variable=dp, value=dp_row, command=lambda row=dp_row: set_dp(row))
+    dp_menu.add_radiobutton(label=dp_row, variable=dp, value=dp_row,
+                            command=lambda row=dp_row: set_dp(row))
 
 
 def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, trunk_frequency_value,
@@ -91,7 +87,7 @@ def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, t
     bm_used = (1 / fungus_growth_chance + (18000 - 11423) / 14608) * fungus
 
     # stems, shroomlights and wart blocks produced per hour
-    if schematic_path_val.get() == '../../assets/empty_layout.litematic':
+    if schematic_path_val.get() == '../../Assets/empty_layout.litematic':
         stems_per_cycle = 0
         layer = trunk_start_value - 1
         while layer < trunk_height_value:
@@ -134,7 +130,7 @@ def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, t
         labels[label_num + 16]['text'] = output_value_labels[label_num]
 
 
-schematic_path_val = tk.StringVar(value='../../assets/empty_layout.litematic')
+schematic_path_val = tk.StringVar(value='../../Assets/empty_layout.litematic')
 
 
 def open_file_explorer():
@@ -163,21 +159,21 @@ input_labels = [
 for i, label_text in enumerate(input_labels):
     if i != 5:
         # create a label for the entry box
-        label = tk.Label(root, text=label_text, bg=bg_colour, fg=fg_colour, font=main_font)
+        label = tk.Label(root, text=label_text, bg=colours.bg, fg=colours.fg, font=main_font)
         label.grid(row=i, column=0, padx=10, pady=10)
 
         # create an entry box for the number
         entry = tk.Entry(root, width=10)
         entry.grid(row=i, column=1, padx=10, pady=10)
     else:
-        label = tk.Label(root, bg=bg_colour, fg=fg_colour, font=main_font)
+        label = tk.Label(root, bg=colours.bg, fg=colours.fg, font=main_font)
         label.grid(row=i, column=0, padx=10, pady=10)
 
     # store the label in the dictionary for later use
     labels[i + 1] = label
 
 # in the future make it so the file input button text changes to the current inputted schematic
-schematic_path = tk.Button(root, text="Encoded Layout .litematic", bg="#D42121", font=button_font,
+schematic_path = tk.Button(root, text="Encoded Layout .litematic", bg=colours.warped, font=button_font,
                            command=lambda: schematic_path_val.set(open_file_explorer()))
 schematic_path.grid(row=len(input_labels), column=0, padx=10, pady=10)
 
@@ -189,7 +185,7 @@ calculate_button = tk.Button(root, text="Calculate!", font=button_font,
                                                        trunk_start_val.get(), infinite_dispenser_val.get())
                              if dispenser_frequency_val.get() > 0 else print("Please enter a non-zero value for"
                                                                              " dispenser frequency"),
-                             bg="#00a7a3", fg="black")
+                             bg=colours.light_red)
 calculate_button.grid(row=len(input_labels), column=1, padx=10, pady=10)
 
 # create the labels for outputs
@@ -210,59 +206,60 @@ output_labels = [
 # create a dictionary to store the labels
 labels = {}
 for k, label_text2 in enumerate(output_labels):
-    label2 = tk.Label(root, text=label_text2, bg=bg_colour, fg=fg_colour, font=main_font)
+    label2 = tk.Label(root, text=label_text2, bg=colours.bg, fg=colours.fg, font=main_font)
     label2.grid(row=k, column=2, padx=10, pady=10)
     labels[k] = label2
 
-    output = tk.Label(root, text="", bg=bg_colour, fg=fg_colour, font=main_font)
+    output = tk.Label(root, text="", bg=colours.bg, fg=colours.fg, font=main_font)
     output.grid(row=k, column=3, padx=10, pady=10)
     labels[k + 16] = output
 
 # create entry widgets and link them to the variables
 dispenser_val = tk.IntVar(value=3)
-dispenser_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
+dispenser_entry = tk.Entry(root, width=10, bg=colours.bg_widget, fg=colours.fg, font=main_font,
                            textvariable=dispenser_val)
 dispenser_entry.grid(row=0, column=1, padx=10, pady=10)
 
 dispenser_frequency_val = tk.IntVar(value=4)
-dispenser_frequency_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
+dispenser_frequency_entry = tk.Entry(root, width=10, bg=colours.bg_widget, fg=colours.fg, font=main_font,
                                      textvariable=dispenser_frequency_val)
 dispenser_frequency_entry.grid(row=1, column=1, padx=10, pady=10)
 
 hat_frequency_val = tk.IntVar(value=4)
-hat_frequency_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
+hat_frequency_entry = tk.Entry(root, width=10, bg=colours.bg_widget, fg=colours.fg, font=main_font,
                                textvariable=hat_frequency_val)
 hat_frequency_entry.grid(row=2, column=1, padx=10, pady=10)
 
 trunk_frequency_val = tk.IntVar(value=4)
-trunk_frequency_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
+trunk_frequency_entry = tk.Entry(root, width=10, bg=colours.bg_widget, fg=colours.fg, font=main_font,
                                  textvariable=trunk_frequency_val)
 trunk_frequency_entry.grid(row=3, column=1, padx=10, pady=10)
 
 trunk_height_val = tk.IntVar(value=1)
-trunk_height_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
+trunk_height_entry = tk.Entry(root, width=10, bg=colours.bg_widget, fg=colours.fg, font=main_font,
                               textvariable=trunk_height_val)
 trunk_height_entry.grid(row=4, column=1, padx=10, pady=10)
 
 # creating the 'Advanced Options:' subheading
-advanced_label = tk.Label(root, text=" Advanced Options: ", bg=subheading_colour, fg=fg_colour, font=subheading_font)
+advanced_label = tk.Label(root, text=" Advanced Options: ", bg=colours.dark_orange, fg=colours.fg,
+                          font=subheading_font)
 advanced_label.grid(row=5, column=0, padx=10, pady=10, sticky="W")
 
 layer2_dispenser_val = tk.StringVar(value='0')
-layer2_dispenser_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
+layer2_dispenser_entry = tk.Entry(root, width=10, bg=colours.bg_widget, fg=colours.fg, font=main_font,
                                   textvariable=layer2_dispenser_val)
 layer2_dispenser_entry.grid(row=6, column=1, padx=10, pady=10)
 
-credit_label = tk.Label(root, text="Made by ncolyer", bg=bg_widget_colour, fg=fg_colour, font=main_font)
+credit_label = tk.Label(root, text="Made by ncolyer", bg=colours.bg_widget, fg=colours.fg, font=main_font)
 credit_label.grid(row=len(input_labels) + 1, column=0, padx=10, pady=10)
 
 trunk_start_val = tk.IntVar(value=1)
-trunk_start_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
+trunk_start_entry = tk.Entry(root, width=10, bg=colours.bg_widget, fg=colours.fg, font=main_font,
                              textvariable=trunk_start_val)
 trunk_start_entry.grid(row=7, column=1, padx=10, pady=10)
 
 infinite_dispenser_val = tk.StringVar(value='0')
-infinite_dispenser_entry = tk.Entry(root, width=10, bg=bg_widget_colour, fg=fg_colour, font=main_font,
+infinite_dispenser_entry = tk.Entry(root, width=10, bg=colours.bg_widget, fg=colours.fg, font=main_font,
                                     textvariable=infinite_dispenser_val)
 infinite_dispenser_entry.grid(row=8, column=1, padx=10, pady=10)
 
