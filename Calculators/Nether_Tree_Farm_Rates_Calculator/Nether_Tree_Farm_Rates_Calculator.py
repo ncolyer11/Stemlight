@@ -185,7 +185,7 @@ calculate_button = tk.Button(root, text="Calculate!", font=button_font,
                                                        trunk_start_val.get(), infinite_dispenser_val.get())
                              if dispenser_frequency_val.get() > 0 else print("Please enter a non-zero value for"
                                                                              " dispenser frequency"),
-                             bg=colours.light_red)
+                             bg=colours.crimson)
 calculate_button.grid(row=len(input_labels), column=1, padx=10, pady=10)
 
 # create the labels for outputs
