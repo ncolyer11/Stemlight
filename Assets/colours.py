@@ -7,7 +7,7 @@ fg_button = "#323231"
 
 # buttons
 crimson = "#D42121"
-warped = "#D22B2B"
+warped = "#00a7a3"
 
 menu_gradient = ["#87CEEB", "#1E90FF"]
 

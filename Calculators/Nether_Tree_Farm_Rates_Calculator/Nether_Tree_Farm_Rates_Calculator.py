@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog
 import tkinter.font as font
+import os
 
 from Assets import colours
 import calculate_layout
@@ -48,6 +49,16 @@ toolbar.add_cascade(label="Decimal Places", menu=dp_menu)
 for dp_row in range(0, 6):
     dp_menu.add_radiobutton(label=dp_row, variable=dp, value=dp_row,
                             command=lambda row=dp_row: set_dp(row))
+
+# Create a string variable to display
+schematic_path_val = tk.StringVar(value="../Assets/empty_layout.litematic")
+
+# Create a third menu to display the string variable
+third_menu = tk.Menu(toolbar, tearoff=0)
+filename = os.path.basename(schematic_path_val.get())  # get the filename
+name, extension = os.path.splitext(filename)  # split the filename into name and extension
+name = f"Selected schematic: '{name}'"
+toolbar.add_cascade(label=name, menu=third_menu)
 
 
 def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, trunk_frequency_value,
@@ -119,9 +130,9 @@ def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, t
         f"{round(bm_produced, d_p)}",
         f"{round(bm_used, d_p)}",
         f"{round(bm_required, d_p)}",
-        f"{round(stem_eff, d_p)}",
-        f"{round(shroom_eff, d_p)}",
-        f"{round(wart_eff, d_p)}",
+        f"{round(100 * stem_eff, d_p)}%",
+        f"{round(100 * shroom_eff, d_p)}%",
+        f"{round(100 * wart_eff, d_p)}%",
         f"{round(total_rates, d_p)}"
     ]
 
@@ -130,7 +141,13 @@ def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, t
         labels[label_num + 16]['text'] = output_value_labels[label_num]
 
 
-schematic_path_val = tk.StringVar(value='../Assets/empty_layout.litematic')
+# Define a function to update both the string variable and the menu label
+def update_string_and_menu():
+    schematic_path_val.set(open_file_explorer())
+    filename = os.path.basename(schematic_path_val.get())  # get the filename
+    name, extension = os.path.splitext(filename)  # split the filename into name and extension
+    name = f"Selected schematic: '{name}'"
+    toolbar.entryconfig(3, label=name)
 
 
 def open_file_explorer():
@@ -160,7 +177,7 @@ for i, label_text in enumerate(input_labels):
     if i != 5:
         # create a label for the entry box
         label = tk.Label(root, text=label_text, bg=colours.bg, fg=colours.fg, font=main_font)
-        label.grid(row=i, column=0, padx=10, pady=10)
+        label.grid(row=i, column=0, padx=10, pady=10, sticky="W")
 
         # create an entry box for the number
         entry = tk.Entry(root, width=10)
@@ -174,7 +191,7 @@ for i, label_text in enumerate(input_labels):
 
 # in the future make it so the file input button text changes to the current inputted schematic
 schematic_path = tk.Button(root, text="Encoded Layout .litematic", bg=colours.warped, font=button_font,
-                           command=lambda: schematic_path_val.set(open_file_explorer()))
+                           command=lambda: update_string_and_menu())
 schematic_path.grid(row=len(input_labels), column=0, padx=10, pady=10)
 
 # create a button to calculate the outputs
@@ -207,10 +224,10 @@ output_labels = [
 labels = {}
 for k, label_text2 in enumerate(output_labels):
     label2 = tk.Label(root, text=label_text2, bg=colours.bg, fg=colours.fg, font=main_font)
-    label2.grid(row=k, column=2, padx=10, pady=10)
+    label2.grid(row=k, column=2, padx=10, pady=10, sticky="W")
     labels[k] = label2
 
-    output = tk.Label(root, text="", bg=colours.bg, fg=colours.fg, font=main_font)
+    output = tk.Label(root, text="", bg=colours.bg, fg=colours.fg, font=button_font)
     output.grid(row=k, column=3, padx=10, pady=10)
     labels[k + 16] = output
 
