@@ -98,7 +98,7 @@ def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, t
     bm_used = (1 / fungus_growth_chance + (18000 - 11423) / 14608) * fungus
 
     # stems, shroomlights and wart blocks produced per hour
-    if schematic_path_val.get() == './Assets/empty_layout.litematic':
+    if schematic_path_val.get() in ['', './Assets/empty_layout.litematic']:
         stems_per_cycle = 0
         layer = trunk_start_value - 1
         while layer < trunk_height_value:
@@ -144,10 +144,10 @@ def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, t
 # Define a function to update both the string variable and the menu label
 def update_string_and_menu():
     schematic_path_val.set(open_file_explorer())
-    filename = os.path.basename(schematic_path_val.get())  # get the filename
-    name, extension = os.path.splitext(filename)  # split the filename into name and extension
-    name = f"Selected schematic: '{name}'"
-    toolbar.entryconfig(3, label=name)
+    filename2 = os.path.basename(schematic_path_val.get())  # get the filename
+    name2, extension2 = os.path.splitext(filename2)  # split the filename into name and extension
+    name2 = f"Selected schematic: '{name2}'"
+    toolbar.entryconfig(3, label=name2)
 
 
 def open_file_explorer():
