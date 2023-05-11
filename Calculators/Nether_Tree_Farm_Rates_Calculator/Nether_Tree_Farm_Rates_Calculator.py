@@ -51,7 +51,7 @@ for dp_row in range(0, 6):
                             command=lambda row=dp_row: set_dp(row))
 
 # Create a string variable to display
-schematic_path_val = tk.StringVar(value="./Assets/empty_layout.litematic")
+schematic_path_val = tk.StringVar(value='')
 
 # Create a third menu to display the string variable
 third_menu = tk.Menu(toolbar, tearoff=0)
@@ -98,7 +98,7 @@ def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, t
     bm_used = (1 / fungus_growth_chance + (18000 - 11423) / 14608) * fungus
 
     # stems, shroomlights and wart blocks produced per hour
-    if schematic_path_val.get() in ['', './Assets/empty_layout.litematic']:
+    if schematic_path_val.get() in ['']:
         stems_per_cycle = 0
         layer = trunk_start_value - 1
         while layer < trunk_height_value:
