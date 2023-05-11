@@ -94,7 +94,7 @@ def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, t
     # fungus used per hour
     fungus = growth_chance * hourly_cycles
 
-    # upper bound bonemeal used per hour (fraction is bonemeal required to produce 1 crimson fungus)
+    # upper bound bonemeal used per hour (fraction is the bonemeal required to produce 1 crimson fungus)
     bm_used = (1 / fungus_growth_chance + (18000 - 11423) / 14608) * fungus
 
     # stems, shroomlights and wart blocks produced per hour
