@@ -8,7 +8,7 @@ import calculate_layout_efficiency
 
 root = tk.Tk()
 root.title("Stemlight: Nether Tree Farm Layout Efficiency Calculator")
-root.iconbitmap('../Assets/ikon.ico')
+root.iconbitmap('./Assets/ikon.ico')
 root.configure(bg=colours.bg)
 
 dp = tk.StringVar(value="2")

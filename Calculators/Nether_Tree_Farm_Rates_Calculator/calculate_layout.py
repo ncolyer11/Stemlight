@@ -14,11 +14,13 @@ from Assets import heatmap_data
 
 # taking file input from user and checking to see if the path and schematic size is valid
 def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
-    schem = Schematic.load(f"{path}")
+    # to fix empty input bug
+    if path == '':
+        path = './Assets/empty_layout.litematic'
+    schem = Schematic.load(path)
     reg = list(schem.regions.values())[0]
 
     start_time = time.time()
-
     # skipping unnecessary calculations if layout schematic is empty
     if schem == 'empty_layout.litematic':
         end_time = time.time()
