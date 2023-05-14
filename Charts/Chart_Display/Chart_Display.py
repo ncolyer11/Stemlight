@@ -119,6 +119,7 @@ for i, image_file in enumerate(image_files):
         "\nShroomlights per Layer",
         "\nWart Blocks per Layer"
     ]
+
     caption = tk.Label(root, text=captions[i], bg=colours.bg, fg=colours.fg, font=main_font)
     caption.grid(row=row, column=col, padx=10, pady=3)
 
