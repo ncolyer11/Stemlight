@@ -10,6 +10,8 @@ root = tk.Tk()
 root.title("Stemlight: Nether Tree Farm Layout Efficiency Calculator")
 root.iconbitmap('./Assets/ikon.ico')
 root.configure(bg=colours.bg)
+root.minsize(320, 235)
+
 
 dp = tk.StringVar(value="2")
 

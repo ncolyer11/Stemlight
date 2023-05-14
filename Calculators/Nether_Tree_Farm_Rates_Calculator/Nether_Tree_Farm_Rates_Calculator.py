@@ -10,6 +10,7 @@ root = tk.Tk()
 root.title("Stemlight: Nether Tree Farm Rates Calculator")
 root.iconbitmap('./Assets/ikon.ico')
 root.configure(bg=colours.bg)
+root.minsize(620, 515)
 
 # call update_idletasks to make sure widgets have been created
 root.update_idletasks()

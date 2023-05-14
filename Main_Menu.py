@@ -1,18 +1,19 @@
 import tkinter as tk
 import tkinter.font as font
 import threading
-import os
+import subprocess
 
 from Assets import colours
 
 
 # Define function to open a Python file
-def open_file(folder, file_name):
-    os.system(f"python calculators/{folder}/{file_name}")
+def open_file(folder, subfolder, program_name):
+    file_path = f"./{folder}/{subfolder}/{program_name}"
+    subprocess.call(["python", file_path])
 
 
-def open_file_single_instance(folder, file):
-    thread = threading.Thread(target=open_file, args=(folder, file))
+def open_file_single_instance(folder, subfolder, file):
+    thread = threading.Thread(target=open_file, args=(folder, subfolder, file))
     thread.start()
 
 
@@ -21,6 +22,8 @@ root = tk.Tk()
 root.title("Stemlight: Main Menu")
 root.iconbitmap('./Assets/ikon.ico')
 root.configure(bg=colours.bg)
+# root.geometry("+0+0")
+root.minsize(450, 200)
 
 main_font = font.Font(family='Segoe UI Semibold', size=11)
 
@@ -28,7 +31,7 @@ main_font = font.Font(family='Segoe UI Semibold', size=11)
 def create_gradient(start_color, end_color, width, height):
     # Create a canvas and grid it into the root window
     canvas = tk.Canvas(root, width=width, height=height, borderwidth=0, highlightthickness=0)
-    canvas.grid(row=0, column=0, rowspan=2, columnspan=2, sticky="nsew")
+    canvas.grid(row=0, column=0, rowspan=3, columnspan=2, sticky="nsew")
 
     # Configure grid weights to make the canvas fill the window
     root.grid_rowconfigure(0, weight=1)
@@ -76,32 +79,48 @@ toolbar.add_cascade(label="File", menu=file_menu)
 file_menu.add_command(label="Exit", command=root.quit)
 
 # Define file names and button labels
+folder_names = [
+    "Calculators",
+    "Calculators",
+    "Calculators",
+    "Calculators",
+    "Charts",
+    "Assets"
+]
+
+subfolder_names = [
+    "Nether_Tree_Farm_Layout_Efficiency_Calculator",
+    "Nether_Tree_Farm_Rates_Calculator",
+    "Nylium_Dispenser_Placement_Calculator",
+    "Trunk_Distribution_Calculator",
+    "Chart_Display",
+    "Credits"
+]
+
 file_names = [
     "Nether_Tree_Farm_Layout_Efficiency_Calculator.py",
     "Nether_Tree_Farm_Rates_Calculator.py",
     "Nylium_Dispenser_Placement_Calculator.py",
-    "Trunk_Distribution_Calculator.py"
-]
-
-folder_names = [
-    "Nether_Tree_Farm_Layout_Efficiency_Calculator",
-    "Nether_Tree_Farm_Rates_Calculator",
-    "Nylium_Dispenser_Placement_Calculator",
-    "Trunk_Distribution_Calculator"
+    "Trunk_Distribution_Calculator.py",
+    "Chart_Display.py",
+    "Credits.py"
 ]
 
 button_labels = [
     "Layout Efficiency",
     "Farm Rates",
     "Fungus Distribution",
-    "Trunk Distribution"
+    "Trunk Distribution",
+    "Chart Viewer",
+    "Credits"
 ]
 
 # Create buttons using a for loop
 for i in range(len(file_names)):
     button = tk.Button(root, text=button_labels[i],
-                       command=lambda file=file_names[i], folder=folder_names[i]: open_file_single_instance(folder,
-                                                                                                            file))
+                       command=lambda folder=folder_names[i], subfolder=subfolder_names[i],
+                                      file=file_names[i]: open_file_single_instance(folder, subfolder,
+                                                                                    file))
     button.config(activebackground=button.cget('bg'), bg=colours.bg, fg=colours.fg, font=main_font,
                   padx=5, pady=5, width=22, height=2)
     button.grid(row=i // 2, column=i % 2, padx=8, pady=5)
