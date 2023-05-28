@@ -13,10 +13,9 @@ import heatmap_data
 def get_cell_value(sheet_name2, column_number, row_number):
     return heatmap_data.heatmap_array[sheet_name2][row_number][column_number]
 
+
 # 3D data is stored in a excel spreadsheet format in a 3D array,
 # hence some math is needed to convert between them
-
-
 def xz_to_col(X, Z):
     return X + (7 * Z)
 
