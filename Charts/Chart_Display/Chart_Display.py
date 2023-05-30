@@ -55,10 +55,12 @@ image_folder = "Charts/"
 image_files = [
     "7 different regions.png",
     "Shroomlight Heatmap v2 3D.jpg",
-    "Wart Block Heatmap v2 3D.jpg",
-    "Shroomlight Distribution.png",
     "shrooms per layer v2.jpg",
-    "warts per layer v2.jpg"
+    "vrm optimal placements heatmap.png",
+    "Shroomlight Distribution.png",
+    "Wart Block Heatmap v2 3D.jpg",
+    "warts per layer v2.jpg",
+    "vrm raw placements heatmap.png"
 ]
 
 # Calculate the desired thumbnail width and height
@@ -66,7 +68,7 @@ thumbnail_width = 320
 thumbnail_height = 180
 
 # Set the maximum thumbnail size
-max_thumbnail_width = 400
+max_thumbnail_width = 370
 max_thumbnail_height = 300
 
 # Calculate the aspect ratio of the thumbnails
@@ -76,9 +78,12 @@ aspect_ratio = thumbnail_width / thumbnail_height
 photo_images = []
 
 # Create a 2x3 button grid
+MAX_ROW = 2
+MAX_COL = 4
+
 for i, image_file in enumerate(image_files):
-    row = 2 * (i // 3)
-    col = i % 3
+    row = MAX_ROW * (i // MAX_COL)
+    col = i % MAX_COL
     image_path = image_folder + image_file
     image = Image.open(image_path)
 
@@ -114,10 +119,12 @@ for i, image_file in enumerate(image_files):
     captions = [
         "\nDifferent Regions",
         "\nShroomlight Heatmap",
-        "\nWart Block Heatmap",
-        "\nShroomlight Distribution",
         "\nShroomlights per Layer",
-        "\nWart Blocks per Layer"
+        "\nWart Blocks per VRM",
+        "\nShroomlight Distribution",
+        "\nWart Block Heatmap",
+        "\nWart Blocks per Layer",
+        "\nRaw Wart Blocks per VRM"
     ]
 
     caption = tk.Label(root, text=captions[i], bg=colours.bg, fg=colours.fg, font=main_font)
