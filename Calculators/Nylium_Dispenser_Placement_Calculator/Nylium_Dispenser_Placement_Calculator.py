@@ -23,8 +23,6 @@ for i in range(dispensers):
 
 # Create 2D array of given size and initialize all elements to 0
 nyliumGrid = [[0 for i in range(length)] for j in range(width)]
-
-
 def selection_chance(x1, y1):
     x2 = 3 - abs(x1)
     y2 = 3 - abs(y1)
@@ -32,7 +30,6 @@ def selection_chance(x1, y1):
     P = 0 if x2 < 0 or y2 < 0 else P
     return 1 - (1 - P / 81) ** 9
     # return P
-
 
 bonemeal_used = 0
 for i in range(dispensers):
@@ -58,19 +55,20 @@ print(f'total items: {total}')
 print(f'crimson fungi: {total / 9}')
 print(f'bonemeal_used: {bonemeal_used}')
 
-print("For dispensers in the following order, placed at:")
-blockGrid = [[0 for i in range(length)] for j in range(width)]
-dis = 1
-for i in range(dispensers):
-    x = coordinates[i][0]
-    y = coordinates[i][1]
-    blockGrid[x][y] = dis
-    dis += 1
+if dispensers > 0:
+    print("For dispensers in the following order, placed at:")
+    blockGrid = [[0 for i in range(length)] for j in range(width)]
+    dis = 1
+    for i in range(dispensers):
+        x = coordinates[i][0]
+        y = coordinates[i][1]
+        blockGrid[x][y] = dis
+        dis += 1
 
-for x in range(width):
-    for y in range(length):
-        if blockGrid[x][y] != 0:
-            print(f'[{blockGrid[x][y]}]', end='')
-        else:
-            print('[ ]', end='')
-    print('\n', end='')
+    for x in range(width):
+        for y in range(length):
+            if blockGrid[x][y] != 0:
+                print(f'[{blockGrid[x][y]}]', end='')
+            else:
+                print('[ ]', end='')
+        print('\n', end='')
