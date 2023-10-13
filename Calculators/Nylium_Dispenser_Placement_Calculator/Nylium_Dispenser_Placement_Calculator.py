@@ -39,10 +39,10 @@ while True:
     else:
         fungi_weight = 11/99  # 11/99 for crimson
 
-    width = int(input("Enter Width of Nylium Grid: "))
     length = int(input("Enter Length of Nylium Grid: "))
+    width = int(input("Enter Width of Nylium Grid: "))
     dispensers = int(input("Enter Amount of Dispensers: "))
-    
+
     for i in range(dispensers):
         while True:
             x = int(input(f'Enter x-Offset from NW corner for dispenser {i + 1}: '))
@@ -89,8 +89,12 @@ for i in range(dispensers):
         if fungi == 0:
             foliage_chance = selection_chance(x - coordinates[i][0], y - coordinates[i][1])
             foliage_grid[x][y] += dispenser_fail_chance * foliage_chance * (1 - foliage_grid[x][y])
+    # only enable for testing when clearing centre nylium with a piston for a 1 dispenser centred on a 5x5 platform
+    # if dispensers > 1:
+    #     foliage_grid[2][2] = 0
+    #     des_fungi_grid[2][2] = 0
 
-# Print the resulting array
+# print the resulting fungi gen chance values for each block in the nylium grid
 for i in range(width):
     print(" ".join(["{:<8}".format(round(des_fungi_grid[i][j], 5)) for j in range(length)]))
 
@@ -109,7 +113,7 @@ print(f'bonemeal_used: {round(bonemeal_used, 5)}')
 
 if dispensers > 0:
     print("For dispensers in the following order, placed at:")
-    blockGrid = np.zeros((width, length), dtype=int)
+    blockGrid = np.zeros((length, width), dtype=int)
     dis = 1
     for i in range(dispensers):
         x = coordinates[i][0]
@@ -117,7 +121,7 @@ if dispensers > 0:
         blockGrid[x][y] = dis
         dis += 1
 
-    for x, y in iter.product(range(width), range(length)):
+    for x, y in iter.product(range(length), range(width)):
         if blockGrid[x][y] != 0:
             print(f'[{blockGrid[x][y]}]', end='')
         else:
