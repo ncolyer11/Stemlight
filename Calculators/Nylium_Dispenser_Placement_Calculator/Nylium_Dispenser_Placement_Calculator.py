@@ -12,20 +12,20 @@ import numpy as np
 import itertools as iter
 
 while True:
-    coordinates = []
+    disp_coordinates = []
     fungi = input("Enter Nylium Type: ").lower().strip()
     # shorcut for 1 centred dispenser on a 5x5 platform of nylium
     if fungi in {"d", "default", "d2", "default2"}:
         if fungi in {"d", "default"}:
             fungi = 0
-            fungi_weight = 13/100 # 13/100 for warped
+            fungi_weight = 13/100  # 13/100 for warped
         else:
             fungi = 1
-            fungi_weight = 11/99 # 11/99 for crimson         
+            fungi_weight = 11/99  # 11/99 for crimson
         width = 5
         length = 5
         dispensers = 1
-        coordinates.append((2,2))
+        disp_coordinates.append((2, 2))
         break
     elif fungi in {"blue", "b", "warped", "w", "warp"}:
         fungi = 0  # warped
@@ -48,7 +48,7 @@ while True:
             x = int(input(f'Enter x-Offset from NW corner for dispenser {i + 1}: '))
             y = int(input(f'Enter y-Offset from NW corner for dispenser {i + 1}: '))
             if 0 <= x < width and 0 <= y < length:
-                coordinates.append((x, y))
+                disp_coordinates.append((x, y))
                 break
             else:
                 print(f'Error: The offset values must be within the bounds of the {width}x{length} grid.')
@@ -72,14 +72,14 @@ def selection_chance(x1, y1):
 bonemeal_used = 0
 for i in range(dispensers):
     # chance of dispenser being able to fire from lack of foliage above it
-    dispenser_x = coordinates[i][0]
-    dispenser_y = coordinates[i][1]
+    dispenser_x = disp_coordinates[i][0]
+    dispenser_y = disp_coordinates[i][1]
     dispenser_fail_chance = (1 - foliage_grid[dispenser_x][dispenser_y])
     bonemeal_used += dispenser_fail_chance
     for x, y in iter.product(range(width), range(length)):
         # selection_chance(offset from dispenser posX, offset from dispenser posY)
         # the chance of a new foliage generating at the given offset pos
-        foliage_chance = selection_chance(x - coordinates[i][0], y - coordinates[i][1])
+        foliage_chance = selection_chance(x - dispenser_x, y - dispenser_y)
         # the chance of a desired fungi generating at the given offset pos
         des_fungi_chance = foliage_chance * fungi_weight
         # P(fungi) = P(dispenser not obstructred) * P(desired fungi being selected) * P(offset block not blocked)
@@ -87,7 +87,7 @@ for i in range(dispensers):
         foliage_grid[x][y] += dispenser_fail_chance * foliage_chance * (1 - foliage_grid[x][y])
         # warped nylium has another 9 cycles to generate sprouts
         if fungi == 0:
-            foliage_chance = selection_chance(x - coordinates[i][0], y - coordinates[i][1])
+            foliage_chance = selection_chance(x - dispenser_x, y - dispenser_y)
             foliage_grid[x][y] += dispenser_fail_chance * foliage_chance * (1 - foliage_grid[x][y])
     # only enable for testing when clearing centre nylium with a piston for a 1 dispenser centred on a 5x5 platform
     # if dispensers > 1:
@@ -116,8 +116,8 @@ if dispensers > 0:
     blockGrid = np.zeros((length, width), dtype=int)
     dis = 1
     for i in range(dispensers):
-        x = coordinates[i][0]
-        y = coordinates[i][1]
+        x = disp_coordinates[i][0]
+        y = disp_coordinates[i][1]
         blockGrid[x][y] = dis
         dis += 1
 
