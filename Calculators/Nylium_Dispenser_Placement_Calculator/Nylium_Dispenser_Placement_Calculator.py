@@ -8,23 +8,57 @@
 
 # USE SCHEMATIC OF NYLIUM + DISPENSER INPUT AND GUI LIKE LAYOUT RATES CALCULATOR
 
-width = int(input("Enter Width of Nylium Grid: "))
-length = int(input("Enter Length of Nylium Grid: "))
-dispensers = int(input("Enter Amount of Dispensers: "))
+import numpy as np
+import itertools as iter
 
-coordinates = []
-for i in range(dispensers):
-    while True:
-        x = int(input(f'Enter x-Offset from NW corner for dispenser {i + 1}: '))
-        y = int(input(f'Enter y-Offset from NW corner for dispenser {i + 1}: '))
-        if 0 <= x < width and 0 <= y < length:
-            coordinates.append((x, y))
-            break
+while True:
+    coordinates = []
+    fungi = input("Enter Nylium Type: ").lower().strip()
+    # shorcut for 1 centred dispenser on a 5x5 platform of nylium
+    if fungi in {"d", "default", "d2", "default2"}:
+        if fungi in {"d", "default"}:
+            fungi = 0
+            fungi_weight = 13/100 # 13/100 for warped
         else:
-            print(f'Error: The offset values must be within the bounds of the {width}x{length} grid.')
+            fungi = 1
+            fungi_weight = 11/99 # 11/99 for crimson         
+        width = 5
+        length = 5
+        dispensers = 1
+        coordinates.append((2,2))
+        break
+    elif fungi in {"blue", "b", "warped", "w", "warp"}:
+        fungi = 0  # warped
+    elif fungi in {"red", "r", "crimson", "c", "crim"}:
+        fungi = 1  # crimson
+    else:
+        print("Error: Please enter a valid nylium type")
+        exit(1)
+    if fungi == 0:
+        fungi_weight = 13/100  # 13/100 for warped
+    else:
+        fungi_weight = 11/99  # 11/99 for crimson
 
-# Create 2D array of given size and initialize all elements to 0
-nyliumGrid = [[0 for i in range(length)] for j in range(width)]
+    width = int(input("Enter Width of Nylium Grid: "))
+    length = int(input("Enter Length of Nylium Grid: "))
+    dispensers = int(input("Enter Amount of Dispensers: "))
+    
+    for i in range(dispensers):
+        while True:
+            x = int(input(f'Enter x-Offset from NW corner for dispenser {i + 1}: '))
+            y = int(input(f'Enter y-Offset from NW corner for dispenser {i + 1}: '))
+            if 0 <= x < width and 0 <= y < length:
+                coordinates.append((x, y))
+                break
+            else:
+                print(f'Error: The offset values must be within the bounds of the {width}x{length} grid.')
+    break
+
+# Create 2D array storing total plant growth chance of given size and initialize all elements to 0
+foliage_grid = np.zeros((width, length))
+# Create 2D array storing desired fungi growth chance of given size and initialize all elements to 0
+des_fungi_grid = np.zeros((width, length))
+
 def selection_chance(x1, y1):
     x2 = 3 - abs(x1)
     y2 = 3 - abs(y1)
@@ -33,36 +67,49 @@ def selection_chance(x1, y1):
     P = 0
     for k in range(1, 10):
         P += (1 - P_block) ** (9 - k)
-    return P * P_block * 11 / 99  # 11/99 for crimson and 13/100 for warped
+    return P * P_block
 
 bonemeal_used = 0
 for i in range(dispensers):
     # chance of dispenser being able to fire from lack of foliage above it
-    C = (1 - nyliumGrid[coordinates[i][0]][coordinates[i][1]])
-    bonemeal_used += C
-    for x in range(width):
-        for y in range(length):
-            S = selection_chance(x - coordinates[i][0], y - coordinates[i][1])
-            B = nyliumGrid[x][y] * C * S
-            nyliumGrid[x][y] = round(nyliumGrid[x][y] + C * S - B, 5)
+    dispenser_x = coordinates[i][0]
+    dispenser_y = coordinates[i][1]
+    dispenser_fail_chance = (1 - foliage_grid[dispenser_x][dispenser_y])
+    bonemeal_used += dispenser_fail_chance
+    for x, y in iter.product(range(width), range(length)):
+        # selection_chance(offset from dispenser posX, offset from dispenser posY)
+        # the chance of a new foliage generating at the given offset pos
+        foliage_chance = selection_chance(x - coordinates[i][0], y - coordinates[i][1])
+        # the chance of a desired fungi generating at the given offset pos
+        des_fungi_chance = foliage_chance * fungi_weight
+        # P(fungi) = P(dispenser not obstructred) * P(desired fungi being selected) * P(offset block not blocked)
+        des_fungi_grid[x][y] += dispenser_fail_chance * des_fungi_chance * (1 - foliage_grid[x][y])
+        foliage_grid[x][y] += dispenser_fail_chance * foliage_chance * (1 - foliage_grid[x][y])
+        # warped nylium has another 9 cycles to generate sprouts
+        if fungi == 0:
+            foliage_chance = selection_chance(x - coordinates[i][0], y - coordinates[i][1])
+            foliage_grid[x][y] += dispenser_fail_chance * foliage_chance * (1 - foliage_grid[x][y])
 
 # Print the resulting array
 for i in range(width):
-    print(" ".join(["{:<8}".format(nyliumGrid[i][j]) for j in range(length)]))
+    print(" ".join(["{:<8}".format(round(des_fungi_grid[i][j], 5)) for j in range(length)]))
 
-total = 0
-for x in range(width):
-    for y in range(length):
-        total += nyliumGrid[x][y]
+total_fungi = 0
+total_plants = 0
+for x, y in iter.product(range(width), range(length)):
+    total_fungi += des_fungi_grid[x][y]
+    total_plants += foliage_grid[x][y]
 
-
-print(f'total items: {total}')
-print(f'crimson fungi: {total}')
-print(f'bonemeal_used: {bonemeal_used}')
+print(f'total plants: {round(total_plants, 5)}')
+if fungi == 0:
+    print(f'warped fungi: {round(total_fungi, 5)}')
+else:
+    print(f'crimson fungi: {round(total_fungi, 5)}')
+print(f'bonemeal_used: {round(bonemeal_used, 5)}')
 
 if dispensers > 0:
     print("For dispensers in the following order, placed at:")
-    blockGrid = [[0 for i in range(length)] for j in range(width)]
+    blockGrid = np.zeros((width, length), dtype=int)
     dis = 1
     for i in range(dispensers):
         x = coordinates[i][0]
@@ -70,10 +117,10 @@ if dispensers > 0:
         blockGrid[x][y] = dis
         dis += 1
 
-    for x in range(width):
-        for y in range(length):
-            if blockGrid[x][y] != 0:
-                print(f'[{blockGrid[x][y]}]', end='')
-            else:
-                print('[ ]', end='')
-        print('\n', end='')
+    for x, y in iter.product(range(width), range(length)):
+        if blockGrid[x][y] != 0:
+            print(f'[{blockGrid[x][y]}]', end='')
+        else:
+            print('[ ]', end='')
+        if y == length - 1:
+            print('\n', end='')
