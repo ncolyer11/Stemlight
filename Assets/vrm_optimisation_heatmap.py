@@ -1,17 +1,13 @@
-"""
-Currently Known Bugs:
-- overflow error for the top 3 rows as y + [1,2,3] value exceeds 27
-- 'undeflow' error i.e. not including preplaced wart blocks at layer 0
-- both issues can easily be solved by making another heatmap that goes from layer 0 to layer 30 with just 0's in place
-of the rows that exceed the height of the nether tree volume
-"""
-
 import xlsxwriter
 import heatmap_data
 
+VRM_RANGE = 1 + 27 + 3
 
 def get_cell_value(sheet_name2, column_number, row_number):
-    return heatmap_data.heatmap_array[sheet_name2][row_number][column_number]
+    if row_number > 26 or row_number == 0:
+        return 0
+    else:
+        return heatmap_data.heatmap_array[sheet_name2][row_number][column_number]
 
 
 # 3D data is stored in a excel spreadsheet format in a 3D array,
@@ -21,7 +17,7 @@ def xz_to_col(X, Z):
 
 
 def y_to_row(Y):
-    return 26 - Y
+    return VRM_RANGE - 1 - 3 - Y
 
 
 # defining the different heatmap sheets
@@ -29,11 +25,12 @@ stems, shroomlight, vrm0, vrm1, vrm2, vrm3 = 0, 1, 2, 3, 4, 5
 
 outSheet = []
 outWorkbook = xlsxwriter.Workbook(r"VRM_Optimisation_Heatmap2.xlsx")
+print(VRM_RANGE)
 outSheet.append(outWorkbook.add_worksheet(f"vrm_optimisation_values"))
 outSheet.append(outWorkbook.add_worksheet(f"vrm_raw_added_values"))
 outSheet.append(outWorkbook.add_worksheet(f"vrm0_raw_values"))
 
-for y in range(27):
+for y in range(VRM_RANGE):
     for x in range(7):
         for z in range(7):
             # finding the avg wart blocks generated at the block which the pre-placed vrm wart block obstructs
