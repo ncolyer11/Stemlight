@@ -46,7 +46,7 @@ while True:
     print("Here is your nylium platform:")
     for i in range(width):
         for j in range(length):
-            print("☐", end=" ")
+            print("[ ]", end="")
         print("")
 
     dispensers = int(input("Enter Amount of Dispensers: "))
@@ -61,6 +61,12 @@ while True:
             else:
                 print(f'Error: The offset values must be within the bounds of the {width}x{length} grid.')
     break
+
+clearing = input("Enter if clearing above dispensers: ").lower().strip()
+if clearing in {"y", "yes", "1", "true"}:
+    clearing = 1
+else:
+    clearing = 0
 
 # Create 2D array storing total plant growth chance of given size and initialize all elements to 0
 foliage_grid = np.zeros((width, length))
@@ -82,8 +88,11 @@ for i in range(dispensers):
     # chance of dispenser being able to fire from lack of foliage above it
     dispenser_x = disp_coordinates[i][0]
     dispenser_y = disp_coordinates[i][1]
-    dispenser_fail_chance = (1 - foliage_grid[dispenser_x][dispenser_y])
-    bonemeal_used += dispenser_fail_chance
+    dispenser_bm_chance = (1 - foliage_grid[dispenser_x][dispenser_y])
+    if clearing == 1:
+        dispenser_bm_chance = 1 # as above block is always cleared
+    bonemeal_used += dispenser_bm_chance
+
     for x, y in iter.product(range(width), range(length)):
         # selection_chance(offset from dispenser posX, offset from dispenser posY)
         # the chance of a new foliage generating at the given offset pos
@@ -91,12 +100,12 @@ for i in range(dispensers):
         # the chance of a desired fungi generating at the given offset pos
         des_fungi_chance = foliage_chance * fungi_weight
         # P(fungi) = P(dispenser not obstructred) * P(desired fungi being selected) * P(offset block not blocked)
-        des_fungi_grid[x][y] += dispenser_fail_chance * des_fungi_chance * (1 - foliage_grid[x][y])
-        foliage_grid[x][y] += dispenser_fail_chance * foliage_chance * (1 - foliage_grid[x][y])
+        des_fungi_grid[x][y] += dispenser_bm_chance * des_fungi_chance * (1 - foliage_grid[x][y])
+        foliage_grid[x][y] += dispenser_bm_chance * foliage_chance * (1 - foliage_grid[x][y])
         # warped nylium has another 9 cycles to generate sprouts
         if fungi == 0:
             foliage_chance = selection_chance(x - dispenser_x, y - dispenser_y)
-            foliage_grid[x][y] += dispenser_fail_chance * foliage_chance * (1 - foliage_grid[x][y])
+            foliage_grid[x][y] += dispenser_bm_chance * foliage_chance * (1 - foliage_grid[x][y])
     # only enable for testing when clearing centre nylium with a piston for a 1 dispenser centred on a 5x5 platform
     # if dispensers > 1:
     #     foliage_grid[2][2] = 0
