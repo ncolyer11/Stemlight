@@ -41,12 +41,20 @@ while True:
 
     length = int(input("Enter Length of Nylium Grid: "))
     width = int(input("Enter Width of Nylium Grid: "))
+
+    # Show user current sized grid
+    print("Here is your nylium platform:")
+    for i in range(width):
+        for j in range(length):
+            print("☐", end=" ")
+        print("")
+
     dispensers = int(input("Enter Amount of Dispensers: "))
 
     for i in range(dispensers):
         while True:
-            x = int(input(f'Enter x-Offset from NW corner for dispenser {i + 1}: '))
-            y = int(input(f'Enter y-Offset from NW corner for dispenser {i + 1}: '))
+            y = int(input(f'Enter x-Offset from NW corner for dispenser {i + 1}: '))
+            x = int(input(f'Enter y-Offset from NW corner for dispenser {i + 1}: '))
             if 0 <= x < width and 0 <= y < length:
                 disp_coordinates.append((x, y))
                 break
@@ -113,7 +121,7 @@ print(f'bonemeal_used: {round(bonemeal_used, 5)}')
 
 if dispensers > 0:
     print("For dispensers in the following order, placed at:")
-    blockGrid = np.zeros((length, width), dtype=int)
+    blockGrid = np.zeros((width, length), dtype=int)
     dis = 1
     for i in range(dispensers):
         x = disp_coordinates[i][0]
@@ -121,7 +129,7 @@ if dispensers > 0:
         blockGrid[x][y] = dis
         dis += 1
 
-    for x, y in iter.product(range(length), range(width)):
+    for x, y in iter.product(range(width), range(length)):
         if blockGrid[x][y] != 0:
             print(f'[{blockGrid[x][y]}]', end='')
         else:
