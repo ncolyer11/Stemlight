@@ -6,9 +6,11 @@ import os
 from Assets import colours
 import calculate_layout
 
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 root = tk.Tk()
 root.title("Stemlight: Nether Tree Farm Rates Calculator")
-root.iconbitmap('./Assets/ikon.ico')
+root.iconbitmap('../../Assets/ikon.ico')
 root.configure(bg=colours.bg)
 root.minsize(620, 515)
 
@@ -62,38 +64,38 @@ name = f"Selected schematic: '{name}'"
 toolbar.add_cascade(label=name, menu=third_menu)
 
 
-def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, trunk_frequency_value,
+def calculate(dispenser_value, dispenser_period_value, hat_period_value, trunk_period_value,
               trunk_height_value, layer2_dispenser_value, trunk_start_value, infinite_dispenser_value):
     yes_options = {'y', 'yes', 'on', '1'}
 
     # huge fungus related constants
     fungus_growth_chance = 0.4
-    trunk_distribution = 7 * [1 / 120, 0] + 3 * [11 / 120, 0.1] + 4 * [11 / 120] + 3 * [0.0]
+    trunk_distribution = 7 * [0, 1 / 120] + 3 * [11 / 120, 12 / 120] + 4 * [11 / 120] + 3 * [0.0]
     cumulative_trunk_distribution = [0.0] * (len(trunk_distribution) + 1)
-    for index in range(1, len(cumulative_trunk_distribution)):
+    for index in range(1, len(trunk_distribution)):
         cumulative_trunk_distribution[index] = (cumulative_trunk_distribution[index - 1] +
-                                                trunk_distribution[index - 1])
-    # reversing the order of the list
-    cumulative_trunk_distribution = cumulative_trunk_distribution[::-1]
+                                                trunk_distribution[index])
+
+    # reversing the order of the list and omit first element at layer -1
+    cumulative_trunk_distribution = cumulative_trunk_distribution[26::-1]
 
     # dispenser, trunk and hat cycles
-    hourly_cycles = 72000 / dispenser_frequency_value
-    trunk_cycles = max(1, trunk_frequency_value / dispenser_frequency_value)
-    hat_cycles = max(1, hat_frequency_value / dispenser_frequency_value)
+    trunk_cycles = max(1, trunk_period_value / dispenser_period_value)
+    hat_cycles = max(1, hat_period_value / dispenser_period_value)
+
+    # fungus growth chance per cycle and used per hour
+    if infinite_dispenser_value.lower() in yes_options:
+        fungus = 72000 / trunk_period_value
+        trunk_cycles = trunk_period_value
+        hat_cycles = hat_period_value
+    else:
+        growth_chance = 1 - (1 - fungus_growth_chance) ** dispenser_value
+        fungus = growth_chance * 72000 / dispenser_period_value
 
     # schematic to layout efficiency
     layout_values = calculate_layout.schematic_to_efficiency(schematic_path_val.get(), hat_cycles, trunk_cycles)
     stems_per_cycle, shrooms_per_cycle, warts_per_cycle, stem_eff, shroom_eff, wart_eff = \
         layout_values[0], layout_values[1], layout_values[2], layout_values[3], layout_values[4], layout_values[5]
-
-    # fungus growth chance per cycle
-    if infinite_dispenser_value.lower() in yes_options:
-        growth_chance = 1
-    else:
-        growth_chance = 1 - (1 - fungus_growth_chance) ** dispenser_value
-
-    # fungus used per hour
-    fungus = growth_chance * hourly_cycles
 
     # upper bound bonemeal used per hour (fraction is the bonemeal required to produce 1 crimson fungus)
     bm_used = (1 / fungus_growth_chance + (18000 - 11423) / 14608) * fungus
@@ -105,9 +107,12 @@ def calculate(dispenser_value, dispenser_frequency_value, hat_frequency_value, t
         while layer < trunk_height_value:
             stems_per_cycle += cumulative_trunk_distribution[layer]
             layer += 1
-
-    stem_rates = fungus / trunk_cycles * stems_per_cycle
-    shroom_rates, wart_rates = fungus / hat_cycles * shrooms_per_cycle, fungus / hat_cycles * warts_per_cycle
+        stem_eff = stems_per_cycle / (221 / 24)
+    if infinite_dispenser_value.lower() in yes_options:
+        stem_rates, shroom_rates, wart_rates = fungus * stems_per_cycle, fungus * shrooms_per_cycle, fungus * warts_per_cycle
+    else:
+        stem_rates = fungus / trunk_cycles * stems_per_cycle
+        shroom_rates, wart_rates = fungus / hat_cycles * shrooms_per_cycle, fungus / hat_cycles * warts_per_cycle
 
     # bonemeal produced per hour from just wart blocks. it takes 137/17 (~8.05882352941) wart blocks to make 1 bonemeal
     bm_produced = wart_rates * 17 / 137
@@ -163,9 +168,9 @@ labels = {}
 # define the labels for each entry box
 input_labels = [
     "Dispensers",
-    "Dispenser Fire Frequency (gt)",
-    "Hat Harvesting Frequency (gt)",
-    "Trunk Harvesting Frequency (gt)",
+    "Dispenser Fire Period (gt)",
+    "Hat Harvesting Period (gt)",
+    "Trunk Harvesting Period (gt)",
     "Trunk Harvesting Top Layer",
     "Advanced Options",
     "Layer 2 Dispenser",
@@ -197,12 +202,12 @@ schematic_path.grid(row=len(input_labels), column=0, padx=10, pady=10)
 
 # create a button to calculate the outputs
 calculate_button = tk.Button(root, text="Calculate!", font=button_font,
-                             command=lambda: calculate(dispenser_val.get(), dispenser_frequency_val.get(),
-                                                       hat_frequency_val.get(), trunk_frequency_val.get(),
+                             command=lambda: calculate(dispenser_val.get(), dispenser_period_val.get(),
+                                                       hat_period_val.get(), trunk_period_val.get(),
                                                        trunk_height_val.get(), layer2_dispenser_val.get(),
                                                        trunk_start_val.get(), infinite_dispenser_val.get())
-                             if dispenser_frequency_val.get() > 0 else print("Please enter a non-zero value for"
-                                                                             " dispenser frequency"),
+                             if dispenser_period_val.get() > 0 else print("Please enter a non-zero value for"
+                                                                             " dispenser period"),
                              bg=colours.crimson)
 calculate_button.grid(row=len(input_labels), column=1, padx=10, pady=10)
 
@@ -233,25 +238,25 @@ for k, label_text2 in enumerate(output_labels):
     labels[k + 16] = output
 
 # create entry widgets and link them to the variables
-dispenser_val = tk.IntVar(value=3)
+dispenser_val = tk.DoubleVar(value=3)
 dispenser_entry = tk.Entry(root, width=10, bg=colours.bg_widget, fg=colours.fg, font=main_font,
                            textvariable=dispenser_val)
 dispenser_entry.grid(row=0, column=1, padx=10, pady=10)
 
-dispenser_frequency_val = tk.IntVar(value=4)
-dispenser_frequency_entry = tk.Entry(root, width=10, bg=colours.bg_widget, fg=colours.fg, font=main_font,
-                                     textvariable=dispenser_frequency_val)
-dispenser_frequency_entry.grid(row=1, column=1, padx=10, pady=10)
+dispenser_period_val = tk.DoubleVar(value=4)
+dispenser_period_entry = tk.Entry(root, width=10, bg=colours.bg_widget, fg=colours.fg, font=main_font,
+                                     textvariable=dispenser_period_val)
+dispenser_period_entry.grid(row=1, column=1, padx=10, pady=10)
 
-hat_frequency_val = tk.IntVar(value=4)
-hat_frequency_entry = tk.Entry(root, width=10, bg=colours.bg_widget, fg=colours.fg, font=main_font,
-                               textvariable=hat_frequency_val)
-hat_frequency_entry.grid(row=2, column=1, padx=10, pady=10)
+hat_period_val = tk.DoubleVar(value=4)
+hat_period_entry = tk.Entry(root, width=10, bg=colours.bg_widget, fg=colours.fg, font=main_font,
+                               textvariable=hat_period_val)
+hat_period_entry.grid(row=2, column=1, padx=10, pady=10)
 
-trunk_frequency_val = tk.IntVar(value=4)
-trunk_frequency_entry = tk.Entry(root, width=10, bg=colours.bg_widget, fg=colours.fg, font=main_font,
-                                 textvariable=trunk_frequency_val)
-trunk_frequency_entry.grid(row=3, column=1, padx=10, pady=10)
+trunk_period_val = tk.DoubleVar(value=4)
+trunk_period_entry = tk.Entry(root, width=10, bg=colours.bg_widget, fg=colours.fg, font=main_font,
+                                 textvariable=trunk_period_val)
+trunk_period_entry.grid(row=3, column=1, padx=10, pady=10)
 
 trunk_height_val = tk.IntVar(value=1)
 trunk_height_entry = tk.Entry(root, width=10, bg=colours.bg_widget, fg=colours.fg, font=main_font,

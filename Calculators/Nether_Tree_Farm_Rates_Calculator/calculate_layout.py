@@ -16,7 +16,7 @@ from Assets import heatmap_data
 def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
     # to fix empty input bug
     if path == '':
-        path = './Assets/empty_layout.litematic'
+        path = '../../Assets/empty_layout.litematic'
     schem = Schematic.load(path)
     reg = list(schem.regions.values())[0]
 

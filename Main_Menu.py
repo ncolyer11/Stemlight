@@ -2,9 +2,9 @@ import tkinter as tk
 import tkinter.font as font
 import threading
 import subprocess
+import sys
 
 from Assets import colours
-
 
 # Define function to open a Python file
 def open_file(folder, subfolder, program_name):
@@ -16,6 +16,8 @@ def open_file_single_instance(folder, subfolder, file):
     thread = threading.Thread(target=open_file, args=(folder, subfolder, file))
     thread.start()
 
+
+sys.path.insert(0, './Assets')
 
 # Create main window
 root = tk.Tk()
