@@ -10,13 +10,14 @@ for more info on how this & the heatmaps were made visit the huge fungi huggers 
 from litemapy import Schematic
 import time
 # importing heatmap data array
-from Assets import heatmap_data
+from Assets import heatmap_data, constants as const
 
 
 def schematic_to_values(path):
     schem = Schematic.load(path)
     reg = list(schem.regions.values())[0]
 
+    # start tracking time
     start_time = time.time()
 
     # function for accessing a single value/cell in the above array
@@ -36,17 +37,17 @@ def schematic_to_values(path):
 
                 X, Y, Z = x, y, z
                 if min(Xrange) < 0:
-                    X += 6
+                    X += const.NT_MAX_WD - 1
                 if min(Yrange) < 0:
-                    Y += 26
+                    Y += const.NT_MAX_HT - 1
                 if min(Zrange) < 0:
-                    Z += 6
+                    Z += const.NT_MAX_WD - 1
 
                 if block.blockid != "minecraft:air":
                     # 3D data is stored in a excel spreadsheet format in a 3D array,
                     # hence some math is needed to convert between them
-                    col = X + (7 * Z)
-                    row = 26 - Y
+                    col = X + (const.NT_MAX_WD * Z)
+                    row = const.NT_MAX_HT - 1 - Y
                     if block.blockid not in valid_encoding_blocks:
                         continue
                     elif block.blockid == "minecraft:red_concrete":  # vrm 0
@@ -70,9 +71,9 @@ def schematic_to_values(path):
                     avg_shroomlights += get_cell_value(1, row, col)
                     avg_wart_blocks += get_cell_value(vrm, row, col)
 
-    stem_E = avg_stems / (221 / 24)
-    shroomlight_E = avg_shroomlights / 2.03192455026454
-    wart_block_E = avg_wart_blocks / 63.0252319962964
+    stem_E = avg_stems / const.AVG_STEMS
+    shroomlight_E = avg_shroomlights / const.AVG_SHROOMS
+    wart_block_E = avg_wart_blocks / const.AVG_WARTS
     # wart blocks max doesn't take into account vrm and the actual max warts including VRM still hasn't been found
     # well at least the max feasible with vrm as if you can predict the optimal vrm locations for a huge fungi before it
     # grows you'd get ~99 wart blocks per fungus, but this isn't possible without rng manipulation

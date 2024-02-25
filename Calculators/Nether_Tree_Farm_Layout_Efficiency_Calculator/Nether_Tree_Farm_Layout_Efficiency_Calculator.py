@@ -6,38 +6,9 @@ import os
 from Assets import colours
 import calculate_layout_efficiency
 
-root = tk.Tk()
-root.title("Stemlight: Nether Tree Farm Layout Efficiency Calculator")
-root.iconbitmap('./Assets/ikon.ico')
-root.configure(bg=colours.bg)
-# root.minsize(415, 235)
-
-
-dp = tk.StringVar(value="2")
-
-
 def set_dp(value, file_path):
     dp.set(value)
     output(file_path)
-
-
-toolbar = tk.Menu(root)
-root.config(menu=toolbar)
-
-file_menu = tk.Menu(toolbar, tearoff=0)
-toolbar.add_cascade(label="File", menu=file_menu)
-file_menu.add_command(label="Exit", command=root.quit)
-
-dp_menu = tk.Menu(toolbar, tearoff=0)
-toolbar.add_cascade(label="Decimal Places", menu=dp_menu)
-
-for dp_row in range(0, 11):
-    dp_menu.add_radiobutton(label=dp_row, variable=dp, value=dp_row, command=lambda row=dp_row: set_dp(row, path.get()))
-
-main_font = font.Font(family='Segoe UI Semibold', size=12)
-output_font = font.Font(family='Segoe UI', size=11)
-subheading_font = font.Font(family='Segoe UI Semibold', size=12)
-
 
 def output(file_path):
     layout_values = calculate_layout_efficiency.schematic_to_values(file_path)
@@ -70,7 +41,6 @@ def output(file_path):
     for label_num in range(0, 4):
         vrm_labels[label_num + 4]['text'] = output_value_labels[label_num + 6]
 
-
 def select_file():
     # function to prompt the user to select a file
     file_path = filedialog.askopenfilename()
@@ -78,6 +48,30 @@ def select_file():
         output(file_path)
         return file_path
 
+root = tk.Tk()
+root.title("Stemlight: Nether Tree Farm Layout Efficiency Calculator")
+root.iconbitmap('./Assets/ikon.ico')
+root.configure(bg=colours.bg)
+# root.minsize(415, 235)
+
+dp = tk.StringVar(value="2")
+
+toolbar = tk.Menu(root)
+root.config(menu=toolbar)
+
+file_menu = tk.Menu(toolbar, tearoff=0)
+toolbar.add_cascade(label="File", menu=file_menu)
+file_menu.add_command(label="Exit", command=root.quit)
+
+dp_menu = tk.Menu(toolbar, tearoff=0)
+toolbar.add_cascade(label="Decimal Places", menu=dp_menu)
+
+for dp_row in range(1, 6):
+    dp_menu.add_radiobutton(label=dp_row, variable=dp, value=dp_row, command=lambda row=dp_row: set_dp(row, path.get()))
+
+main_font = font.Font(family='Segoe UI Semibold', size=12)
+output_font = font.Font(family='Segoe UI', size=11)
+subheading_font = font.Font(family='Segoe UI Semibold', size=12)
 
 button = tk.Button(root, text="Select Schematic", bg=colours.warped, font=main_font,
                    command=lambda: path.set(select_file()))

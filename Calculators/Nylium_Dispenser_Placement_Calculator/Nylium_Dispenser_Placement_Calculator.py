@@ -11,6 +11,10 @@
 import numpy as np
 import itertools as iter
 
+from Assets import constants as const
+
+DP_VAL = 5
+
 while True:
     disp_coordinates = []
     fungi = input("Enter Nylium Type: ").lower().strip()
@@ -18,26 +22,27 @@ while True:
     if fungi in {"d", "default", "d2", "default2"}:
         if fungi in {"d", "default"}:
             fungi = 0
-            fungi_weight = 13/100  # 13/100 for warped
+            fungi_weight = const.WARP_FUNGI_CHANCE  # 13/100 for warped
         else:
             fungi = 1
-            fungi_weight = 11/99  # 11/99 for crimson
-        width = 5
-        length = 5
+            fungi_weight = const.CRMS_FUNGI_CHANCE  # 11/99 for crimson
+        width = const.FUNG_SPREAD_DIA
+        length = const.FUNG_SPREAD_DIA
         dispensers = 1
-        disp_coordinates.append((2, 2))
+        disp_coordinates.append((const.FUNG_SPREAD_RAD - 1, const.FUNG_SPREAD_RAD - 1))
+        clearing = 0
         break
-    elif fungi in {"blue", "b", "warped", "w", "warp"}:
+    elif fungi in const.WARP_OPTIONS:
         fungi = 0  # warped
-    elif fungi in {"red", "r", "crimson", "c", "crim"}:
+    elif fungi in const.CRMS_OPTIONS:
         fungi = 1  # crimson
     else:
         print("Error: Please enter a valid nylium type")
         exit(1)
     if fungi == 0:
-        fungi_weight = 13/100  # 13/100 for warped
+        fungi_weight = const.WARP_FUNGI_CHANCE  # 13/100 for warped
     else:
-        fungi_weight = 11/99  # 11/99 for crimson
+        fungi_weight = const.CRMS_FUNGI_CHANCE  # 11/99 for crimson
 
     length = int(input("Enter Length of Nylium Grid: "))
     width = int(input("Enter Width of Nylium Grid: "))
@@ -60,13 +65,14 @@ while True:
                 break
             else:
                 print(f'Error: The offset values must be within the bounds of the {width}x{length} grid.')
+
+    clearing = input("Enter if clearing above dispensers: ").lower().strip()
+    if clearing in {"y", "yes", "1", "true"}:
+        clearing = 1
+    else:
+        clearing = 0
     break
 
-clearing = input("Enter if clearing above dispensers: ").lower().strip()
-if clearing in {"y", "yes", "1", "true"}:
-    clearing = 1
-else:
-    clearing = 0
 
 # Create 2D array storing total plant growth chance of given size and initialize all elements to 0
 foliage_grid = np.zeros((width, length))
@@ -74,13 +80,13 @@ foliage_grid = np.zeros((width, length))
 des_fungi_grid = np.zeros((width, length))
 
 def selection_chance(x1, y1):
-    x2 = 3 - abs(x1)
-    y2 = 3 - abs(y1)
-    P_block = x2 * y2 / 81
+    x2 = const.FUNG_SPREAD_RAD - abs(x1)
+    y2 = const.FUNG_SPREAD_RAD - abs(y1)
+    P_block = x2 * y2 / (const.FUNG_SPREAD_RAD ** 4)
     P_block = 0 if x2 < 0 or y2 < 0 else P_block
     P = 0
-    for k in range(1, 10):
-        P += (1 - P_block) ** (9 - k)
+    for k in range(1, const.FUNG_SPREAD_RAD ** 2 + 1):
+        P += (1 - P_block) ** (const.FUNG_SPREAD_RAD ** 2 - k)
     return P * P_block
 
 bonemeal_used = 0
@@ -113,7 +119,7 @@ for i in range(dispensers):
 
 # print the resulting fungi gen chance values for each block in the nylium grid
 for i in range(width):
-    print(" ".join(["{:<8}".format(round(des_fungi_grid[i][j], 5)) for j in range(length)]))
+    print(" ".join(["{:<8}".format(round(des_fungi_grid[i][j], DP_VAL)) for j in range(length)]))
 
 total_fungi = 0
 total_plants = 0
@@ -121,12 +127,12 @@ for x, y in iter.product(range(width), range(length)):
     total_fungi += des_fungi_grid[x][y]
     total_plants += foliage_grid[x][y]
 
-print(f'total plants: {round(total_plants, 5)}')
+print(f'total plants: {round(total_plants, DP_VAL)}')
 if fungi == 0:
-    print(f'warped fungi: {round(total_fungi, 5)}')
+    print(f'warped fungi: {round(total_fungi, DP_VAL)}')
 else:
-    print(f'crimson fungi: {round(total_fungi, 5)}')
-print(f'bonemeal_used: {round(bonemeal_used, 5)}')
+    print(f'crimson fungi: {round(total_fungi, DP_VAL)}')
+print(f'bonemeal_used: {round(bonemeal_used, DP_VAL)}')
 
 if dispensers > 0:
     print("For dispensers in the following order, placed at:")

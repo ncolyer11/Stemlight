@@ -9,14 +9,14 @@ for that nether tree farm layout
 from litemapy import Schematic
 import time
 # importing heatmap data array
-from Assets import heatmap_data
+from Assets import heatmap_data, constants as const
 
 
 # taking file input from user and checking to see if the path and schematic size is valid
 def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
     # to fix empty input bug
     if path == '':
-        path = '../../Assets/empty_layout.litematic'
+        path = './Assets/empty_layout.litematic'
     schem = Schematic.load(path)
     reg = list(schem.regions.values())[0]
 
@@ -34,8 +34,8 @@ def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
 
     # function that computes the instantaneous value of the avg stems and shroomlights of the layout
     def stems_and_shrooms(average_stems, average_shroomlights, row2, col2, hat_cycles2, trunk_cycles2):
-        average_stems += comp_probability(get_cell_value(0, row2, col2), trunk_cycles2)  # 0: stem heatmap
-        average_shroomlights += comp_probability(get_cell_value(1, row2, col2), hat_cycles2)  # 1: shroomlight heatmap
+        average_stems += comp_probability(get_cell_value(0, row2, col2), trunk_cycles2) / trunk_cycles2  # 0: stem heatmap
+        average_shroomlights += comp_probability(get_cell_value(1, row2, col2), hat_cycles2) / hat_cycles2 # 1: shroomlight heatmap
         return average_stems, average_shroomlights
 
     # function that calculates the complimentary probability of an event
@@ -54,15 +54,15 @@ def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
                 block = reg.getblock(x, y, z)
                 X, Y, Z = x, y, z
                 if min(Xrange) < 0:
-                    X += 6
+                    X += const.NT_MAX_WD - 1
                 if min(Yrange) < 0:
-                    Y += 26
+                    Y += const.NT_MAX_HT - 1
                 if min(Zrange) < 0:
-                    Z += 6
+                    Z += const.NT_MAX_WD - 1
 
                 # 3D data is stored in 'slices' on a 2D spreadsheet, hence some math is needed to convert between them
-                col = X + (7 * Z)
-                row = 26 - Y
+                col = X + (const.NT_MAX_WD * Z)
+                row = const.NT_MAX_HT - 1 - Y
 
                 # setting vrm value
                 if block.blockid not in valid_encoding_blocks:
@@ -81,14 +81,14 @@ def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
                                                                 hat_cycles, trunk_cycles)
                 # calculating wart block values
                 if X == 0 and Z == 0:
-                    avg_wart_blocks += comp_probability(get_cell_value(vrm, row, col), trunk_cycles)
+                    avg_wart_blocks += comp_probability(get_cell_value(vrm, row, col), trunk_cycles) / trunk_cycles
                 else:
-                    avg_wart_blocks += comp_probability(get_cell_value(vrm, row, col), hat_cycles)
+                    avg_wart_blocks += comp_probability(get_cell_value(vrm, row, col), hat_cycles) / hat_cycles
 
     # finding the efficiencies of the layout factoring in the varying cycles
-    stem_E = (avg_stems / (221 / 24)) / trunk_cycles
-    shroomlight_E = (avg_shroomlights / 2.03192455026454) / hat_cycles
-    wart_block_E = (avg_wart_blocks / 63.0252319962964 ** 2) * (62.045721996296 / hat_cycles + 0.97951 / trunk_cycles)
+    stem_E = (avg_stems / const.AVG_STEMS) / trunk_cycles
+    shroomlight_E = (avg_shroomlights / const.AVG_SHROOMS) / hat_cycles
+    wart_block_E = (avg_wart_blocks / const.AVG_WARTS ** 2) * ((const.AVG_WARTS - const.AVG_TOP_WART) / hat_cycles + const.AVG_TOP_WART / trunk_cycles)
 
     end_time = time.time()
     elapsed_time = end_time - start_time
