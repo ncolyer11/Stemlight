@@ -22,10 +22,10 @@ while True:
     if fungi in {"d", "default", "d2", "default2"}:
         if fungi in {"d", "default"}:
             fungi = 0
-            fungi_weight = const.WARP_FUNGI_CHANCE  # 13/100 for warped
+            fungi_weight = const.WARP_FUNG_CHANCE  # 13/100 for warped
         else:
             fungi = 1
-            fungi_weight = const.CRMS_FUNGI_CHANCE  # 11/99 for crimson
+            fungi_weight = const.CRMS_FUNG_CHANCE  # 11/99 for crimson
         width = const.FUNG_SPREAD_DIA
         length = const.FUNG_SPREAD_DIA
         dispensers = 1
@@ -40,9 +40,9 @@ while True:
         print("Error: Please enter a valid nylium type")
         exit(1)
     if fungi == 0:
-        fungi_weight = const.WARP_FUNGI_CHANCE  # 13/100 for warped
+        fungi_weight = const.WARP_FUNG_CHANCE  # 13/100 for warped
     else:
-        fungi_weight = const.CRMS_FUNGI_CHANCE  # 11/99 for crimson
+        fungi_weight = const.CRMS_FUNG_CHANCE  # 11/99 for crimson
 
     length = int(input("Enter Length of Nylium Grid: "))
     width = int(input("Enter Width of Nylium Grid: "))

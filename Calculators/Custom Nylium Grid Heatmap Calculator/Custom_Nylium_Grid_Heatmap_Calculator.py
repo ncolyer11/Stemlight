@@ -44,7 +44,7 @@ def selection_chance(x1, y1):
     P = 0
     for k in range(1, const.FUNG_SPREAD_RAD ** 2 + 1):
         P += (1 - P_block) ** (const.FUNG_SPREAD_RAD ** 2 - k)
-    return P * P_block * const.CRMS_FUNGI_CHANCE  # 11/99 for crimson and 13/100 for warped
+    return P * P_block * const.CRMS_FUNG_CHANCE  # 11/99 for crimson and 13/100 for warped
 
 
 for i in range(dispensers):

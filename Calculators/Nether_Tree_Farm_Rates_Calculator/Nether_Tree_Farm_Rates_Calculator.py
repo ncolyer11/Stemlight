@@ -23,7 +23,7 @@ def calculate(dispenser_value, dispenser_period_value, hat_period_value, trunk_p
         trunk_cycles = trunk_period_value
         hat_cycles = hat_period_value
     else:
-        growth_chance = 1 - (1 - const.FUNGUS_GROWTH_CHANCE) ** dispenser_value
+        growth_chance = 1 - (1 - const.FUNG_GROWTH_CHANCE) ** dispenser_value
         fungus = growth_chance * const.TICKS_PER_HR / dispenser_period_value
 
     # schematic to layout efficiency
@@ -32,7 +32,7 @@ def calculate(dispenser_value, dispenser_period_value, hat_period_value, trunk_p
         layout_values[0], layout_values[1], layout_values[2], layout_values[3], layout_values[4], layout_values[5]
 
     # upper bound bonemeal used per hour (fraction is the bonemeal required to produce 1 crimson fungus)
-    bm_used = (1 / const.FUNGUS_GROWTH_CHANCE + const.BM_FOR_CRMS_FUNG) * fungus
+    bm_used = (1 / const.FUNG_GROWTH_CHANCE + const.BM_FOR_CRMS_FUNG) * fungus
 
     # stems, shroomlights and wart blocks produced per hour
     if schematic_path_val.get() in ['']:
