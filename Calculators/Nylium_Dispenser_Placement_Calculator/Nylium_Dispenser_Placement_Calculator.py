@@ -19,10 +19,10 @@ def get_size_input(prompt):
         try:
             value = int(input(prompt))
             if value <= 0:
-                raise ValueError(f"Error: Please enter a positive integer for {prompt.split()[1]}.")
+                raise ValueError(f"Error: Please enter a positive integer for {prompt.split()[1].lower()}.")
             return value
         except ValueError:
-            print(f"Error: Please enter a positive integer for {prompt.split()[1]}.")
+            print(f"Error: Please enter a positive integer for {prompt.split()[1].lower()}.")
 
 def display_nylium_platform(width, length):
     print("Here is your nylium platform:")
