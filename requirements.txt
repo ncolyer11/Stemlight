@@ -3,3 +3,4 @@ xlsxwriter
 litemapy
 openpyxl
 pillow
+questionary

@@ -1,5 +1,5 @@
 # Program/GUI
-YES_OPTIONS = {'y', 'yes', 'on', '1'}
+YES_OPTIONS = {"y", "yes", "on", "1", "yeah", "sure", "yup", "ja", "si", "sí", "haan", "हाँ"}
 WARP_OPTIONS = {"blue", "b", "warped", "w", "warp"}
 CRMS_OPTIONS = {"red", "r", "crimson", "c", "crim"}
 
@@ -27,6 +27,7 @@ BLOCK_TYPES = 3
 
 # Small Fungi
 FUNG_GROWTH_CHANCE = 0.4
+AVG_BM_TO_GROW_FUNG = 1 / FUNG_GROWTH_CHANCE
 FUNG_SPREAD_RAD = 3
 FUNG_SPREAD_DIA = 5
 CRMS_FUNG_CHANCE = 11 / 99
