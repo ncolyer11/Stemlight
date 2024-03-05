@@ -6,7 +6,7 @@ from Assets import colours
 credits_text = (
     "Made by: ncolyer\n"
     "Created: 2023\n"
-    "Version: 0.3.0-alpha"
+    "Version: 0.3.1-alpha"
 )
 
 # Create the main window
