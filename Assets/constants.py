@@ -1,12 +1,21 @@
-# Program/GUI
-YES_OPTIONS = {"y", "yes", "on", "1", "yeah", "sure", "yup", "ja", "si", "sí", "haan", "हाँ"}
+### Program/GUI
+YES_OPTIONS = {"y", "yes", "on", "1", "yeah", "true", "sure", "yup",
+               "ja", "si", "sí", "haan", "हाँ"}
 WARP_OPTIONS = {"blue", "b", "warped", "w", "warp"}
 CRMS_OPTIONS = {"red", "r", "crimson", "c", "crim"}
+# Resoloution Scale Factor
+RSF = 1.0 # unchanged for Linux and MacOS, but changes to 1.5 on Windows to fix dpi scaling
+try:
+    from ctypes import windll
+    RSF = 1.5
+except ImportError:
+    pass
 
-# Minecraft
+### Minecraft
 TICKS_PER_HR = 72000
+DSPNR_CLDWN = 4
 
-# Huge Fungi Growth
+### Huge Fungi Growth
 NT_MAX_RAD = 3
 NT_MAX_HT = 27
 NT_MAX_WD = 7
@@ -16,16 +25,16 @@ for index in range(1, len(TRUNK_DIST)):
     CUML_TRUNK_DIST[index] = (CUML_TRUNK_DIST[index - 1] + TRUNK_DIST[index])
 CUML_TRUNK_DIST = CUML_TRUNK_DIST[NT_MAX_HT - 1::-1]
 
-# Huge Fungi Farming
+### Huge Fungi Farming
 WARTS_PER_BM = 137 / 17
-BM_FOR_CRMS_FUNG = (18000 - 11423) / 14608
+BM_FOR_CRMS_FUNG = (TICKS_PER_HR / DSPNR_CLDWN - 11423) / 14608
 AVG_STEMS = 221 / 24
 AVG_SHROOMS = 2.03192455026454
 AVG_WARTS = 63.0252319962964
 AVG_TOP_WART = 0.97951
 BLOCK_TYPES = 3
 
-# Small Fungi
+### Small Fungi
 FUNG_GROWTH_CHANCE = 0.4
 AVG_BM_TO_GROW_FUNG = 1 / FUNG_GROWTH_CHANCE
 FUNG_SPREAD_RAD = 3

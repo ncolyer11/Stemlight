@@ -5,49 +5,51 @@ pre-calculated heatmaps in a .xlsx file to work out the average stems, shroomlig
 for that nether tree farm layout
 """
 
-# if the below import function is underlined in red run `pip install litemapy`
 from litemapy import Schematic
 import time
-# importing heatmap data array
+
 from Assets import heatmap_data, constants as const
 
 
-# taking file input from user and checking to see if the path and schematic size is valid
+# Taking file input from user and checking to see if the path and schematic size is valid
 def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
-    # to fix empty input bug
+    # To fix empty input bug
     if path == '':
         path = './Assets/empty_layout.litematic'
     schem = Schematic.load(path)
     reg = list(schem.regions.values())[0]
 
     start_time = time.time()
-    # skipping unnecessary calculations if layout schematic is empty
+    # Skipping unnecessary calculations if layout schematic is empty
     if schem == 'empty_layout.litematic':
         end_time = time.time()
         elapsed_time = end_time - start_time
         print("\nElapsed time:", elapsed_time, "seconds")
         return 0, 0, 0, 0, 0, 0
 
-    # function for accessing a single element/cell in the above array
+    # Accessing a single element/cell in the above array
     def get_cell_value(sheet_name2, row_number, column_number):
         return heatmap_data.heatmap_array[sheet_name2][row_number][column_number]
 
-    # function that computes the instantaneous value of the avg stems and shroomlights of the layout
-    def stems_and_shrooms(average_stems, average_shroomlights, row2, col2, hat_cycles2, trunk_cycles2):
-        average_stems += comp_probability(get_cell_value(0, row2, col2), trunk_cycles2) / trunk_cycles2  # 0: stem heatmap
-        average_shroomlights += comp_probability(get_cell_value(1, row2, col2), hat_cycles2) / hat_cycles2 # 1: shroomlight heatmap
+    # Computes the instantaneous value of the avg stems and shroomlights of the layout
+    def stems_and_shrooms(average_stems, average_shroomlights, 
+                          row2, col2, hat_cycles2, trunk_cycles2):
+        average_stems += comp_probability(
+            get_cell_value(0, row2, col2), trunk_cycles2) / trunk_cycles2  # 0: stem heatmap
+        
+        average_shroomlights += comp_probability(
+            get_cell_value(1, row2, col2), hat_cycles2) / hat_cycles2 # 1: shroomlight heatmap
+        
         return average_stems, average_shroomlights
 
-    # function that calculates the complimentary probability of an event
+    # Calculates the complimentary probability of an event
     def comp_probability(success_chance, attempts):
         return 1 - (1 - success_chance) ** attempts
 
-    # initialising variables
     Xrange, Yrange, Zrange = reg.xrange(), reg.yrange(), reg.zrange()
     avg_shroomlights, avg_wart_blocks, avg_stems = 0, 0, 0
-    valid_encoding_blocks = {'minecraft:red_concrete', 'minecraft:blue_concrete', 'minecraft:cyan_concrete',
-                             'minecraft:light_blue_concrete'}
-
+    valid_encoding_blocks = {'minecraft:red_concrete', 'minecraft:blue_concrete',
+                             'minecraft:cyan_concrete', 'minecraft:light_blue_concrete'}
     for y in Yrange:
         for x in Xrange:
             for z in Zrange:
@@ -64,31 +66,35 @@ def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
                 col = X + (const.NT_MAX_WD * Z)
                 row = const.NT_MAX_HT - 1 - Y
 
-                # setting vrm value
+                # Setting vrm value
                 if block.blockid not in valid_encoding_blocks:
                     continue
-                elif block.blockid == "minecraft:red_concrete":  # vrm 0
+                elif block.blockid == "minecraft:red_concrete":
+                    vrm = 0
+                elif block.blockid == "minecraft:blue_concrete":
+                    vrm = 1
+                elif block.blockid == "minecraft:cyan_concrete":
                     vrm = 2
-                elif block.blockid == "minecraft:blue_concrete":  # vrm 1
+                elif block.blockid == "minecraft:light_blue_concrete":
                     vrm = 3
-                elif block.blockid == "minecraft:cyan_concrete":  # vrm 2
-                    vrm = 4
-                elif block.blockid == "minecraft:light_blue_concrete":  # vrm 3
-                    vrm = 5
 
-                # calculating stems and shroomlight values
-                avg_stems, avg_shroomlights = stems_and_shrooms(avg_stems, avg_shroomlights, row, col,
-                                                                hat_cycles, trunk_cycles)
-                # calculating wart block values
+                # Calculating stems and shroomlight values
+                avg_stems, avg_shroomlights = stems_and_shrooms(
+                    avg_stems, avg_shroomlights, row, col, hat_cycles, trunk_cycles)
+                # Calculating wart block values
                 if X == 0 and Z == 0:
-                    avg_wart_blocks += comp_probability(get_cell_value(vrm, row, col), trunk_cycles) / trunk_cycles
+                    avg_wart_blocks += comp_probability(
+                        get_cell_value(vrm + 2, row, col), trunk_cycles) / trunk_cycles
                 else:
-                    avg_wart_blocks += comp_probability(get_cell_value(vrm, row, col), hat_cycles) / hat_cycles
+                    avg_wart_blocks += comp_probability(
+                        get_cell_value(vrm + 2, row, col), hat_cycles) / hat_cycles
 
-    # finding the efficiencies of the layout factoring in the varying cycles
+    # Finding the efficiencies of the layout factoring in the varying cycles
     stem_E = (avg_stems / const.AVG_STEMS) / trunk_cycles
     shroomlight_E = (avg_shroomlights / const.AVG_SHROOMS) / hat_cycles
-    wart_block_E = (avg_wart_blocks / const.AVG_WARTS ** 2) * ((const.AVG_WARTS - const.AVG_TOP_WART) / hat_cycles + const.AVG_TOP_WART / trunk_cycles)
+    wart_block_E = ((avg_wart_blocks / const.AVG_WARTS ** 2) * 
+                    ((const.AVG_WARTS - const.AVG_TOP_WART) / hat_cycles + 
+                    const.AVG_TOP_WART / trunk_cycles))
 
     end_time = time.time()
     elapsed_time = end_time - start_time

@@ -5,6 +5,8 @@ import os
 
 from Assets import colours
 import calculate_layout_efficiency
+from Assets.constants import RSF
+
 
 def set_dp(value, file_path):
     dp.set(value)
@@ -59,19 +61,19 @@ dp = tk.StringVar(value="2")
 toolbar = tk.Menu(root)
 root.config(menu=toolbar)
 
-file_menu = tk.Menu(toolbar, tearoff=0)
+file_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
 toolbar.add_cascade(label="File", menu=file_menu)
 file_menu.add_command(label="Exit", command=root.quit)
 
-dp_menu = tk.Menu(toolbar, tearoff=0)
+dp_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
 toolbar.add_cascade(label="Decimal Places", menu=dp_menu)
 
 for dp_row in range(1, 6):
     dp_menu.add_radiobutton(label=dp_row, variable=dp, value=dp_row, command=lambda row=dp_row: set_dp(row, path.get()))
 
-main_font = font.Font(family='Segoe UI Semibold', size=12)
-output_font = font.Font(family='Segoe UI', size=11)
-subheading_font = font.Font(family='Segoe UI Semibold', size=12)
+main_font = font.Font(family='Segoe UI Semibold', size=int((RSF**1.765)*12))
+output_font = font.Font(family='Segoe UI', size=int((RSF**1.765)*11))
+subheading_font = font.Font(family='Segoe UI Semibold', size=int((RSF**1.765)*12))
 
 button = tk.Button(root, text="Select Schematic", bg=colours.warped, font=main_font,
                    command=lambda: path.set(select_file()))
@@ -83,7 +85,7 @@ labels = {}
 # define block types
 output_labels = [
     "    Stems    ",
-    " Shroomlights",
+    " Shroomlights" if RSF == 1 else " Shroomlights ",
     " Wart Blocks "
 ]
 
@@ -132,4 +134,8 @@ for j, val2 in enumerate(vrms_labels):
     label2.grid(row=1, column=j)
     vrm_labels[j + 4] = label2
 
-root.mainloop()
+try:
+    from ctypes import windll
+    windll.shcore.SetProcessDpiAwareness(1)
+finally:
+    root.mainloop()
