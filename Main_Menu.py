@@ -1,4 +1,5 @@
 import math
+import os
 import tkinter as tk
 import tkinter.font as font
 from tkinter import messagebox
@@ -68,7 +69,8 @@ def resize_canvas(event, canvas, start_color, end_color):
 # Create main window
 root = tk.Tk()
 root.title("Stemlight: Main Menu")
-root.iconbitmap('./Assets/ikon.ico')
+icon_path = os.path.abspath('Assets\\ikon.ico')
+root.iconbitmap(icon_path)
 root.configure(bg=colours.bg)
 root.minsize(450, 200)
 

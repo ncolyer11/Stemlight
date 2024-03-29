@@ -14,7 +14,7 @@ TRUNK_DIST = 7 * [0, 1 / 120] + 3 * [11 / 120, 12 / 120] + 4 * [11 / 120] + 3 * 
 CUML_TRUNK_DIST = [0.0] * (len(TRUNK_DIST) + 1)
 for index in range(1, len(TRUNK_DIST)):
     CUML_TRUNK_DIST[index] = (CUML_TRUNK_DIST[index - 1] + TRUNK_DIST[index])
-CUML_TRUNK_DIST = CUML_TRUNK_DIST[26::-1]
+CUML_TRUNK_DIST = CUML_TRUNK_DIST[NT_MAX_HT - 1::-1]
 
 # Huge Fungi Farming
 WARTS_PER_BM = 137 / 17
