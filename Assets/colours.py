@@ -1,4 +1,4 @@
-# define the colors
+# define the colours
 bg = "#191919"
 fg = "#F0F0F0"
 off_black = "#1c1c1c"
