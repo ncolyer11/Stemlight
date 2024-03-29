@@ -3,6 +3,8 @@ import tkinter.font as font
 from PIL import Image, ImageTk
 from Assets import colours
 
+from Assets.constants import RSF
+
 
 # Function to open the selected image in a new window
 def open_image(image_file_path):
@@ -24,6 +26,8 @@ def open_image(image_file_path):
     new_window = tk.Toplevel(root)
     new_window.title(image_file_path[7:])
     new_window.iconbitmap('./Assets/ikon.ico')
+    new_window.resizable(0,0)
+
     img = ImageTk.PhotoImage(resized_image)
     label = tk.Label(new_window, image=img)
     label.image = img  # Keep a reference to the image object
@@ -34,16 +38,17 @@ def open_image(image_file_path):
 root = tk.Tk()
 root.title("Stemlight: Chart Viewer")
 root.iconbitmap('./Assets/ikon.ico')
+root.resizable(0,0)
 root.configure(bg=colours.bg)
 root.geometry("+0+0")
 root.minsize(1400, 700)
 
 
-main_font = font.Font(family='Segoe UI Semibold', size=14)
+main_font = font.Font(family='Segoe UI Semibold', size=int((RSF**1.765)*12))
 
 toolbar = tk.Menu(root)
 root.config(menu=toolbar)
-file_menu = tk.Menu(toolbar, tearoff=0)
+file_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
 toolbar.add_cascade(label="File", menu=file_menu)
 file_menu.add_command(label="Exit", command=root.quit)
 
@@ -114,8 +119,8 @@ for i, image_file in enumerate(image_files):
     # Save reference to the photo object to prevent it from being garbage collected
     button.photo = photo
 
-    # Add captions below each image
 
+    # Add captions below each image
     captions = [
         "\nDifferent Regions",
         "\nShroomlight Heatmap",
@@ -130,5 +135,8 @@ for i, image_file in enumerate(image_files):
     caption = tk.Label(root, text=captions[i], bg=colours.bg, fg=colours.fg, font=main_font)
     caption.grid(row=row, column=col, padx=10, pady=3)
 
-# Run the Tkinter event loop
-root.mainloop()
+try:
+    from ctypes import windll
+    windll.shcore.SetProcessDpiAwareness(1)
+finally:
+    root.mainloop()

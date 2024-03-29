@@ -7,6 +7,8 @@ import threading
 import subprocess
 
 from Assets import colours
+from Assets.constants import RSF
+
 
 # Define function to open a Python file
 def open_file(folder, subfolder, program_name):
@@ -72,9 +74,9 @@ root.title("Stemlight: Main Menu")
 icon_path = os.path.abspath('Assets\\ikon.ico')
 root.iconbitmap(icon_path)
 root.configure(bg=colours.bg)
-root.minsize(450, 200)
+root.minsize(int(RSF*450), int(RSF*200))
 
-main_font = font.Font(family='Segoe UI Semibold', size=11)
+main_font = font.Font(family='Segoe UI Semibold', size=int((RSF**1.765)*11))
 
 # Define file paths, names, and button labels
 programs = [
@@ -141,18 +143,18 @@ cols = 2
 rows = math.ceil(len(file_names) / cols)
 
 # Add background gradient
-create_gradient(colours.menu_gradient[0], colours.menu_gradient[1], 500, 200, rows, cols)
+create_gradient(colours.menu_gradient[0], colours.menu_gradient[1], int(RSF*500), int(RSF*200), rows, cols)
 
 # Create menu
 toolbar = tk.Menu(root)
 root.config(menu=toolbar)
 
-file_menu = tk.Menu(toolbar, tearoff=0)
+file_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
 toolbar.add_cascade(label="File", menu=file_menu)
 file_menu.add_command(label="Exit", command=root.quit)
 
 # New Help menu
-help_menu = tk.Menu(toolbar, tearoff=0)
+help_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
 toolbar.add_cascade(label="Help", menu=help_menu)
 help_menu.add_command(label="Module Not Found Error", command=show_help_message)
 
@@ -161,13 +163,17 @@ for i in range(len(file_names)):
     button = tk.Button(root, text=button_labels[i],
                        command=lambda folder=folder_names[i], subfolder=subfolder_names[i],
                                       file=file_names[i]: open_file_single_instance(folder, subfolder, file))
-    button.config(activebackground=button.cget('bg'), bg=colours.bg, fg=colours.fg, font=main_font,
-                  padx=5, pady=5, width=22, height=2)
+    button.config(activebackground=button.cget('bg'), bg=colours.bg, fg=colours.fg,
+                  font=main_font, padx=5, pady=5,
+                  width=int((RSF**0.5)*22), height=int((RSF**0.7)*2))
     button.grid(row=i // cols, column=i % cols, padx=8, pady=5)
 
 # Set equal weights to all rows in the grid
 for i in range(len(file_names) // 2):
     root.grid_rowconfigure(i, weight=1)
 
-# Start main loop
-root.mainloop()
+try:
+    from ctypes import windll
+    windll.shcore.SetProcessDpiAwareness(1)
+finally:
+    root.mainloop()
