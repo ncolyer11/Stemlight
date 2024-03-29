@@ -3,15 +3,14 @@ from tkinter import filedialog
 from tkinter import font
 import os
 
-from Assets import colours
-import calculate_layout_efficiency
+from Assets import colours, calculate_layout_efficiency as cle
 
 def set_dp(value, file_path):
     dp.set(value)
     output(file_path)
 
 def output(file_path):
-    layout_values = calculate_layout_efficiency.schematic_to_values(file_path)
+    layout_values = cle.schematic_to_values(file_path)
     avg_stems, avg_shroomlights, avg_wart_blocks, stem_E, shroomlight_E, wart_block_E, vrm0, vrm1, vrm2, vrm3 = \
         layout_values[0], layout_values[1], layout_values[2], layout_values[3], layout_values[4], layout_values[5], \
         layout_values[6], layout_values[7], layout_values[8], layout_values[9]

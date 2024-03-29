@@ -9,7 +9,6 @@ import numpy as np
 import itertools as iter
 import questionary
 
-
 from Assets import constants as const
 
 DP_VAL = 5

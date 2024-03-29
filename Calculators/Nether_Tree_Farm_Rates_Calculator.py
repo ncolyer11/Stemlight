@@ -3,9 +3,7 @@ from tkinter import filedialog
 import tkinter.font as font
 import os
 
-from Assets import colours as col, constants as const
-
-import calculate_layout
+from Assets import colours as col, constants as const, calculate_layout as cl
 
 
 def set_dp(value):
@@ -27,7 +25,7 @@ def calculate(dispenser_value, dispenser_period_value, hat_period_value, trunk_p
         fungus = growth_chance * const.TICKS_PER_HR / dispenser_period_value
 
     # schematic to layout efficiency
-    layout_values = calculate_layout.schematic_to_efficiency(schematic_path_val.get(), hat_cycles, trunk_cycles)
+    layout_values = cl.schematic_to_efficiency(schematic_path_val.get(), hat_cycles, trunk_cycles)
     stems_per_cycle, shrooms_per_cycle, warts_per_cycle, stem_eff, shroom_eff, wart_eff = \
         layout_values[0], layout_values[1], layout_values[2], layout_values[3], layout_values[4], layout_values[5]
 

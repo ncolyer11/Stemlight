@@ -23,7 +23,7 @@ def open_image(image_file_path):
     # Create a new window
     new_window = tk.Toplevel(root)
     new_window.title(image_file_path[7:])
-    new_window.iconbitmap('./Assets/ikon.ico')
+    # new_window.iconbitmap('./Assets/ikon.ico')
     img = ImageTk.PhotoImage(resized_image)
     label = tk.Label(new_window, image=img)
     label.image = img  # Keep a reference to the image object
@@ -33,8 +33,8 @@ def open_image(image_file_path):
 # Create the main Tkinter window
 root = tk.Tk()
 root.title("Stemlight: Chart Viewer")
-root.iconbitmap('./Assets/ikon.ico')
-root.configure(bg=colours.bg)
+# root.iconbitmap('./Assets/ikon.ico')
+# root.configure(bg=colours.bg)
 root.geometry("+0+0")
 root.minsize(1400, 700)
 
