@@ -14,8 +14,8 @@ root = tk.Tk()
 root.title("Stemlight: Credits")
 
 # Set the window icon
-icon_path = "./Assets/ikon.ico"
-root.iconbitmap(icon_path)
+# icon_path = "./Assets/ikon.ico"
+# root.iconbitmap(icon_path)
 
 # Set the window size
 window_width = 275
