@@ -4,3 +4,8 @@ litemapy
 openpyxl
 pillow
 questionary
+ctypes
+threading
+subprocess
+os
+math
