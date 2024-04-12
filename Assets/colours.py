@@ -4,6 +4,8 @@ fg = "#F0F0F0"
 off_black = "#1c1c1c"
 bg_widget = "#323231"
 fg_button = "#323231"
+phtalo_green = "#123524"
+green2 = "#003333"
 
 # buttons
 crimson = "#D42121"
