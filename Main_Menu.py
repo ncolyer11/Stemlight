@@ -145,7 +145,12 @@ for i, program in enumerate(programs):
         height=int((RSF**0.7)*2)
     )
     button.config(activebackground=button.cget('bg'))
-    button.grid(row=i // cols, column=i % cols, padx=8, pady=5)
+
+    # If it's the last button and it's the only one in its row, span it across all columns
+    if i == len(programs) - 1 and len(programs) % cols == 1:
+        button.grid(row=i // cols, column=0, columnspan=cols, padx=8, pady=5)
+    else:
+        button.grid(row=i // cols, column=i % cols, padx=8, pady=5)
 
 # Set equal weights to all rows in the grid
 for i in range(len(programs) // 2):
