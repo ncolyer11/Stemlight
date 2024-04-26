@@ -7,6 +7,8 @@ cycle for that nether tree farm layout
 for more info on how this & the heatmaps were made visit the huge fungi huggers discord: https://discord.gg/EKKkyfcPPV
 """
 
+import os
+import sys
 from litemapy import Schematic
 import time
 
@@ -15,6 +17,17 @@ from src.Assets import heatmap_data, constants as const
 
 
 def schematic_to_values(path):
+    def resource_path(relative_path):
+        try:
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+
+        return os.path.join(base_path, relative_path)
+    
+    # To fix empty input bug
+    if path == '':
+        path = resource_path('src/Assets/empty_layout.litematic')
     schem = Schematic.load(path)
     reg = list(schem.regions.values())[0]
 

@@ -12,9 +12,6 @@ import time
 
 from src.Assets import heatmap_data, constants as const
 
-
-
-
 # Taking file input from user and checking to see if the path and schematic size is valid
 def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
     def resource_path(relative_path):
