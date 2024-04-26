@@ -6,6 +6,18 @@ from tkinter import messagebox
 import threading
 import subprocess
 
+from src import (
+    Trunk_Distribution_Calculator,
+    Nylium_Dispenser_Placement_Calculator,
+    Custom_Nylium_Grid_Heatmap_Calculator,
+    Nether_Tree_Farm_Rates_Calculator,
+    Chart_Display
+)
+from src import (
+    calculate_layout,
+    calculate_layout_efficiency
+)
+
 from Assets import colours
 from Assets.constants import RSF
 
@@ -18,6 +30,18 @@ def open_file(folder, subfolder, program_name):
 def open_file_single_instance(folder, subfolder, file):
     thread = threading.Thread(target=open_file, args=(folder, subfolder, file))
     thread.start()
+    
+def run_python_code(python_file):
+    # Call the start function from the specified python file
+    python_file.start()
+
+def open_child_window(python_file):
+    child_window = tk.Toplevel(root)
+    child_window.title("Child Window")
+
+    # Add a button to run the Python code in the child window
+    run_button = tk.Button(child_window, text="Run Python Code", command=lambda: run_python_code(python_file))
+    run_button.pack()
 
 def show_help_message():
     messagebox.showinfo(
@@ -139,6 +163,10 @@ subfolder_names = [program["subfolder"] for program in programs]
 file_names = [program["file"] for program in programs]
 button_labels = [program["label"] for program in programs]
 
+file_name = [Trunk_Distribution_Calculator, Nylium_Dispenser_Placement_Calculator, 
+            Custom_Nylium_Grid_Heatmap_Calculator, Nether_Tree_Farm_Rates_Calculator,
+            Chart_Display]
+
 cols = 2
 rows = math.ceil(len(file_names) / cols)
 
@@ -161,6 +189,7 @@ help_menu.add_command(label="Module Not Found Error", command=show_help_message)
 # Create buttons using a for loop
 for i in range(len(file_names)):
     button = tk.Button(root, text=button_labels[i],
+                    #    command=lambda file=file_name[i]: open_child_window(file))
                        command=lambda folder=folder_names[i], subfolder=subfolder_names[i],
                                       file=file_names[i]: open_file_single_instance(folder, subfolder, file))
     button.config(activebackground=button.cget('bg'), bg=colours.bg, fg=colours.fg,
