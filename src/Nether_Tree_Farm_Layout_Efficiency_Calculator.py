@@ -72,11 +72,12 @@ def start(root):
 
     # Get the root window's position and size
     root_x = root.winfo_x()
-    root_y = root.winfo_y()
+    root_y = root.winfo_rooty()
     root_height = root.winfo_height()
 
     # Position the child window to the right of the root window
     child.geometry(f"+{root_x}+{root_y + root_height}")
+
     # Update the window so it actually appears in the correct position
     child.update_idletasks()
 

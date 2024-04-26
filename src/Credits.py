@@ -1,3 +1,4 @@
+import ctypes
 import os
 import sys
 import tkinter as tk
@@ -39,15 +40,19 @@ def start(root):
     child.geometry(f"{window_width}x{window_height}")
 
     child.configure(bg=colours.bg)
-    # Get the root window's position and size
-    root_x = root.winfo_x()
-    root_y = root.winfo_y()
-    root_width = root.winfo_width()
-    root_height = root.winfo_height()
 
-    # Position the child window to the right of the root window
-    child.geometry(f"+{root_x + root_width}+{root_y + root_height}")
+    # Get the actual screen's width and height
+    user32 = ctypes.windll.user32
+    screen_width = user32.GetSystemMetrics(0)
+    screen_height = user32.GetSystemMetrics(1)
 
+    # Calculate the position to center the child window
+    center_x = screen_width // 2 - child.winfo_reqwidth()
+    center_y = screen_height // 2 - child.winfo_reqheight()
+    
+    # Position the child window in the center of the screen
+    child.geometry(f"+{center_x}+{center_y}")
+    
     # Call update_idletasks to make sure widgets have been created
     child.update_idletasks()
 

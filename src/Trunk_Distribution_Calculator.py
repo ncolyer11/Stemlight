@@ -55,6 +55,16 @@ def start(root):
     child.iconbitmap(icon_path)
     child.configure(bg=cols.bg)
 
+    root_x = root.winfo_x()
+    root_y = root.winfo_rooty()
+    root_width= root.winfo_width()
+    root_height = root.winfo_height()
+
+    child.geometry(f"+{root_x + root_width}+{root_y + root_height}")
+
+    # Call update_idletasks to make sure widgets have been created
+    child.update_idletasks()
+
     # Create a menu bar
     toolbar = Menu(child)
     child.config(menu=toolbar)
