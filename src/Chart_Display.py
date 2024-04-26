@@ -1,15 +1,14 @@
 import tkinter as tk
 import tkinter.font as font
 from PIL import Image, ImageTk
-from Assets import colours
-import pkg_resources
 import os
 import sys
 
+from src.Assets import colours
+from src.Assets.constants import RSF
+from src.Assets.version import version
 
-from Assets.constants import RSF
-
-def start():
+def start(root):
     def resource_path(relative_path):
         try:
             base_path = sys._MEIPASS
@@ -23,8 +22,8 @@ def start():
         image2 = Image.open(image_file_path)
 
         # Get screen dimensions
-        screen_width = root.winfo_screenwidth()
-        screen_height = root.winfo_screenheight()
+        screen_width = child.winfo_screenwidth()
+        screen_height = child.winfo_screenheight()
 
         # Calculate the maximum allowable width and height
         max_width = screen_width - 100  # Adjusted for padding
@@ -35,9 +34,10 @@ def start():
         resized_image.thumbnail((max_width, max_height))
 
         # Create a new window
-        new_window = tk.Toplevel(root)
-        new_window.title(image_file_path[7:])
-        new_window.iconbitmap('./Assets/ikon.ico')
+        new_window = tk.Toplevel(child)
+        new_window.title(os.path.basename(image_file_path))
+        icon_path = resource_path('src/assets/icon.ico')
+        new_window.iconbitmap(icon_path)
         new_window.resizable(0,0)
 
         img = ImageTk.PhotoImage(resized_image)
@@ -45,23 +45,24 @@ def start():
         label.image = img  # Keep a reference to the image object
         label.pack()
 
-    # Create the main Tkinter window
-    root = tk.Tk()
-    root.title("Stemlight: Chart Viewer")
-    root.iconbitmap('./Assets/ikon.ico')
-    root.resizable(0,0)
-    root.configure(bg=colours.bg)
-    root.geometry("+0+0")
-    root.minsize(1400, 700)
+    # Create the child Tkinter window
+    child = tk.Toplevel(root)
+    child.title(f"Stemlight{version}: Chart Viewer")
+    icon_path = resource_path('src/assets/icon.ico')
+    child.iconbitmap(icon_path)
+    child.resizable(0,0)
+    child.configure(bg=colours.bg)
+    child.geometry("+0+0")
+    child.minsize(1400, 700)
 
 
     main_font = font.Font(family='Segoe UI Semibold', size=int((RSF**1.765)*12))
 
-    toolbar = tk.Menu(root)
-    root.config(menu=toolbar)
+    toolbar = tk.Menu(child)
+    child.config(menu=toolbar)
     file_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
     toolbar.add_cascade(label="File", menu=file_menu)
-    file_menu.add_command(label="Exit", command=root.quit)
+    file_menu.add_command(label="Exit", command=child.quit)
 
     # List of image file names
     image_files = [
@@ -121,7 +122,7 @@ def start():
         photo = ImageTk.PhotoImage(bordered_thumbnail)
         photo_images.append(photo)  # Store the PhotoImage object in the list
 
-        button = tk.Button(root, image=photo, command=lambda path=path,
+        button = tk.Button(child, image=photo, command=lambda path=path,
                            photo=photo: open_image(path, photo))
         button.grid(row=row + 1, column=col, padx=10, pady=10)
 
@@ -140,13 +141,11 @@ def start():
             "\nRaw Wart Blocks per VRM"
         ]
 
-        caption = tk.Label(root, text=captions[i], bg=colours.bg, fg=colours.fg, font=main_font)
+        caption = tk.Label(child, text=captions[i], bg=colours.bg, fg=colours.fg, font=main_font)
         caption.grid(row=row, column=col, padx=10, pady=3)
 
     try:
         from ctypes import windll
         windll.shcore.SetProcessDpiAwareness(1)
     finally:
-        root.mainloop()
-
-start()
+        child.mainloop()

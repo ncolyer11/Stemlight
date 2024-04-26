@@ -1038,3 +1038,41 @@ src/Assets/__pycache__/constants.cpython-310.pyc
 src/Assets/__pycache__/Credits.cpython-310.pyc
 src/Assets/__pycache__/heatmap_data.cpython-39.pyc
 src/Assets/__pycache__/heatmap_data.cpython-310.pyc
+build/Main_Menu/Analysis-00.toc
+build/Main_Menu/base_library.zip
+build/Main_Menu/EXE-00.toc
+build/Main_Menu/Main_Menu.pkg
+build/Main_Menu/PKG-00.toc
+build/Main_Menu/PYZ-00.pyz
+build/Main_Menu/PYZ-00.toc
+build/Main_Menu/Tree-00.toc
+build/Main_Menu/Tree-01.toc
+build/Main_Menu/Tree-02.toc
+build/Main_Menu/warn-Main_Menu.txt
+build/Main_Menu/xref-Main_Menu.html
+build/Main_Menu/localpycs/pyimod01_archive.pyc
+build/Main_Menu/localpycs/pyimod02_importers.pyc
+build/Main_Menu/localpycs/pyimod03_ctypes.pyc
+build/Main_Menu/localpycs/pyimod04_pywin32.pyc
+build/Main_Menu/localpycs/struct.pyc
+build/Stemlight Beta-1.0.0/Analysis-00.toc
+build/Stemlight Beta-1.0.0/base_library.zip
+build/Stemlight Beta-1.0.0/EXE-00.toc
+build/Stemlight Beta-1.0.0/PKG-00.toc
+build/Stemlight Beta-1.0.0/PYZ-00.pyz
+build/Stemlight Beta-1.0.0/PYZ-00.toc
+build/Stemlight Beta-1.0.0/Stemlight Beta-1.0.0.pkg
+build/Stemlight Beta-1.0.0/Tree-00.toc
+build/Stemlight Beta-1.0.0/Tree-01.toc
+build/Stemlight Beta-1.0.0/Tree-02.toc
+build/Stemlight Beta-1.0.0/warn-Stemlight Beta-1.0.0.txt
+build/Stemlight Beta-1.0.0/xref-Stemlight Beta-1.0.0.html
+build/Stemlight Beta-1.0.0/localpycs/pyimod01_archive.pyc
+build/Stemlight Beta-1.0.0/localpycs/pyimod02_importers.pyc
+build/Stemlight Beta-1.0.0/localpycs/pyimod03_ctypes.pyc
+build/Stemlight Beta-1.0.0/localpycs/pyimod04_pywin32.pyc
+build/Stemlight Beta-1.0.0/localpycs/struct.pyc
+dist/Main_Menu.exe
+dist/Stemlight Beta-1.0.0.exe
+src/Assets/__pycache__/version.cpython-310.pyc
+Stemlight Beta-1.0.0.spec
