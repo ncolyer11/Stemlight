@@ -1076,3 +1076,10 @@ dist/Main_Menu.exe
 dist/Stemlight Beta-1.0.0.exe
 src/Assets/__pycache__/version.cpython-310.pyc
 Stemlight Beta-1.0.0.spec
+src/__pycache__/calculate_layout_efficiency.cpython-310.pyc
+src/__pycache__/calculate_layout.cpython-310.pyc
+src/__pycache__/Chart_Display.cpython-310.pyc
+src/__pycache__/Custom_Nylium_Grid_Heatmap_Calculator.cpython-310.pyc
+src/__pycache__/Nether_Tree_Farm_Rates_Calculator.cpython-310.pyc
+src/__pycache__/Nylium_Dispenser_Placement_Calculator.cpython-310.pyc
+src/__pycache__/Trunk_Distribution_Calculator.cpython-310.pyc
