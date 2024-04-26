@@ -9,8 +9,9 @@ for more info on how this & the heatmaps were made visit the huge fungi huggers 
 
 from litemapy import Schematic
 import time
+
 # importing heatmap data array
-from Assets import heatmap_data, constants as const
+from src.Assets import heatmap_data, constants as const
 
 
 def schematic_to_values(path):

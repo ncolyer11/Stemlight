@@ -5,17 +5,30 @@ pre-calculated heatmaps in a .xlsx file to work out the average stems, shroomlig
 for that nether tree farm layout
 """
 
+import os
+import sys
 from litemapy import Schematic
 import time
 
-from Assets import heatmap_data, constants as const
+from src.Assets import heatmap_data, constants as const
+
+
 
 
 # Taking file input from user and checking to see if the path and schematic size is valid
 def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
+    def resource_path(relative_path):
+        try:
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+
+        return os.path.join(base_path, relative_path)
+    
     # To fix empty input bug
     if path == '':
-        path = './Assets/empty_layout.litematic'
+        path = resource_path('src/Assets/empty_layout.litematic')
+
     schem = Schematic.load(path)
     reg = list(schem.regions.values())[0]
 
