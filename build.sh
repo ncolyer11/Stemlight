@@ -11,7 +11,7 @@ done < requirements.txt
 pyinstaller --onefile \
 --add-data "src/Images/*:src/Images" \
 --add-data "src/Assets/*:src/Assets" \
---name "Linux_Stemlight" \
+--name "Stemlight_Linux" \
 Main_Menu.py
 
 # --name "Stemlight$version" \
