@@ -39,12 +39,12 @@ def start(root):
         try:
             # Try to use the .ico file
             icon_path = resource_path('src/Assets/icon.ico')
-            child.iconbitmap(icon_path)
+            new_window.iconbitmap(icon_path)
         except:
             # If that fails, try to use the .xbm file
             try:
                 icon_path = resource_path('src/Assets/icon.xbm')
-                child.iconbitmap('@' + icon_path)
+                new_window.iconbitmap('@' + icon_path)
             except:
                 pass  # If that also fails, do nothing
         new_window.resizable(0,0)
