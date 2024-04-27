@@ -1,4 +1,4 @@
-"""Frontend/GUI for the Fungus Distribution Heatmap Calculator"""
+"""Calculates distribution of fungus, and bone meal usage, \nfor a given grid of nylium, and placement and fire order of dispensers"""
 
 import tkinter as tk
 from tkinter import ttk
@@ -236,17 +236,15 @@ class App:
         self.dispensers.sort(key=lambda d: d[2])
         dispenser_coordinates = [(d[0], d[1]) for d in self.dispensers]
         fungi_type = 1 if self.nylium_type.get() == "crimson" else 0
-        print(self.row_slider.get(), self.col_slider.get())
         total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, fungi_type = \
             calculate_fungus_distribution(
-                self.col_slider.get(), # print out these values, currently getting an out
-                self.row_slider.get(), # of bounds error for dispensers placed on the edge of a non 5x5 grid
+                self.col_slider.get(), 
+                self.row_slider.get(),
                 len(dispenser_coordinates),
                 dispenser_coordinates,
                 fungi_type
             )
-        print(total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, fungi_type)
-
+        
         self.output_text.delete('1.0', tk.END)
         self.output_text.insert(tk.END, "Fungi Type: ", "label")
         self.output_text.insert(tk.END, f"{'Warped' if fungi_type == 0 else 'Crimson'}\n", "output")

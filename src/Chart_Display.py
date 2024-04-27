@@ -1,4 +1,4 @@
-"""Displays various nether tree farming-related charts"""
+"""Displays various nether tree farming-related charts at a glance"""
 
 import tkinter as tk
 import tkinter.font as font

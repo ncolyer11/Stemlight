@@ -1,4 +1,4 @@
-"""A program that calculates the rates of a nether tree farm from either simple inputs or a schematic file."""
+"""A program that calculates the rates of a nether tree farm \nfrom basic info (dispensers, clock speed, etc) or an encoded ntf layout schematic file"""
 
 import sys
 import tkinter as tk

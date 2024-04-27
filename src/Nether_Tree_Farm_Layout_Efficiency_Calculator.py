@@ -1,4 +1,4 @@
-"""Outputs efficiency and VRM count information for a given schematic file representing a nether tree farm layout"""
+"""A program that outputs the efficiency and VRM count information \nfor a given encoded ntf layout schematic file"""
 
 import tkinter as tk
 from tkinter import filedialog
