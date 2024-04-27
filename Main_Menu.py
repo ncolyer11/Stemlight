@@ -87,8 +87,17 @@ def resize_canvas(event, canvas, start_color, end_color):
 # Create main window
 root = tk.Tk()
 root.title(f"Stemlight{version}: Main Menu")
-icon_path = resource_path('src/assets/icon.ico')
-root.iconbitmap(icon_path)
+try:
+    # Try to use the .ico file
+    icon_path = resource_path('src/Assets/icon.ico')
+    root.iconbitmap(icon_path)
+except:
+    # If that fails, try to use the .xbm file
+    try:
+        icon_path = resource_path('src/Assets/icon.xbm')
+        root.iconbitmap('@' + icon_path)
+    except:
+        pass  # If that also fails, do nothing
 root.configure(bg=colours.bg)
 root.minsize(int(RSF*450), int(RSF*200))
 
@@ -159,5 +168,6 @@ for i in range(len(programs) // 2):
 try:
     from ctypes import windll
     windll.shcore.SetProcessDpiAwareness(1)
-finally:
-    root.mainloop()
+except:
+    pass
+root.mainloop()

@@ -36,8 +36,17 @@ def start(root):
         # Create a new window
         new_window = tk.Toplevel(child)
         new_window.title(os.path.basename(image_file_path))
-        icon_path = resource_path('src/assets/icon.ico')
-        new_window.iconbitmap(icon_path)
+        try:
+            # Try to use the .ico file
+            icon_path = resource_path('src/Assets/icon.ico')
+            root.iconbitmap(icon_path)
+        except:
+            # If that fails, try to use the .xbm file
+            try:
+                icon_path = resource_path('src/Assets/icon.xbm')
+                root.iconbitmap('@' + icon_path)
+            except:
+                pass  # If that also fails, do nothing
         new_window.resizable(0,0)
 
         img = ImageTk.PhotoImage(resized_image)
@@ -48,8 +57,17 @@ def start(root):
     # Create the child Tkinter window
     child = tk.Toplevel(root)
     child.title(f"Stemlight{version}: Chart Viewer")
-    icon_path = resource_path('src/assets/icon.ico')
-    child.iconbitmap(icon_path)
+    try:
+        # Try to use the .ico file
+        icon_path = resource_path('src/Assets/icon.ico')
+        root.iconbitmap(icon_path)
+    except:
+        # If that fails, try to use the .xbm file
+        try:
+            icon_path = resource_path('src/Assets/icon.xbm')
+            root.iconbitmap('@' + icon_path)
+        except:
+            pass  # If that also fails, do nothing
     child.resizable(0,0)
     child.configure(bg=colours.bg)
     child.geometry("+0+0")
@@ -147,5 +165,6 @@ def start(root):
     try:
         from ctypes import windll
         windll.shcore.SetProcessDpiAwareness(1)
-    finally:
-        child.mainloop()
+    except:
+        pass
+    child.mainloop()

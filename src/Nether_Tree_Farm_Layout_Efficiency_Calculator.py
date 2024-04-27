@@ -66,8 +66,17 @@ def start(root):
 
     child = tk.Toplevel(root)
     child.title(f"Stemlight{version}: Nether Tree Farm Layout Efficiency Calculator")
-    icon_path = resource_path('src/assets/icon.ico')
-    child.iconbitmap(icon_path)
+    try:
+        # Try to use the .ico file
+        icon_path = resource_path('src/Assets/icon.ico')
+        root.iconbitmap(icon_path)
+    except:
+        # If that fails, try to use the .xbm file
+        try:
+            icon_path = resource_path('src/Assets/icon.xbm')
+            root.iconbitmap('@' + icon_path)
+        except:
+            pass  # If that also fails, do nothing
     child.configure(bg=colours.bg)
 
     # Get the root window's position and size
@@ -162,5 +171,6 @@ def start(root):
     try:
         from ctypes import windll
         windll.shcore.SetProcessDpiAwareness(1)
-    finally:
-        child.mainloop()
+    except:
+        pass
+    child.mainloop()

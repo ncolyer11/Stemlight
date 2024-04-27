@@ -31,8 +31,17 @@ def start(root):
     child.title(f"Stemlight{version}: Credits")
 
     # Set the window icon
-    icon_path = resource_path('src/assets/icon.ico')
-    child.iconbitmap(icon_path)
+    try:
+        # Try to use the .ico file
+        icon_path = resource_path('src/Assets/icon.ico')
+        root.iconbitmap(icon_path)
+    except:
+        # If that fails, try to use the .xbm file
+        try:
+            icon_path = resource_path('src/Assets/icon.xbm')
+            root.iconbitmap('@' + icon_path)
+        except:
+            pass  # If that also fails, do nothing
 
     # Set the window size
     window_width = int(RSF*275)
@@ -42,9 +51,14 @@ def start(root):
     child.configure(bg=colours.bg)
 
     # Get the actual screen's width and height
-    user32 = ctypes.windll.user32
-    screen_width = user32.GetSystemMetrics(0)
-    screen_height = user32.GetSystemMetrics(1)
+    screen_width = child.winfo_screenwidth()
+    screen_height = child.winfo_screenheight()
+    try: 
+        user32 = ctypes.windll.user32
+        screen_width = user32.GetSystemMetrics(0)
+        screen_height = user32.GetSystemMetrics(1)
+    except:
+        pass
 
     # Calculate the position to center the child window
     center_x = screen_width // 2 - child.winfo_reqwidth()
@@ -76,5 +90,6 @@ def start(root):
     try:
         from ctypes import windll
         windll.shcore.SetProcessDpiAwareness(1)
-    finally:
-        child.mainloop()
+    except:
+        pass
+    child.mainloop()
