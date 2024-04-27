@@ -1,5 +1,6 @@
 import math
 import tkinter as tk
+from tkinter import ttk
 import tkinter.font as font
 from tkinter import messagebox
 
@@ -16,6 +17,44 @@ from src.Assets import colours
 from src.Assets.constants import RSF
 from src.Assets.version import version
 from src.Assets.helpers import resource_path
+
+# Program class to cleanly store program data
+class Program:
+    """A class to store program data."""
+    def __init__(self, id, program, label):
+        self.id = id
+        self.program = program
+        self.label = label
+        self.description = program.__doc__
+
+# ToolTip class to display tooltips
+class ToolTip:
+    def __init__(self, widget):
+        self.widget = widget
+        self.tip_window = None
+
+    def show_tip(self, tip_text, x, y):
+        "Display text in a tooltip window"
+        if self.tip_window or not tip_text:
+            return
+        # x += self.widget.winfo_width() // 2
+        # y += self.widget.winfo_height() // 2
+        self.tip_window = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        main_font = font.Font(family='Segoe UI', size=int((RSF**1.765)*8))
+
+        label = tk.Label(tw, text=tip_text, justify=tk.LEFT,
+                    background=colours.p, relief=tk.SOLID, borderwidth=1,
+                    font=main_font)
+        label.pack(ipadx=1)
+
+    def hide_tip(self):
+        tw = self.tip_window
+        self.tip_window = None
+        if tw:
+            tw.destroy()
+
 
 def run_python_code(python_file):
     python_file.start(root)
@@ -88,15 +127,6 @@ root.minsize(int(RSF*450), int(RSF*200))
 
 main_font = font.Font(family='Segoe UI Semibold', size=int((RSF**1.765)*11))
 
-# Program class to cleanly store program data
-class Program:
-    """A class to store program data."""
-    def __init__(self, id, program, label):
-        self.id = id
-        self.program = program
-        self.label = label
-        self.description = program.__doc__
-
 programs = [
     Program(1, Nether_Tree_Farm_Rates_Calculator, "Farm Rates & Efficiency"),
     Program(2, Chart_Display, "Chart Viewer"),
@@ -140,6 +170,14 @@ for i, program in enumerate(programs):
         height=int((RSF**0.7)*2)
     )
     button.config(activebackground=button.cget('bg'))
+
+     # Create a tooltip for the button
+    tooltip = ToolTip(button)
+    button.bind("<Enter>", lambda event, 
+                prog=program: tooltip.show_tip(prog.description, 
+                                               event.x_root, event.y_root))
+    button.bind("<Leave>", lambda event: tooltip.hide_tip())
+
 
     # If it's the last button and it's the only one in its row, span it across all columns
     if i == len(programs) - 1 and len(programs) % cols == 1:
