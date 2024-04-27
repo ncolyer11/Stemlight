@@ -77,6 +77,6 @@ def calculate_fungus_distribution(length, width, dispensers,
     total_fungi, total_plants, bm_for_grow, bm_total = \
         get_totals(des_fungi_grid, foliage_grid, width, length, bm_for_prod)
 
-    print_results(total_plants, total_fungi, bm_for_prod, 
-                  bm_for_grow, bm_total, fungi_type)
+    # print_results(total_plants, total_fungi, bm_for_prod, 
+                #   bm_for_grow, bm_total, fungi_type)
     return total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, fungi_type

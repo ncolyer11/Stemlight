@@ -18,9 +18,11 @@ from src.Assets.helpers import resource_path
 
 # Non-linear scaling factor
 NLS = 1.765
-WDTH = 100
-HGHT = 50
+WDTH = 92
+HGHT = 46
 PAD = 5
+RAD = 26
+DP = 5
 
 def create_squircle(width, height, radius, fill):
     # Create a new image with transparent background
@@ -38,23 +40,18 @@ class SlideSwitch(tk.Canvas):
 
         self.configure(width=WDTH, height=HGHT)
         self.configure(highlightthickness=0)
+        self.configure(bg=colours.bg)
         self.fungi_type = tk.StringVar(value="warped")
 
         # Create an image of a rounded rectangle
-        self.rect_image = create_squircle(WDTH, HGHT, 25, colours.warped, colours.bg)
-
-        # self.rect = self.create_rectangle(PAD, PAD, WDTH-PAD, HGHT-PAD,
-        #                                   fill=colours.warped,
-        #                                   outline=colours.bg)
+        self.rect_image = create_squircle(WDTH, HGHT, RAD, colours.warped)
         self.rect = self.create_image(0, 0, image=self.rect_image, anchor='nw')
+        self.new_image = self.rect_image
 
-        
-        # circle_path = resource_path("src/Images/grey_circle.png")
-        # self.switch_image = self.switch_image.subsample(28, 28)
+        # Create toggle circle
         circle_path = resource_path("src/Images/netherrack_circle.png")
         self.switch_image = tk.PhotoImage(file=circle_path)
         self.switch_image = self.switch_image.subsample(4, 4)
-
         self.oval = self.create_image(WDTH//4, HGHT//2, image=self.switch_image)
 
         self.bind("<Button-1>", self.toggle)
@@ -64,14 +61,14 @@ class SlideSwitch(tk.Canvas):
 
     def toggle(self, event):
         if self.state:
-            new_image = create_squircle(WDTH, HGHT, 20, colours.warped)
-            self.itemconfig(self.rect, image=new_image)
-            self.coords(self.oval, WDTH / 4, HGHT / 2)
+            self.new_image = create_squircle(WDTH, HGHT, RAD, colours.warped)
+            self.itemconfig(self.rect, image=self.new_image)
+            self.coords(self.oval, WDTH//4, HGHT//2)
             self.fungi_type.set("warped")
         else:
-            new_image = create_squircle(WDTH, HGHT, 20, colours.crimson)
-            self.itemconfig(self.rect, image=new_image)
-            self.coords(self.oval, 3 * WDTH / 4, HGHT / 2)
+            self.new_image = create_squircle(WDTH, HGHT, RAD, colours.crimson)
+            self.itemconfig(self.rect, image=self.new_image)
+            self.coords(self.oval, 3 * WDTH//4, HGHT//2)
             self.fungi_type.set("crimson")
 
         self.state = not self.state
@@ -86,6 +83,25 @@ class App:
         self.nylium_type = tk.StringVar(value="warped")
         self.vars = []
         self.create_widgets()
+
+        # Create a new frame for the output results
+        self.output_frame = tk.Frame(self.master, bg=colours.bg)
+        self.output_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        # Add a label to the output frame
+        output_label = tk.Label(self.output_frame, text="Output",
+                                font=("Segoe UI Semibold", int((RSF**NLS)*15)),
+                                bg=colours.bg, fg=colours.fg)
+        output_label.pack()
+        # Add a text widget to this frame
+        self.output_text = tk.Text(self.output_frame,
+                                   bg=colours.bg, fg=colours.fg, height=12)
+        self.output_text.pack(fill=tk.BOTH, expand=True)
+
+        label_font = ("Segoe UI Semibold", int((RSF**NLS)*9))
+        output_font = ("Segoe UI", int((RSF**NLS)*9))
+
+        self.output_text.tag_configure("label", font=label_font)
+        self.output_text.tag_configure("output", font=output_font)
 
     def create_widgets(self):
         self.master.configure(bg=colours.bg)
@@ -144,7 +160,6 @@ class App:
         self.col_slider.pack()
 
         self.nylium_switch = SlideSwitch(self.master, callback=self.update_nylium_type)
-
         self.nylium_switch.pack(pady=10)
 
         self.grid_frame = tk.Frame(self.master, bg=colours.bg, padx=10, pady=10)
@@ -219,28 +234,39 @@ class App:
 
     def calculate(self):
         self.dispensers.sort(key=lambda d: d[2])
-        for dispenser in self.dispensers:
-            print(dispenser[:3])
-        print()
-
         dispenser_coordinates = [(d[0], d[1]) for d in self.dispensers]
         fungi_type = 1 if self.nylium_type.get() == "crimson" else 0
+        print(self.row_slider.get(), self.col_slider.get())
         total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, fungi_type = \
             calculate_fungus_distribution(
-                self.row_slider.get(),
-                self.col_slider.get(), 
+                self.col_slider.get(), # print out these values, currently getting an out
+                self.row_slider.get(), # of bounds error for dispensers placed on the edge of a non 5x5 grid
                 len(dispenser_coordinates),
                 dispenser_coordinates,
                 fungi_type
             )
         print(total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, fungi_type)
 
+        self.output_text.delete('1.0', tk.END)
+        self.output_text.insert(tk.END, "Fungi Type: ", "label")
+        self.output_text.insert(tk.END, f"{'Warped' if fungi_type == 0 else 'Crimson'}\n", "output")
+        self.output_text.insert(tk.END, "Total Fungi: ", "label")
+        self.output_text.insert(tk.END, f"{round(total_fungi, DP)}\n", "output")
+        self.output_text.insert(tk.END, "Total BM: ", "label")
+        self.output_text.insert(tk.END, f"{round(bm_total, DP)}\n", "output")
+        self.output_text.insert(tk.END, "BM for Production: ", "label")
+        self.output_text.insert(tk.END, f"{round(bm_for_prod, DP)}\n", "output")
+        self.output_text.insert(tk.END, "BM for Growth: ", "label")
+        self.output_text.insert(tk.END, f"{round(bm_for_grow, DP)}\n", "output")
+        self.output_text.insert(tk.END, "Total Foliage: ", "label")
+        self.output_text.insert(tk.END, f"{round(total_plants, DP)}\n", "output")
+
 def start(root):
     child = tk.Toplevel(root)
-    set_title_and_icon(child, "Dispenser Placement")
+    set_title_and_icon(child, "Playerless Core Tools")
 
     child.configure(bg=colours.bg)
-    child.minsize(int(RSF*300), int(RSF*325))
+    child.size = (int(RSF*300), int(RSF*325))
 
     # Create menu
     toolbar = tk.Menu(child)
@@ -252,11 +278,11 @@ def start(root):
 
     # Get the root window's position and size
     root_x = root.winfo_x()
-    root_y = root.winfo_rooty()
-    root_height = root.winfo_height()
+    root_y = root.winfo_y()
+    root_width = root.winfo_width()
 
-    # Position the child window to the bottom left of the root window
-    child.geometry(f"+{root_x}+{root_y + root_height}")
+    # Position the child window to the top right of the root window
+    child.geometry(f"+{root_x + root_width}+{root_y}")
 
     # Update the window so it actually appears in the correct position
     child.update_idletasks()
