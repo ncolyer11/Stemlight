@@ -1,6 +1,6 @@
 ### Program/GUI
 YES_OPTIONS = {"y", "yes", "on", "1", "yeah", "true", "sure", "yup",
-               "ja", "si", "sí", "haan", "हाँ"}
+               "ja", "si", "sí", "haan", "हाँ", "oui", "はい", "da"}
 WARP_OPTIONS = {"blue", "b", "warped", "w", "warp"}
 CRMS_OPTIONS = {"red", "r", "crimson", "c", "crim"}
 # Resoloution Scale Factor
