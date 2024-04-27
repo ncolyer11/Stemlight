@@ -1,22 +1,14 @@
-import os
-import sys
+"""Calculates the number of stems and stem efficiency for a given trunk distribution."""
+
 import tkinter as tk
 import tkinter.font as font
-from tkinter import Menu, Checkbutton
+from tkinter import Menu
 
 from src.Assets import colours as cols, constants as const
 from src.Assets.constants import RSF
 from src.Assets.version import version
+from src.Assets.helpers import resource_path
 
-def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-
-    return os.path.join(base_path, relative_path)
 
 def start(root):
     PAD = int(RSF*10)
@@ -81,7 +73,7 @@ def start(root):
     # Create a "File" menu
     file_menu = Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
     toolbar.add_cascade(label="File", menu=file_menu)
-    file_menu.add_command(label="Exit", command=child.quit)
+    file_menu.add_command(label="Exit", command=child.destroy)
 
     # Create a "Decimal Places" menu
     dp_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))

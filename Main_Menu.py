@@ -1,17 +1,12 @@
 import math
-import os
-import sys
 import tkinter as tk
 import tkinter.font as font
 from tkinter import messagebox
-import threading
-import subprocess
 
 from src import (
     Nether_Tree_Farm_Rates_Calculator,
     Chart_Display,
-    Nylium_Dispenser_Placement_Calculator,
-    Custom_Nylium_Grid_Heatmap_Calculator,
+    Fungus_Distribution_Heatmap_Calculator_Frontend,
     Nether_Tree_Farm_Layout_Efficiency_Calculator,
     Trunk_Distribution_Calculator,
     Credits,
@@ -20,17 +15,7 @@ from src import (
 from src.Assets import colours
 from src.Assets.constants import RSF
 from src.Assets.version import version
-
-
-def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-
-    return os.path.join(base_path, relative_path)
+from src.Assets.helpers import resource_path
 
 def run_python_code(python_file):
     python_file.start(root)
@@ -105,18 +90,19 @@ main_font = font.Font(family='Segoe UI Semibold', size=int((RSF**1.765)*11))
 
 # Program class to cleanly store program data
 class Program:
+    """A class to store program data."""
     def __init__(self, id, program, label):
         self.id = id
         self.program = program
         self.label = label
+        self.description = program.__doc__
 
 programs = [
     Program(1, Nether_Tree_Farm_Rates_Calculator, "Farm Rates & Efficiency"),
     Program(2, Chart_Display, "Chart Viewer"),
-    Program(3, Nylium_Dispenser_Placement_Calculator, "Fungus Distribution"),
-    Program(4, Custom_Nylium_Grid_Heatmap_Calculator, "Playerless Core Heatmap Gen"),
-    Program(5, Nether_Tree_Farm_Layout_Efficiency_Calculator, "VRM Decoder"),
-    Program(6, Trunk_Distribution_Calculator, "Trunk Distribution"),
+    Program(3, Fungus_Distribution_Heatmap_Calculator_Frontend, "Playerless Core Tools"),
+    Program(4, Nether_Tree_Farm_Layout_Efficiency_Calculator, "VRM Decoder"),
+    Program(5, Trunk_Distribution_Calculator, "Trunk Distribution"),
     Program(99, Credits, "Credits"),
 ]
 
@@ -132,7 +118,7 @@ root.config(menu=toolbar)
 
 file_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
 toolbar.add_cascade(label="File", menu=file_menu)
-file_menu.add_command(label="Exit", command=root.quit)
+file_menu.add_command(label="Exit", command=root.destroy)
 
 # New Help menu
 help_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))

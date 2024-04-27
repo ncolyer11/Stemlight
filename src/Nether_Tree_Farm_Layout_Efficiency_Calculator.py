@@ -1,25 +1,16 @@
-import sys
+"""Outputs efficiency and VRM count information for a given schematic file representing a nether tree farm layout"""
+
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import font
 import os
 import threading
 
-from src import calculate_layout_efficiency
 from src.Assets import colours
 from src.Assets.constants import RSF
 from src.Assets.version import version
-
-
-def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-
-    return os.path.join(base_path, relative_path)
+from src.Assets.helpers import resource_path, set_title_and_icon
+from src.Assets.helpers import schem_layout_to_efficiency_and_vrms
 
 def start(root):
     def set_dp(value, file_path):
@@ -27,7 +18,8 @@ def start(root):
         output(file_path)
 
     def output(file_path):
-        layout_values = calculate_layout_efficiency.schematic_to_values(file_path)
+        # Convert .litematic file to efficiency, and vrm type and quantity data
+        layout_values = schem_layout_to_efficiency_and_vrms(file_path)
         avg_stems, avg_shroomlights, avg_wart_blocks, stem_E, shroomlight_E, wart_block_E, vrm0, vrm1, vrm2, vrm3 = \
             layout_values[0], layout_values[1], layout_values[2], layout_values[3], layout_values[4], layout_values[5], \
             layout_values[6], layout_values[7], layout_values[8], layout_values[9]
@@ -65,18 +57,8 @@ def start(root):
             return file_path
 
     child = tk.Toplevel(root)
-    child.title(f"Stemlight{version}: Nether Tree Farm Layout Efficiency Calculator")
-    try:
-        # Try to use the .ico file
-        icon_path = resource_path('src/Assets/icon.ico')
-        child.iconbitmap(icon_path)
-    except:
-        # If that fails, try to use the .xbm file
-        try:
-            icon_path = resource_path('src/Assets/icon.xbm')
-            child.iconbitmap('@' + icon_path)
-        except:
-            pass  # If that also fails, do nothing
+    set_title_and_icon(child, "Nether Tree Farm Layout Efficiency Calculator")
+
     child.configure(bg=colours.bg)
 
     # Get the root window's position and size
@@ -97,7 +79,7 @@ def start(root):
 
     file_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
     toolbar.add_cascade(label="File", menu=file_menu)
-    file_menu.add_command(label="Exit", command=child.quit)
+    file_menu.add_command(label="Exit", command=child.destroy)
 
     dp_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
     toolbar.add_cascade(label="Decimal Places", menu=dp_menu)

@@ -1,22 +1,16 @@
+"""Displays various nether tree farming-related charts"""
+
 import tkinter as tk
 import tkinter.font as font
 from PIL import Image, ImageTk
 import os
-import sys
 
 from src.Assets import colours
 from src.Assets.constants import RSF
 from src.Assets.version import version
+from src.Assets.helpers import resource_path
 
 def start(root):
-    def resource_path(relative_path):
-        try:
-            base_path = sys._MEIPASS
-        except Exception:
-            base_path = os.path.abspath(".")
-
-        return os.path.join(base_path, relative_path)
-
     # Function to open the selected image in a new window
     def open_image(image_file_path, photo):
         image2 = Image.open(image_file_path)
@@ -80,7 +74,7 @@ def start(root):
     child.config(menu=toolbar)
     file_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
     toolbar.add_cascade(label="File", menu=file_menu)
-    file_menu.add_command(label="Exit", command=child.quit)
+    file_menu.add_command(label="Exit", command=child.destroy)
 
     # List of image file names
     image_files = [

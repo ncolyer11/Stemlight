@@ -6,8 +6,9 @@ from tkinter import messagebox
 import threading
 import subprocess
 
-from Assets import colours
-from Assets.constants import RSF
+from src.Assets import colours
+from src.Assets.constants import RSF
+from src.Assets.helpers import resource_path
 
 
 # Define function to open a Python file
@@ -160,7 +161,7 @@ root.config(menu=toolbar)
 
 file_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
 toolbar.add_cascade(label="File", menu=file_menu)
-file_menu.add_command(label="Exit", command=root.quit)
+file_menu.add_command(label="Exit", command=root.destroy)
 
 # New Help menu
 help_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))

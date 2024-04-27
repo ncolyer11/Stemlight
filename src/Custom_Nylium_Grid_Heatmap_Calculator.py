@@ -1,9 +1,11 @@
-"""produces a heatmap for fungi grown on a custom sized nylium platform"""
+"""Produces a heatmap for fungi grown on a custom sized nylium platform"""
 
 import xlsxwriter
 import time
 
 from src.Assets import heatmap_data, constants as const
+import itertools
+import numpy as np
 
 def start(root):
     DP_VAL = 5
@@ -88,29 +90,26 @@ def start(root):
     outSheet = []
     outWorkbook = xlsxwriter.Workbook(r"fungi_weighted_heatmap.xlsx")
 
-    blocks = 0
     for block_type in range(const.BLOCK_TYPES):  # 0 = stems, 1 = shrooms, 2 = vrm0/warts
         outSheet.append(outWorkbook.add_worksheet(f"{block_type}"))
-        for nylium_x in range(width):
-            for nylium_z in range(length):
-                heatmap_weighting = nyliumGrid[nylium_x][nylium_z]
-                for y in range(const.NT_MAX_HT):
-                    for z in range(const.NT_MAX_WD):
-                        for x in range(const.NT_MAX_WD):
-                            col = x + (const.NT_MAX_WD * z)
-                            row = const.NT_MAX_HT - 1 - y
-                            weighted_chance = heatmap_weighting * get_cell_value(block_type, row, col)
-                            # print(f"type: {block_type}, x: {nylium_x + x}, z: {nylium_z + z}, y: {y}, weight: {heatmap_weighting}")
-                            custom_heatmap_array[block_type][nylium_z + z][nylium_x + x][y] += weighted_chance
+        # Iterate through each x,z coord in the nylium grid/platform 
+        for nylium_x, nylium_z in itertools.product(range(width), range(length)):
+            heatmap_weighting = nyliumGrid[nylium_x][nylium_z]
+            y_range, z_range, x_range = range(const.NT_MAX_HT), range(const.NT_MAX_WD), range(const.NT_MAX_WD)
+            # Iterate through each x,y,z coord relative to the fungi
+            for y, z, x in itertools.product(y_range, z_range, x_range):
+                col = x + (const.NT_MAX_WD * z)
+                row = const.NT_MAX_HT - 1 - y
+                weighted_chance = heatmap_weighting * get_cell_value(block_type, row, col)
+                custom_heatmap_array[block_type][nylium_z + z][nylium_x + x][y] += weighted_chance
 
-        for y in range(const.NT_MAX_HT):
-            for z in range(heatmap_width):
-                for x in range(heatmap_length):
-                    col = x + (heatmap_width * z)
-                    row = const.NT_MAX_HT - 1 - y
-                    heatmap_data_point = custom_heatmap_array[block_type][x][z][y]
-                    outSheet[block_type].write(row, col, heatmap_data_point)
-                    blocks += 1
+        # Write data to Excel file for each block type
+        y_range, z_range, x_range = range(const.NT_MAX_HT), range(heatmap_width), range(heatmap_length)
+        for y, z, x in itertools.product(y_range, z_range, x_range):
+            col = x + (heatmap_width * z)
+            row = const.NT_MAX_HT - 1 - y
+            heatmap_data_point = custom_heatmap_array[block_type][x][z][y]
+            outSheet[block_type].write(row, col, heatmap_data_point)
                     
     end_time = time.time()
     elapsed_time = end_time - start_time

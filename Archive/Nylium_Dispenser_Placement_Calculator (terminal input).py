@@ -11,7 +11,7 @@ import questionary
 
 from src.Assets import constants as const
 
-def start(root):
+def start():
     DP_VAL = 5
     def get_size_input(prompt):
         while True:

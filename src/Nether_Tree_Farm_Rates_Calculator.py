@@ -1,3 +1,5 @@
+"""A program that calculates the rates of a nether tree farm from either simple inputs or a schematic file."""
+
 import sys
 import tkinter as tk
 from tkinter import filedialog
@@ -7,17 +9,8 @@ import os
 from src.Assets import colours as col, constants as const
 from src.Assets.constants import RSF
 from src.Assets.version import version
-from src import calculate_layout
-
-def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-
-    return os.path.join(base_path, relative_path)
+from src.Assets.helpers import resource_path
+from src.Assets.helpers import schem_layout_to_rates_data
 
 def start(root):
     # Window padding
@@ -44,8 +37,8 @@ def start(root):
         # Assuming the layer 1 stem is cleared by a separate circuit that syncs with the dispensers
         fungus = growth_chance * const.TICKS_PER_HR / dispenser_period_value
 
-        # Schematic to layout efficiency
-        layout_values = calculate_layout.schematic_to_efficiency(
+        # Convert .litematic file to rates, and efficiency data
+        layout_values = schem_layout_to_rates_data(
             schematic_path_val.get(), hat_cycles, trunk_cycles)
         stems_per_cycle, shrooms_per_cycle, warts_per_cycle, stem_eff, shroom_eff, wart_eff = \
             layout_values[0], layout_values[1], layout_values[2], layout_values[3], layout_values[4], layout_values[5]
@@ -167,7 +160,7 @@ def start(root):
 
     file_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
     toolbar.add_cascade(label="File", menu=file_menu)
-    file_menu.add_command(label="Exit", command=child.quit)
+    file_menu.add_command(label="Exit", command=child.destroy)
 
     dp_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
     toolbar.add_cascade(label="Decimal Places", menu=dp_menu)
