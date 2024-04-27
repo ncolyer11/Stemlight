@@ -4,7 +4,7 @@ YES_OPTIONS = {"y", "yes", "on", "1", "yeah", "true", "sure", "yup",
 WARP_OPTIONS = {"blue", "b", "warped", "w", "warp"}
 CRMS_OPTIONS = {"red", "r", "crimson", "c", "crim"}
 # Resoloution Scale Factor
-RSF = 1.0 # unchanged for Linux and MacOS, but changes to 1.5 on Windows to fix dpi scaling
+RSF = 1.25 # Lower for Linux and MacOS, but changes to 1.5 on Windows to fix dpi scaling
 try:
     from ctypes import windll
     RSF = 1.5

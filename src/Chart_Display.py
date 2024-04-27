@@ -94,7 +94,7 @@ def start(root):
         "vrm raw placements heatmap.png"
     ]
 
-    image_paths = [resource_path(f"src/images/{image}") for image in image_files]
+    image_paths = [resource_path(f"src/Images/{image}") for image in image_files]
 
     # Calculate the desired thumbnail width and height
     thumbnail_width = 320
