@@ -1,11 +1,11 @@
-tkinter
 xlsxwriter
 litemapy
 openpyxl
 pillow
 questionary
-ctypes
-threading
-subprocess
-os
-math
+# tkinter
+# ctypes
+# threading
+# subprocess
+# os
+# math

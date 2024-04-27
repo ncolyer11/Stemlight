@@ -108,6 +108,6 @@ def schematic_to_efficiency(path, hat_cycles, trunk_cycles):
 
     end_time = time.time()
     elapsed_time = end_time - start_time
-    print("\nElapsed time:", elapsed_time, "seconds")
+    print("Elapsed time:", elapsed_time, "seconds")
 
     return avg_stems, avg_shroomlights, avg_wart_blocks, stem_E, shroomlight_E, wart_block_E

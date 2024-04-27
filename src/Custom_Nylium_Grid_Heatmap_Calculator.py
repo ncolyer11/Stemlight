@@ -12,13 +12,39 @@ def start(root):
         return heatmap_data.heatmap_array[sheet_name][row_number][column_number]
 
     # get input from user
-    width = int(input("Enter Width of Nylium Grid: "))
+    while True:
+        try:
+            width = int(input("Enter Width of Nylium Grid: "))
+            if width > 0:
+                break
+            else:
+                print("Error: Please enter a positive integer for width.")
+        except ValueError:
+            print("Error: Please enter a positive integer for width.")
+
     heatmap_width = const.NT_MAX_RAD + width + const.NT_MAX_RAD
 
-    length = int(input("Enter Length of Nylium Grid: "))
+    while True:
+        try:
+            length = int(input("Enter Length of Nylium Grid: "))
+            if length > 0:
+                break
+            else:
+                print("Error: Please enter a positive integer for length.")
+        except ValueError:
+            print("Error: Please enter a positive integer for length.")
+
     heatmap_length = const.NT_MAX_RAD + length + const.NT_MAX_RAD
 
-    dispensers = int(input("Enter Amount of Dispensers: "))
+    while True:
+        try:
+            dispensers = int(input("Enter Amount of Dispensers: "))
+            if dispensers >= 0:
+                break
+            else:
+                print("Error: Amount of Dispensers must be a positive integer or 0.")
+        except ValueError:
+            print("Error: Amount of Dispensers must be a positive integer or 0.")
 
     # start tracking time
     start_time = time.time()

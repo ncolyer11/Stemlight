@@ -134,12 +134,12 @@ def start(root):
     try:
         # Try to use the .ico file
         icon_path = resource_path('src/Assets/icon.ico')
-        root.iconbitmap(icon_path)
+        child.iconbitmap(icon_path)
     except:
         # If that fails, try to use the .xbm file
         try:
             icon_path = resource_path('src/Assets/icon.xbm')
-            root.iconbitmap('@' + icon_path)
+            child.iconbitmap('@' + icon_path)
         except:
             pass  # If that also fails, do nothing
     child.configure(bg=col.bg)

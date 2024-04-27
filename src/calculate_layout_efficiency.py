@@ -94,6 +94,6 @@ def schematic_to_values(path):
 
     end_time = time.time()
     elapsed_time = end_time - start_time
-    print(f"\nElapsed time: {elapsed_time} seconds")
+    print(f"Elapsed time: {elapsed_time} seconds")
 
     return avg_stems, avg_shroomlights, avg_wart_blocks, stem_E, shroomlight_E, wart_block_E, vrm0, vrm1, vrm2, vrm3

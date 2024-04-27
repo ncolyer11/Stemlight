@@ -1087,3 +1087,20 @@ __pycache__
 dist
 Stemlight.spec
 Stemlight Beta-1.0.0
+build/Stemlight/Analysis-00.toc
+build/Stemlight/base_library.zip
+build/Stemlight/EXE-00.toc
+build/Stemlight/PKG-00.toc
+build/Stemlight/PYZ-00.pyz
+build/Stemlight/PYZ-00.toc
+build/Stemlight/Stemlight.pkg
+build/Stemlight/Tree-00.toc
+build/Stemlight/Tree-01.toc
+build/Stemlight/Tree-02.toc
+build/Stemlight/warn-Stemlight.txt
+build/Stemlight/xref-Stemlight.html
+build/Stemlight/localpycs/pyimod01_archive.pyc
+build/Stemlight/localpycs/pyimod02_importers.pyc
+build/Stemlight/localpycs/pyimod03_ctypes.pyc
+build/Stemlight/localpycs/pyimod04_pywin32.pyc
+build/Stemlight/localpycs/struct.pyc
