@@ -66,7 +66,6 @@ def start(root):
 
     child = tk.Toplevel(root)
     child.title(f"Stemlight{version}: Nether Tree Farm Layout Efficiency Calculator")
-    print("aahowdy")
     try:
         # Try to use the .ico file
         icon_path = resource_path('src/Assets/icon.ico')
