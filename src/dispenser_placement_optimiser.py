@@ -24,7 +24,7 @@ def calculate_max_fungi(length, width, num_dispensers, disp_perms, fungus_type):
         _, total_fungi, *_ = \
             calculate_fungus_distribution(length, width, num_dispensers, disp_perm, fungus_type)
         # Update optimal perm for rates if a better combination is found
-        if math.isclose(total_fungi, max_fungi, abs_tol=0.00001):
+        if math.isclose(total_fungi, max_fungi, abs_tol=0.000001):
             # Add to collection of optimal coordinates if the same max is found
             all_optimal_coords.append(disp_perm)
         elif total_fungi > max_fungi:
@@ -37,12 +37,12 @@ def calculate_max_fungi(length, width, num_dispensers, disp_perms, fungus_type):
 
 length = 5
 width = 5
-num_dispensers = 5
+num_dispensers = 6
 f_type = WARPED
 f_type = CRIMSON
 
 permutations = np.math.perm(length * width, num_dispensers)
-est_time_to_run = permutations * (1 / 3752.85 if f_type == WARPED else 1 / 4880.66)
+est_time_to_run = permutations * (1 / 3752.85 if f_type == WARPED else 1 / 3866.68)
     
 print(f"Est. runtime: {est_time_to_run:.4f}s ({permutations} permutations) ")
 start_time = time.time()

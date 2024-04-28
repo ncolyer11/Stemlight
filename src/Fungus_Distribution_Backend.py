@@ -37,7 +37,7 @@ def calculate_distribution(length, width, dispensers, disp_coordinates, fungi_we
     for i in range(dispensers):
         dispenser_x = disp_coordinates[i][0]
         dispenser_y = disp_coordinates[i][1]
-        dispenser_bm_chance = (1 - foliage_grid[dispenser_x, dispenser_y])
+        dispenser_bm_chance = 1 - foliage_grid[dispenser_x, dispenser_y]
         bm_for_prod += dispenser_bm_chance
 
         foliage_chance = selection_chance(x - dispenser_x, y - dispenser_y)
