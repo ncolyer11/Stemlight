@@ -1156,3 +1156,21 @@ build/Linux_Stemlight/localpycs/pyimod02_importers.pyc
 build/Linux_Stemlight/localpycs/pyimod03_ctypes.pyc
 build/Linux_Stemlight/localpycs/struct.pyc
 Linux_Stemlight.spec
+build/Stemlight for Windows/Analysis-00.toc
+build/Stemlight for Windows/base_library.zip
+build/Stemlight for Windows/EXE-00.toc
+build/Stemlight for Windows/PKG-00.toc
+build/Stemlight for Windows/PYZ-00.pyz
+build/Stemlight for Windows/PYZ-00.toc
+build/Stemlight for Windows/Stemlight for Windows.pkg
+build/Stemlight for Windows/Tree-00.toc
+build/Stemlight for Windows/Tree-01.toc
+build/Stemlight for Windows/Tree-02.toc
+build/Stemlight for Windows/warn-Stemlight for Windows.txt
+build/Stemlight for Windows/xref-Stemlight for Windows.html
+build/Stemlight for Windows/localpycs/pyimod01_archive.pyc
+build/Stemlight for Windows/localpycs/pyimod02_importers.pyc
+build/Stemlight for Windows/localpycs/pyimod03_ctypes.pyc
+build/Stemlight for Windows/localpycs/pyimod04_pywin32.pyc
+build/Stemlight for Windows/localpycs/struct.pyc
+Stemlight for Windows.spec
