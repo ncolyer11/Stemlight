@@ -9,17 +9,20 @@ from src.Assets import constants as const
 DP_VAL = 5
 WARPED = 0
 CRIMSON = 1
+SPREAD_AMOUNT = const.FUNG_SPREAD_RAD ** 4
+SPREAD_AREA = const.FUNG_SPREAD_RAD ** 2
 
 def selection_chance(x1, y1):
     # Neat little formula cooked up on Desmos
-    x2 = const.FUNG_SPREAD_RAD - abs(x1)
-    y2 = const.FUNG_SPREAD_RAD - abs(y1)
-    P_block = x2 * y2 / (const.FUNG_SPREAD_RAD ** 4)
-    P_block = 0 if x2 < 0 or y2 < 0 else P_block
-    P = 0
-    for k in range(1, const.FUNG_SPREAD_RAD ** 2 + 1):
-        P += (1 - P_block) ** (const.FUNG_SPREAD_RAD ** 2 - k)
-    return P * P_block   
+    x2 = const.FUNG_SPREAD_RAD - np.abs(x1)
+    y2 = const.FUNG_SPREAD_RAD - np.abs(y1)
+    P_block = np.where((x2 < 0) | (y2 < 0), 0, x2 * y2 / SPREAD_AMOUNT)
+
+    # Calculate binomial distribution using numpy's vectorized operations
+    k = np.arange(1, SPREAD_AREA + 1)
+    P = np.sum((1 - P_block[..., None]) ** (SPREAD_AREA - k), axis=-1)
+
+    return P * P_block
 
 def calculate_distribution(length, width, dispensers, disp_coordinates, fungi_weight, fungi):
     # 2D Array for storing distribution of all the foliage
@@ -28,19 +31,22 @@ def calculate_distribution(length, width, dispensers, disp_coordinates, fungi_we
     des_fungi_grid = np.zeros((width, length))
     # Bone meal used during 1 cycle of firing all the given dispensers
     bm_for_prod = 0
+
+    x, y = np.ogrid[:width, :length]
+
     for i in range(dispensers):
         dispenser_x = disp_coordinates[i][0]
         dispenser_y = disp_coordinates[i][1]
-        dispenser_bm_chance = (1 - foliage_grid[dispenser_x][dispenser_y])
+        dispenser_bm_chance = (1 - foliage_grid[dispenser_x, dispenser_y])
         bm_for_prod += dispenser_bm_chance
 
-        for x, y in iter.product(range(width), range(length)):
-            foliage_chance = selection_chance(x - dispenser_x, y - dispenser_y)
-            des_fungi_chance = foliage_chance * fungi_weight
-            np.add(des_fungi_grid[x][y], dispenser_bm_chance * des_fungi_chance * (1 - foliage_grid[x][y]), out=foliage_grid[x][y])
-            np.add(foliage_grid[x][y], dispenser_bm_chance * foliage_chance * (1 - foliage_grid[x][y]), out=foliage_grid[x][y])
-            if fungi == 0:
-                np.add(foliage_grid[x][y], dispenser_bm_chance * foliage_chance * (1 - foliage_grid[x][y]), out=foliage_grid[x][y])
+        foliage_chance = selection_chance(x - dispenser_x, y - dispenser_y)
+        des_fungi_chance = foliage_chance * fungi_weight
+
+        np.add(des_fungi_grid, dispenser_bm_chance * des_fungi_chance * (1 - foliage_grid), out=des_fungi_grid)
+        np.add(foliage_grid, dispenser_bm_chance * foliage_chance * (1 - foliage_grid), out=foliage_grid)
+        if fungi == 0:
+            np.add(foliage_grid, dispenser_bm_chance * foliage_chance * (1 - foliage_grid), out=foliage_grid)
 
     return foliage_grid, des_fungi_grid, bm_for_prod
 
@@ -73,7 +79,7 @@ def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungi_
         calculate_distribution(length, width, dispensers, disp_coords, fungi_weight, fungi_type)
 
     total_fungi, total_plants, bm_for_grow, bm_total = \
-        get_totals(des_fungi_grid, foliage_grid, width, length, bm_for_prod)
+        get_totals(des_fungi_grid, foliage_grid, bm_for_prod)
 
     # print_results(total_plants, total_fungi, bm_for_prod, 
                 #   bm_for_grow, bm_total, fungi_type)
