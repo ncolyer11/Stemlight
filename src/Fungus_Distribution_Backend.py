@@ -2,10 +2,13 @@
 
 import numpy as np
 import itertools as iter
+import time
 
 from src.Assets import constants as const
 
 DP_VAL = 5
+WARPED = 0
+CRIMSON = 1
 
 def selection_chance(x1, y1):
     # Neat little formula cooked up on Desmos
@@ -42,12 +45,9 @@ def calculate_distribution(length, width, dispensers, disp_coordinates, fungi_we
 
     return foliage_grid, des_fungi_grid, bm_for_prod
 
-def get_totals(des_fungi_grid, foliage_grid, width, length, bm_for_prod):
-    total_fungi = 0
-    total_plants = 0
-    for x, y in iter.product(range(width), range(length)):
-        total_fungi += des_fungi_grid[x][y]
-        total_plants += foliage_grid[x][y]
+def get_totals(des_fungi_grid, foliage_grid, bm_for_prod):
+    total_fungi = np.sum(des_fungi_grid)
+    total_plants = np.sum(foliage_grid)
     bm_for_grow = const.AVG_BM_TO_GROW_FUNG * total_fungi
     bm_total = bm_for_prod + bm_for_grow
 
@@ -55,7 +55,7 @@ def get_totals(des_fungi_grid, foliage_grid, width, length, bm_for_prod):
 
 def print_results(total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, fungi_type):
     print(f'Total plants: {round(total_plants, DP_VAL)}')
-    if fungi_type == 0:
+    if fungi_type == WARPED:
         print(f'Warped fungi: {round(total_fungi, DP_VAL)}')
     else:
         print(f'Crimson fungi: {round(total_fungi, DP_VAL)}')
@@ -63,16 +63,15 @@ def print_results(total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total,
             f'{round(bm_for_prod, DP_VAL)} + {round(bm_for_grow, DP_VAL)} = '
             f'{round(bm_total, DP_VAL)}')
 
-def calculate_fungus_distribution(length, width, dispensers, 
-                                  disp_coords, fungi_type):
+def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungi_type):
+    """Calculates the distribution of foliage and fungi on a custom size grid of nylium"""
     fungi_weight = 0
-    if fungi_type == 0:
+    if fungi_type == WARPED:
         fungi_weight = const.WARP_FUNG_CHANCE
     else:
         fungi_weight = const.CRMS_FUNG_CHANCE
     foliage_grid, des_fungi_grid, bm_for_prod = \
-    calculate_distribution(length, width, dispensers,
-                                      disp_coords, fungi_weight, fungi_type)
+        calculate_distribution(length, width, dispensers, disp_coords, fungi_weight, fungi_type)
 
     total_fungi, total_plants, bm_for_grow, bm_total = \
         get_totals(des_fungi_grid, foliage_grid, width, length, bm_for_prod)

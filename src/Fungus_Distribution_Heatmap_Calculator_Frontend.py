@@ -29,6 +29,7 @@ from src.Assets.helpers import resource_path
 # tidy up output labels and functionality to be on the left, consider using grids
 # .pack inside one of the grids so you can have input fields on the left and outputs
 # on the right
+# replace current dispenser png with 10 of them with numbers 0 - 9 overlayed
 
 # Non-linear scaling 
 NLS = 1.765
