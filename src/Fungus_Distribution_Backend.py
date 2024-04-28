@@ -37,11 +37,10 @@ def calculate_distribution(length, width, dispensers, disp_coordinates, fungi_we
         for x, y in iter.product(range(width), range(length)):
             foliage_chance = selection_chance(x - dispenser_x, y - dispenser_y)
             des_fungi_chance = foliage_chance * fungi_weight
-            des_fungi_grid[x][y] += dispenser_bm_chance * des_fungi_chance * (1 - foliage_grid[x][y])
-            foliage_grid[x][y] += dispenser_bm_chance * foliage_chance * (1 - foliage_grid[x][y])
+            np.add(des_fungi_grid[x][y], dispenser_bm_chance * des_fungi_chance * (1 - foliage_grid[x][y]), out=foliage_grid[x][y])
+            np.add(foliage_grid[x][y], dispenser_bm_chance * foliage_chance * (1 - foliage_grid[x][y]), out=foliage_grid[x][y])
             if fungi == 0:
-                foliage_chance = selection_chance(x - dispenser_x, y - dispenser_y)
-                foliage_grid[x][y] += dispenser_bm_chance * foliage_chance * (1 - foliage_grid[x][y])
+                np.add(foliage_grid[x][y], dispenser_bm_chance * foliage_chance * (1 - foliage_grid[x][y]), out=foliage_grid[x][y])
 
     return foliage_grid, des_fungi_grid, bm_for_prod
 
