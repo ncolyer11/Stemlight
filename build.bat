@@ -21,7 +21,7 @@ pyinstaller --onefile ^
 --add-data "src/images/*;src/images" ^
 --add-data "src/assets/*;src/assets" ^
 --icon="src/assets/icon.ico" ^
---name "Stemlight_Windows" ^
+--name "Stemlight for Windows" ^
 Main_Menu.py
 
 ::--name "Stemlight%version%" ^

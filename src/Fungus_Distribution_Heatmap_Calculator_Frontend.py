@@ -12,11 +12,25 @@ from src.Assets.constants import RSF
 from src.Assets.helpers import set_title_and_icon
 from src.Assets.helpers import resource_path
 
+# @TODO:
 # label input for number of cycles
-# sidebar with a list of all dispensers and hover over a dispenser to tell u how much bm it uses per cycle
 # reset button to clear all selections 
+# hover over any cell to give you a tooltip of how many fungi and foliage are generated on top of
+# it after N input cycles (usually just 1) and how much bm is used to grow in that spot, and if
+# the cell is a dispenser, also show what position that dispenser fires in and how much bm it
+# uses to produce fungi
+# Add a button that switches from nylium and dispenser mode,
+# to displaying numbers 1 through to 100 to indicate dispenser firing order
+# in each program, add a help menu item to the toolbar explaining how to use it
+# add an optimise dispenser placement button, where for a given amount of dispensers already
+# placed on the nylium platform, it will find an arrangement and order of dispensers that 
+# maximises the amount of fungi produced
+# Button to export nether tree growth heatmap from the fungi distribution data
+# tidy up output labels and functionality to be on the left, consider using grids
+# .pack inside one of the grids so you can have input fields on the left and outputs
+# on the right
 
-# Non-linear scaling factor
+# Non-linear scaling 
 NLS = 1.765
 WDTH = 92
 HGHT = 46
@@ -246,16 +260,18 @@ class App:
             )
         
         self.output_text.delete('1.0', tk.END)
-        self.output_text.insert(tk.END, "Fungi Type: ", "label")
-        self.output_text.insert(tk.END, f"{'Warped' if fungi_type == 0 else 'Crimson'}\n", "output")
         self.output_text.insert(tk.END, "Total Fungi: ", "label")
-        self.output_text.insert(tk.END, f"{round(total_fungi, DP)}\n", "output")
-        self.output_text.insert(tk.END, "Total BM: ", "label")
-        self.output_text.insert(tk.END, f"{round(bm_total, DP)}\n", "output")
+        self.output_text.insert(tk.END,
+            f"{round(total_fungi, DP)} {'Warped' if fungi_type == 0 else 'Crimson'} Fungi\n", "output")
+        self.output_text.insert(tk.END, "BM to Produce a Fungus: ", "label")
+        self.output_text.insert(tk.END,
+            f"{round(bm_for_prod / total_fungi, DP) if total_fungi != 0 else 0}\n", "output")
         self.output_text.insert(tk.END, "BM for Production: ", "label")
         self.output_text.insert(tk.END, f"{round(bm_for_prod, DP)}\n", "output")
         self.output_text.insert(tk.END, "BM for Growth: ", "label")
         self.output_text.insert(tk.END, f"{round(bm_for_grow, DP)}\n", "output")
+        self.output_text.insert(tk.END, "Total BM Used: ", "label")
+        self.output_text.insert(tk.END, f"{round(bm_total, DP)}\n", "output")
         self.output_text.insert(tk.END, "Total Foliage: ", "label")
         self.output_text.insert(tk.END, f"{round(total_plants, DP)}\n", "output")
 
