@@ -90,7 +90,7 @@ def initialise_optimisation():
     f_type = CRIMSON
 
     permutations = np.math.perm(length * width, num_dispensers)
-    est_time_to_run = permutations * (1 / 3752.85 if f_type == WARPED else 1 / 3866.68)
+    est_time_to_run = permutations * (1 / 3752.85 if f_type == WARPED else 1 / 3566.68)
         
     print(f"Est. runtime: {est_time_to_run:.4f}s ({permutations} permutations) ")
     start_time = time.time()
