@@ -8,6 +8,8 @@ from src.Fungus_Distribution_Backend import calculate_fungus_distribution
 
 WARPED = 0
 CRIMSON = 1
+FORWARD = 1
+BACKWARD = -1
 
 def generate_permutations(length, width, n):
     # Generate all possible coordinates in the grid
@@ -55,17 +57,36 @@ def calculate_max_fungi(length, width, num_dispensers):
     # Handle 0 dispensers
     if num_dispensers == 0:
         return 0, []
-    
-    disp_positions = []
 
+    disp_positions = []
     # Start optimisation
     for i in range(num_dispensers):
         disp_positions.append([0,0])
-        optimise_dispenser(i, disp_positions, length, width, num_dispensers)
+        while True:
+            prev_positions = disp_positions.copy()
+            optimise_dispenser(i, disp_positions, length, width, num_dispensers, BACKWARD)
+            if prev_positions == disp_positions:
+                break
 
     return 1, disp_positions, disp_positions
 
-def optimise_dispenser(disp_index, disp_positions, length, width, num_dispensers):
+def optimise_dispenser(disp_index, disp_positions, length, width, num_dispensers, direction):
+    print(f"Optimising dispenser {disp_index}...")  # Debugging line
+    if disp_index < 0 or disp_index >= num_dispensers:
+        print(f"Dispenser {disp_index} out of range, stopping recursion.")  # Debugging line
+        return
+    # Ensure all dispensers before this are optimised
+    if direction == BACKWARD:
+        optimise_dispenser(disp_index - 1, disp_positions, length, width, num_dispensers, BACKWARD)
+    # Place the dispenser at the position that resulted in the max foliage
+    disp_positions[disp_index] = find_max_pos(disp_index, disp_positions, width, length)
+    print(f"Dispenser {disp_index} placed at {disp_positions[disp_index]}")  # Debugging line
+    # Optimise all dispensers after
+    optimise_dispenser(disp_index + 1, disp_positions, length, width, num_dispensers, FORWARD)
+
+def find_max_pos(disp_index, disp_positions, width, length):
+    """Find the position that results in the most foliage when a new dispenser is placed there
+    given a pre-exisiting nylium grid with other dispensers"""
     max_foliage = -1
     max_pos = None
     # Try placing the dispenser at every position in the grid
@@ -81,27 +102,9 @@ def optimise_dispenser(disp_index, disp_positions, length, width, num_dispensers
         if total_foliage > max_foliage:
             max_foliage = total_foliage
             max_pos = [i, j]
-    
-    # Place the dispenser at the position that resulted in the max foliage
-    disp_positions[disp_index] = max_pos
-    
-    while True:
-        prev_positions = disp_positions.copy()
-        print(f"{disp_index}. Before going down current:\n - {disp_positions}\n - {prev_positions}\n")
-        # Go back and optimise all the previous dispensers
-        if disp_index > 0:
-            optimise_dispenser(disp_index - 1, disp_positions, length, width, num_dispensers)
-        # If the positions haven't changed, we're done
-        if prev_positions == disp_positions:
-            break
-
-        # Go forwards and optimise all the next dispensers
-        if disp_index < len(disp_positions) - 1:
-            optimise_dispenser(disp_index + 1, disp_positions, length, width, num_dispensers)
-        print(f"{disp_index}. After coming back up:\n - {disp_positions}\n - {prev_positions}\n\n")
-        # If the positions haven't changed, we're done
-        if prev_positions == disp_positions:
-            break
+       
+    print(f"Max position for dispenser {disp_index} is {max_pos}")
+    return max_pos
 
 def output_data(start_time, f_type, width, length, max_rates, max_rates_coords, all_max_coords):
     print(f'Calculated max fungi in {time.time() - start_time:.3f} seconds')
@@ -150,7 +153,7 @@ def initialise_optimisation():
     disp_perms = generate_permutations(length, width, num_dispensers)
 
     # If the number of permutations is less than 1 mil, use brute force (TBD, new algo for all rn)
-    if permutations != 0:
+    if permutations == 0:
         max_rates, max_rates_coords, all_max_coords = \
             brute_force_max_fungi(length, width, num_dispensers, disp_perms, f_type)
 
