@@ -62,10 +62,19 @@ def calculate_max_fungi(length, width, num_dispensers):
     # Start optimisation
     for n in range(num_dispensers):
         disp_positions.append([0,0])
-        for i in range(n + 1):
-            disp_positions[i] = optimise_dispenser(i, disp_positions, width, length)
-        for i in range(n, 0, -1):
-            disp_positions[i] = optimise_dispenser(i, disp_positions, width, length)
+        prev_positions = None
+        l = 0
+        print("====================================")
+        while disp_positions != prev_positions:
+            prev_positions = disp_positions.copy()
+            for i in range(n, 0, -1):
+                disp_positions[i] = optimise_dispenser(i, disp_positions, width, length)
+                print("   back: ", i, disp_positions, "\n")
+            for i in range(n + 1):
+                disp_positions[i] = optimise_dispenser(i, disp_positions, width, length)
+                print("forward: ", i, disp_positions)
+            l += 1
+        print("====================================\n")
 
     return 1, disp_positions, disp_positions
 
