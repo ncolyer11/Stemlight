@@ -64,24 +64,24 @@ def calculate_max_fungi(length, width, num_dispensers):
         disp_positions.append([0,0])
         prev_positions = None
         l = 0
-        print("====================================")
+        # print("====================================")
         while disp_positions != prev_positions:
             prev_positions = disp_positions.copy()
             for i in range(n, 0, -1):
                 disp_positions[i] = optimise_dispenser(i, disp_positions, width, length)
-                print("   back: ", i, disp_positions, "\n")
+                # print("   back: ", i, disp_positions, "\n")
             for i in range(n + 1):
                 disp_positions[i] = optimise_dispenser(i, disp_positions, width, length)
-                print("forward: ", i, disp_positions)
+                # print("forward: ", i, disp_positions)
             l += 1
-        print("====================================\n")
+        # print("====================================\n")
 
     return 1, disp_positions, disp_positions
 
 def optimise_dispenser(disp_index, disp_positions, width, length):
     """Find the position that results in the most foliage when a new dispenser is placed there
     given a pre-exisiting nylium grid with other dispensers"""
-    max_foliage = -1
+    max_foliage = -1e3
     max_pos = None
     # Try placing the dispenser at every position in the grid
     for i, j in iter.product(range(width), range(length)):
@@ -92,9 +92,19 @@ def optimise_dispenser(disp_index, disp_positions, width, length):
         # Place the dispenser
         disp_positions[disp_index] = [i, j]
         # Calculate the total foliage
-        total_foliage, *_ = calculate_fungus_distribution(width, length, len(disp_positions),
-                                                            disp_positions, CRIMSON)
+        disp_foliage_grids = calculate_fungus_distribution(width, length, len(disp_positions),
+                                                           disp_positions, CRIMSON)[5]
+        total_foliage_blocked = 0
+        for k in range(len(disp_positions)):
+            if k != disp_index:
+                blocked_x = disp_positions[k][0]
+                blocked_y = disp_positions[k][1]
+                block_chance = disp_foliage_grids[disp_index][blocked_x][blocked_y]
+                # print(f"Blocked: {block_chance} at {blocked_x}, {blocked_y}")
+                # print(f"Blocked: {np.sum(disp_foliage_grids[k], axis=0)}")
+                total_foliage_blocked += block_chance * np.sum(disp_foliage_grids[k])
         # If this position results in more foliage, update the max
+        total_foliage = np.sum(disp_foliage_grids[disp_index]) - total_foliage_blocked
         if total_foliage > max_foliage:
             max_foliage = total_foliage
             max_pos = [i, j]
@@ -169,4 +179,3 @@ initialise_optimisation()
 # it should generate a list of all permutations of the order, 4 rotations, and 2 mirrors and then calculate which set of new orientations is best out of those for warped
 # further, out of the entire set, it should compare the difference between the worst possible ordering of those dispensers and the
 # best to see if it's worth worrying about activation order
-

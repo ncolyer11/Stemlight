@@ -12,6 +12,9 @@ from src.Assets.constants import RSF
 from src.Assets.helpers import set_title_and_icon
 from src.Assets.helpers import resource_path
 
+WARPED = 0
+CRIMSON = 1
+
 # @TODO:
 # label input for number of cycles
 # reset button to clear all selections 
@@ -252,8 +255,8 @@ class App:
     def calculate(self):
         self.dispensers.sort(key=lambda d: d[2])
         dispenser_coordinates = [(d[0], d[1]) for d in self.dispensers]
-        fungi_type = 1 if self.nylium_type.get() == "crimson" else 0
-        total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, fungi_type = \
+        fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
+        total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total = \
             calculate_fungus_distribution(
                 self.col_slider.get(), 
                 self.row_slider.get(),

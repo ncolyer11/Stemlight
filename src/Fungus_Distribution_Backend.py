@@ -1,9 +1,6 @@
 """A program that helps calculate the optimal position to place n dispensers on a custom size grid of nylium"""
 
-import random
 import numpy as np
-import itertools as iter
-import time
 
 from src.Assets import constants as const
 
@@ -34,35 +31,36 @@ def selection_chance(x1, y1):
     return np.where((x1 > 2) | (y1 > 2), 0, selection_cache[np.minimum(x1, 2), np.minimum(y1, 2)])
 
 def calculate_distribution(length, width, dispensers, disp_coords, fungi_weight, fungi):
-    # 2D Array for storing distribution of all the foliage
-    foliage_grid = np.zeros((width, length))
-    # 2D Array for storing distribution of desired fungus
-    des_fungi_grid = np.zeros((width, length))
-    # Bone meal used during 1 cycle of firing all the given dispensers
+    # 3D array for storing distribution of foliage for all dispensers
+    disp_foliage_grids = np.zeros((dispensers, width, length))
+    # 2D array for storing distribution of all the foliage
+    total_foliage_grid = np.zeros((width, length))
+
+    # 3D array for storing distribution of desired fungus for all dispensers
+    disp_des_fungi_grids = np.zeros((dispensers, width, length))
+    # 2D array for storing distribution of desired fungus
+    total_des_fungi_grid = np.zeros((width, length))
+    # 'bm_for_prod': bone meal used during 1 cycle of firing all the given dispensers
     bm_for_prod = 0
 
     x, y = np.ogrid[:width, :length]
-    # Moving if statement outside the loop so it's only checked once
-    if fungi == 1:
-        for i in range(dispensers):
-            foliage_chance, bm_for_prod = generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y)
-            # (1 - foliage_grid): P(Air at x,y)
-            np.add(foliage_grid, (1 - foliage_grid) * foliage_chance, out=foliage_grid)
+    for i in range(dispensers):
+        foliage_chance, bm_for_prod = generate_foliage(disp_coords, total_foliage_grid, bm_for_prod, i, x, y)
+        
+        des_fungi_chance = foliage_chance * fungi_weight
+        disp_des_fungi_grids[i] = (1 - total_foliage_grid) * des_fungi_chance
+        total_des_fungi_grid = np.sum(disp_des_fungi_grids, axis=0)
+        
+        disp_foliage_grids[i] = (1 - total_foliage_grid) * foliage_chance
+        total_foliage_grid = np.sum(disp_foliage_grids, axis=0)
+        
+        # If warped nylium, generate sprouts
+        if fungi == WARPED:
+            disp_foliage_grids[i] += (1 - total_foliage_grid) * foliage_chance
+            total_foliage_grid = np.sum(disp_foliage_grids, axis=0)
 
-        # If crimson, can factor out the crimson fungi weight and multiply it at the very end
-        des_fungi_grid = fungi_weight * foliage_grid
-    else:
-        for i in range(dispensers):
-            foliage_chance, bm_for_prod = \
-                generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y)
-            des_fungi_chance = foliage_chance * fungi_weight
-            
-            np.add(des_fungi_grid, (1 - foliage_grid) * des_fungi_chance, out=des_fungi_grid)
-            np.add(foliage_grid, (1 - foliage_grid) * foliage_chance, out=foliage_grid)
-            # If warped nylium, generate sprouts
-            np.add(foliage_grid, (1 - foliage_grid) * foliage_chance, out=foliage_grid)
-
-    return foliage_grid, des_fungi_grid, bm_for_prod
+    return total_foliage_grid, total_des_fungi_grid, bm_for_prod, \
+        disp_foliage_grids, disp_des_fungi_grids
 
 def generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y,):
     disp_x = disp_coords[i][0]
@@ -82,25 +80,15 @@ def get_totals(des_fungi_grid, foliage_grid, bm_for_prod):
 
     return total_fungi, total_plants, bm_for_grow, bm_total
 
-def print_results(total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, fungi_type):
-    print(f'Total plants: {round(total_plants, DP_VAL)}')
-    if fungi_type == WARPED:
-        print(f'Warped fungi: {round(total_fungi, DP_VAL)}')
-    else:
-        print(f'Crimson fungi: {round(total_fungi, DP_VAL)}')
-    print(f'Bone meal used per cycle (to produce + to grow):\n'
-            f'{round(bm_for_prod, DP_VAL)} + {round(bm_for_grow, DP_VAL)} = '
-            f'{round(bm_total, DP_VAL)}')
-
 def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungi_type):
     """Calculates the distribution of foliage and fungi on a custom size grid of nylium"""
     fungi_weight = const.WARP_FUNG_CHANCE if fungi_type == WARPED else const.CRMS_FUNG_CHANCE
 
-    foliage_grid, des_fungi_grid, bm_for_prod = \
+    foliage_grid, des_fungi_grid, bm_for_prod, disp_foliage_grids, disp_des_fungi_grids = \
         calculate_distribution(length, width, dispensers, disp_coords, fungi_weight, fungi_type)
 
     total_fungi, total_plants, bm_for_grow, bm_total = \
         get_totals(des_fungi_grid, foliage_grid, bm_for_prod)
 
-    # print_results(total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, fungi_type)
-    return total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, fungi_type
+    return total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, \
+        disp_foliage_grids, disp_des_fungi_grids
