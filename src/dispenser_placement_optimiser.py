@@ -95,7 +95,7 @@ def initialise_optimisation():
     print(f"Est. runtime: {est_time_to_run:.4f}s ({permutations} permutations) ")
     start_time = time.time()
     disp_perms = generate_permutations(length, width, num_dispensers)
-    # If the number of permutations is less than 10 million, use brute force
+    # If the number of permutations is less than 1 million, use brute force
     if permutations < 1e6:
         max_rates, max_rates_coords, all_max_coords = \
             brute_force_max_fungi(length, width, num_dispensers, disp_perms, f_type)
