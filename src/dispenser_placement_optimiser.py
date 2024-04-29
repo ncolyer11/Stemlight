@@ -68,9 +68,6 @@ def calculate_max_fungi(length, width, num_dispensers):
 def optimise_dispenser(disp_index, disp_positions, length, width, num_dispensers):
     max_foliage = -1
     max_pos = None
-    # Store the current positions to check for changes later
-    prev_positions = disp_positions.copy()
-    # print("hihihi", disp_positions.copy(), disp_index)
     # Try placing the dispenser at every position in the grid
     for i, j in iter.product(range(width), range(length)):
         if [i, j] in disp_positions:
@@ -88,17 +85,23 @@ def optimise_dispenser(disp_index, disp_positions, length, width, num_dispensers
     # Place the dispenser at the position that resulted in the max foliage
     disp_positions[disp_index] = max_pos
     
-    # If the positions haven't changed, we're done
-    while prev_positions != disp_positions:
-        print(f"{disp_index}. Before going down current:\n - {disp_positions}\n - {prev_positions}\n")
+    while True:
         prev_positions = disp_positions.copy()
+        print(f"{disp_index}. Before going down current:\n - {disp_positions}\n - {prev_positions}\n")
         # Go back and optimise all the previous dispensers
         if disp_index > 0:
             optimise_dispenser(disp_index - 1, disp_positions, length, width, num_dispensers)
+        # If the positions haven't changed, we're done
+        if prev_positions == disp_positions:
+            break
+
         # Go forwards and optimise all the next dispensers
         if disp_index < len(disp_positions) - 1:
             optimise_dispenser(disp_index + 1, disp_positions, length, width, num_dispensers)
         print(f"{disp_index}. After coming back up:\n - {disp_positions}\n - {prev_positions}\n\n")
+        # If the positions haven't changed, we're done
+        if prev_positions == disp_positions:
+            break
 
 def output_data(start_time, f_type, width, length, max_rates, max_rates_coords, all_max_coords):
     print(f'Calculated max fungi in {time.time() - start_time:.3f} seconds')
