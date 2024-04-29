@@ -92,8 +92,9 @@ def optimise_dispenser(disp_index, disp_positions, width, length):
         # Place the dispenser
         disp_positions[disp_index] = [i, j]
         # Calculate the total foliage
-        disp_foliage_grids = calculate_fungus_distribution(width, length, len(disp_positions),
-                                                           disp_positions, CRIMSON)[5]
+        total_foliage_added, _, _, _, _, disp_foliage_grids, _ = \
+            calculate_fungus_distribution(width, length, len(disp_positions), 
+                                          disp_positions, CRIMSON)
         total_foliage_blocked = 0
         for k in range(len(disp_positions)):
             if k != disp_index:
@@ -104,7 +105,8 @@ def optimise_dispenser(disp_index, disp_positions, width, length):
                 # print(f"Blocked: {np.sum(disp_foliage_grids[k], axis=0)}")
                 total_foliage_blocked += block_chance * np.sum(disp_foliage_grids[k])
         # If this position results in more foliage, update the max
-        total_foliage = np.sum(disp_foliage_grids[disp_index]) - total_foliage_blocked
+        total_foliage = total_foliage_added - total_foliage_blocked
+        print(f"Total foliage blocked: {total_foliage_blocked}")
         if total_foliage > max_foliage:
             max_foliage = total_foliage
             max_pos = [i, j]
