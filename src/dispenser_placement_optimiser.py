@@ -137,25 +137,29 @@ def initialise_optimisation():
     length = 5
     width = 5
     num_dispensers = int(input("Enter number of dispensers: "))
-    f_type = WARPED
     f_type = CRIMSON
+    f_type = WARPED
 
     permutations = np.math.perm(length * width, num_dispensers)
-    est_time_to_run = permutations * (1 / 3752.85 if f_type == WARPED else 1 / 3566.68)
+    # Time complexity ain't precise coz surprise Python is an interpreted language :p
+    k = 1 / 669486 if f_type == WARPED else 1 / 832608
+    est_time_to_run =  k * length * width * num_dispensers * permutations
         
     print(f"Est. runtime: {est_time_to_run:.4f}s ({permutations} permutations) ")
     start_time = time.time()
     disp_perms = generate_permutations(length, width, num_dispensers)
+
     # If the number of permutations is less than 1 million, use brute force
-    if permutations == 0:
+    if permutations != 0:
         max_rates, max_rates_coords, all_max_coords = \
             brute_force_max_fungi(length, width, num_dispensers, disp_perms, f_type)
-        output_data(start_time, f_type, width, length, max_rates, max_rates_coords, all_max_coords)
+
     # Otherwise, use the more efficient, but possibly less accurate algorithm
     else:
         max_rates, max_rates_coords = \
             calculate_max_fungi(length, width, num_dispensers)
-        output_data(start_time, f_type, width, length, max_rates, max_rates_coords, max_rates_coords)
+
+    output_data(start_time, f_type, width, length, max_rates, max_rates_coords, max_rates_coords)
 
 initialise_optimisation()
 

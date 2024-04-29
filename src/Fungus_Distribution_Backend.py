@@ -10,20 +10,28 @@ from src.Assets import constants as const
 DP_VAL = 5
 WARPED = 0
 CRIMSON = 1
-SPREAD_AMOUNT = const.FUNG_SPREAD_RAD ** 4
-SPREAD_AREA = const.FUNG_SPREAD_RAD ** 2
+
 
 def selection_chance(x1, y1):
-    # Neat little formula cooked up on Desmos
-    x2 = const.FUNG_SPREAD_RAD - np.abs(x1)
-    y2 = const.FUNG_SPREAD_RAD - np.abs(y1)
-    P_block = np.where((x2 < 0) | (y2 < 0), 0, x2 * y2 / SPREAD_AMOUNT)
-
-    # Calculate binomial distribution using numpy's vectorized operations
-    k = np.arange(1, SPREAD_AREA + 1)
-    P = np.sum((1 - P_block[..., None]) ** (SPREAD_AREA - k), axis=-1)
-
-    return P * P_block
+    """Calculates the probability of a block being selected for 
+    foliage generation given its offset from a dispenser"""
+    # Selection values derived from little formula cooked up on Desmos
+    P = [
+        0.10577931226910778, 0.20149313967509574,
+        0.28798973593014715, 0.3660553272880777,
+        0.4997510328685407, 0.6535605838853813
+    ]
+    # Foliage is centrally distributed around the dispenser
+    selection_cache = np.array([
+        [P[5], P[4], P[2]],
+        [P[4], P[3], P[1]],
+        [P[2], P[1], P[0]],
+    ])
+    # Normalising
+    x1 = np.abs(x1).astype(int)
+    y1 = np.abs(y1).astype(int)
+    # Need to take min of x1 and y1 to avoid index out of bounds as numpy evaluates both branches
+    return np.where((x1 > 2) | (y1 > 2), 0, selection_cache[np.minimum(x1, 2), np.minimum(y1, 2)])
 
 def calculate_distribution(length, width, dispensers, disp_coords, fungi_weight, fungi):
     # 2D Array for storing distribution of all the foliage
@@ -34,6 +42,7 @@ def calculate_distribution(length, width, dispensers, disp_coords, fungi_weight,
     bm_for_prod = 0
 
     x, y = np.ogrid[:width, :length]
+    # Moving if statement outside the loop so it's only checked once
     if fungi == 1:
         for i in range(dispensers):
             foliage_chance, bm_for_prod = generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y)
@@ -61,7 +70,7 @@ def generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y,):
     disp_bm_chance = 1 - foliage_grid[disp_x, disp_y]
     bm_for_prod += disp_bm_chance
 
-    # P(foliage at x,y) = P(Air above dispensers) * P(x,y being selected) * 
+    # P(foliage at x,y) = P(Air above dispensers) * P(x,y being selected)
     foliage_chance = disp_bm_chance * selection_chance(x - disp_x, y - disp_y)
     return foliage_chance, bm_for_prod
 
@@ -85,17 +94,13 @@ def print_results(total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total,
 
 def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungi_type):
     """Calculates the distribution of foliage and fungi on a custom size grid of nylium"""
-    fungi_weight = 0
-    if fungi_type == WARPED:
-        fungi_weight = const.WARP_FUNG_CHANCE
-    else:
-        fungi_weight = const.CRMS_FUNG_CHANCE
+    fungi_weight = const.WARP_FUNG_CHANCE if fungi_type == WARPED else const.CRMS_FUNG_CHANCE
+
     foliage_grid, des_fungi_grid, bm_for_prod = \
         calculate_distribution(length, width, dispensers, disp_coords, fungi_weight, fungi_type)
 
     total_fungi, total_plants, bm_for_grow, bm_total = \
         get_totals(des_fungi_grid, foliage_grid, bm_for_prod)
 
-    # print_results(total_plants, total_fungi, bm_for_prod, 
-                #   bm_for_grow, bm_total, fungi_type)
+    # print_results(total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, fungi_type)
     return total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, fungi_type

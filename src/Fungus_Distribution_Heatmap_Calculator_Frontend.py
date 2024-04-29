@@ -18,7 +18,7 @@ from src.Assets.helpers import resource_path
 # hover over any cell to give you a tooltip of how many fungi and foliage are generated on top of
 # it after N input cycles (usually just 1) and how much bm is used to grow in that spot, and if
 # the cell is a dispenser, also show what position that dispenser fires in and how much bm it
-# uses to produce fungi
+# uses to produce fungi, and if it's a cleared dispenser
 # Add a button that switches from nylium and dispenser mode,
 # to displaying numbers 1 through to 100 to indicate dispenser firing order
 # in each program, add a help menu item to the toolbar explaining how to use it
@@ -30,6 +30,8 @@ from src.Assets.helpers import resource_path
 # .pack inside one of the grids so you can have input fields on the left and outputs
 # on the right
 # replace current dispenser png with 10 of them with numbers 0 - 9 overlayed
+# slider for selecting desired wart block/ bone meal efficiency
+# an option for each dispenser to make it so it isn't affected by overlap (cleared by piston above)
 
 # Non-linear scaling 
 NLS = 1.765
@@ -264,14 +266,14 @@ class App:
         self.output_text.insert(tk.END, "Total Fungi: ", "label")
         self.output_text.insert(tk.END,
             f"{round(total_fungi, DP)} {'Warped' if fungi_type == 0 else 'Crimson'} Fungi\n", "output")
-        self.output_text.insert(tk.END, "BM to Produce a Fungus: ", "label")
+        self.output_text.insert(tk.END, "Bone Meal to Produce a Fungus: ", "label")
         self.output_text.insert(tk.END,
             f"{round(bm_for_prod / total_fungi, DP) if total_fungi != 0 else 0}\n", "output")
-        self.output_text.insert(tk.END, "BM for Production: ", "label")
+        self.output_text.insert(tk.END, "Bone Meal for Production: ", "label")
         self.output_text.insert(tk.END, f"{round(bm_for_prod, DP)}\n", "output")
-        self.output_text.insert(tk.END, "BM for Growth: ", "label")
+        self.output_text.insert(tk.END, "Bone Meal for Growth: ", "label")
         self.output_text.insert(tk.END, f"{round(bm_for_grow, DP)}\n", "output")
-        self.output_text.insert(tk.END, "Total BM Used: ", "label")
+        self.output_text.insert(tk.END, "Total Bone Meal Used: ", "label")
         self.output_text.insert(tk.END, f"{round(bm_total, DP)}\n", "output")
         self.output_text.insert(tk.END, "Total Foliage: ", "label")
         self.output_text.insert(tk.END, f"{round(total_plants, DP)}\n", "output")
