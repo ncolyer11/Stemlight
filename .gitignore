@@ -1174,3 +1174,4 @@ build/Stemlight for Windows/localpycs/pyimod03_ctypes.pyc
 build/Stemlight for Windows/localpycs/pyimod04_pywin32.pyc
 build/Stemlight for Windows/localpycs/struct.pyc
 Stemlight for Windows.spec
+optimal_placements.txt
