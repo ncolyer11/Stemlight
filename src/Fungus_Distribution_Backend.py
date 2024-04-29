@@ -1,5 +1,6 @@
 """A program that helps calculate the optimal position to place n dispensers on a custom size grid of nylium"""
 
+import random
 import numpy as np
 import itertools as iter
 import time
@@ -24,7 +25,7 @@ def selection_chance(x1, y1):
 
     return P * P_block
 
-def calculate_distribution(length, width, dispensers, disp_coordinates, fungi_weight, fungi):
+def calculate_distribution(length, width, dispensers, disp_coords, fungi_weight, fungi):
     # 2D Array for storing distribution of all the foliage
     foliage_grid = np.zeros((width, length))
     # 2D Array for storing distribution of desired fungus
@@ -33,22 +34,36 @@ def calculate_distribution(length, width, dispensers, disp_coordinates, fungi_we
     bm_for_prod = 0
 
     x, y = np.ogrid[:width, :length]
+    if fungi == 1:
+        for i in range(dispensers):
+            foliage_chance, bm_for_prod = generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y)
+            # (1 - foliage_grid): P(Air at x,y)
+            np.add(foliage_grid, (1 - foliage_grid) * foliage_chance, out=foliage_grid)
 
-    for i in range(dispensers):
-        dispenser_x = disp_coordinates[i][0]
-        dispenser_y = disp_coordinates[i][1]
-        dispenser_bm_chance = 1 - foliage_grid[dispenser_x, dispenser_y]
-        bm_for_prod += dispenser_bm_chance
-
-        foliage_chance = selection_chance(x - dispenser_x, y - dispenser_y)
-        des_fungi_chance = foliage_chance * fungi_weight
-
-        np.add(des_fungi_grid, dispenser_bm_chance * des_fungi_chance * (1 - foliage_grid), out=des_fungi_grid)
-        np.add(foliage_grid, dispenser_bm_chance * foliage_chance * (1 - foliage_grid), out=foliage_grid)
-        if fungi == 0:
-            np.add(foliage_grid, dispenser_bm_chance * foliage_chance * (1 - foliage_grid), out=foliage_grid)
+        # If crimson, can factor out the crimson fungi weight and multiply it at the very end
+        des_fungi_grid = fungi_weight * foliage_grid
+    else:
+        for i in range(dispensers):
+            foliage_chance, bm_for_prod = \
+                generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y)
+            des_fungi_chance = foliage_chance * fungi_weight
+            
+            np.add(des_fungi_grid, (1 - foliage_grid) * des_fungi_chance, out=des_fungi_grid)
+            np.add(foliage_grid, (1 - foliage_grid) * foliage_chance, out=foliage_grid)
+            # If warped nylium, generate sprouts
+            np.add(foliage_grid, (1 - foliage_grid) * foliage_chance, out=foliage_grid)
 
     return foliage_grid, des_fungi_grid, bm_for_prod
+
+def generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y,):
+    disp_x = disp_coords[i][0]
+    disp_y = disp_coords[i][1]
+    disp_bm_chance = 1 - foliage_grid[disp_x, disp_y]
+    bm_for_prod += disp_bm_chance
+
+    # P(foliage at x,y) = P(Air above dispensers) * P(x,y being selected) * 
+    foliage_chance = disp_bm_chance * selection_chance(x - disp_x, y - disp_y)
+    return foliage_chance, bm_for_prod
 
 def get_totals(des_fungi_grid, foliage_grid, bm_for_prod):
     total_fungi = np.sum(des_fungi_grid)
