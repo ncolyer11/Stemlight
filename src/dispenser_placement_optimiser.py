@@ -60,37 +60,24 @@ def calculate_max_fungi(length, width, num_dispensers):
 
     disp_positions = []
     # Start optimisation
-    for i in range(num_dispensers):
+    for n in range(num_dispensers):
         disp_positions.append([0,0])
-        while True:
-            prev_positions = disp_positions.copy()
-            optimise_dispenser(i, disp_positions, length, width, num_dispensers, BACKWARD)
-            if prev_positions == disp_positions:
-                break
+        for i in range(n + 1):
+            disp_positions[i] = optimise_dispenser(i, disp_positions, width, length)
+        for i in range(n, 0, -1):
+            disp_positions[i] = optimise_dispenser(i, disp_positions, width, length)
 
     return 1, disp_positions, disp_positions
 
-def optimise_dispenser(disp_index, disp_positions, length, width, num_dispensers, direction):
-    print(f"Optimising dispenser {disp_index}...")  # Debugging line
-    if disp_index < 0 or disp_index >= num_dispensers:
-        print(f"Dispenser {disp_index} out of range, stopping recursion.")  # Debugging line
-        return
-    # Ensure all dispensers before this are optimised
-    if direction == BACKWARD:
-        optimise_dispenser(disp_index - 1, disp_positions, length, width, num_dispensers, BACKWARD)
-    # Place the dispenser at the position that resulted in the max foliage
-    disp_positions[disp_index] = find_max_pos(disp_index, disp_positions, width, length)
-    print(f"Dispenser {disp_index} placed at {disp_positions[disp_index]}")  # Debugging line
-    # Optimise all dispensers after
-    optimise_dispenser(disp_index + 1, disp_positions, length, width, num_dispensers, FORWARD)
-
-def find_max_pos(disp_index, disp_positions, width, length):
+def optimise_dispenser(disp_index, disp_positions, width, length):
     """Find the position that results in the most foliage when a new dispenser is placed there
     given a pre-exisiting nylium grid with other dispensers"""
     max_foliage = -1
     max_pos = None
     # Try placing the dispenser at every position in the grid
     for i, j in iter.product(range(width), range(length)):
+        # print(f"Optimising dispenser {disp_index + 1}/{len(disp_positions)} at {i}, {j}")
+        # print(f"Foliage: {max_foliage} at {max_pos}")
         if [i, j] in disp_positions:
             continue
         # Place the dispenser
@@ -103,7 +90,6 @@ def find_max_pos(disp_index, disp_positions, width, length):
             max_foliage = total_foliage
             max_pos = [i, j]
        
-    print(f"Max position for dispenser {disp_index} is {max_pos}")
     return max_pos
 
 def output_data(start_time, f_type, width, length, max_rates, max_rates_coords, all_max_coords):
@@ -174,3 +160,4 @@ initialise_optimisation()
 # it should generate a list of all permutations of the order, 4 rotations, and 2 mirrors and then calculate which set of new orientations is best out of those for warped
 # further, out of the entire set, it should compare the difference between the worst possible ordering of those dispensers and the
 # best to see if it's worth worrying about activation order
+
