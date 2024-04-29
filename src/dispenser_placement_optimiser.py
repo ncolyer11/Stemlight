@@ -63,7 +63,7 @@ def calculate_max_fungi(length, width, num_dispensers):
         disp_positions.append([0,0])
         optimise_dispenser(i, disp_positions, length, width, num_dispensers)
 
-    return 1, disp_positions
+    return 1, disp_positions, disp_positions
 
 def optimise_dispenser(disp_index, disp_positions, length, width, num_dispensers):
     max_foliage = -1
@@ -149,45 +149,25 @@ def initialise_optimisation():
     start_time = time.time()
     disp_perms = generate_permutations(length, width, num_dispensers)
 
-    # If the number of permutations is less than 1 million, use brute force
+    # If the number of permutations is less than 1 mil, use brute force (TBD, new algo for all rn)
     if permutations != 0:
         max_rates, max_rates_coords, all_max_coords = \
             brute_force_max_fungi(length, width, num_dispensers, disp_perms, f_type)
 
     # Otherwise, use the more efficient, but possibly less accurate algorithm
     else:
-        max_rates, max_rates_coords = \
+        max_rates, max_rates_coords, all_max_coords = \
             calculate_max_fungi(length, width, num_dispensers)
 
-    output_data(start_time, f_type, width, length, max_rates, max_rates_coords, max_rates_coords)
+    output_data(start_time, f_type, width, length, max_rates, max_rates_coords, all_max_coords)
 
 initialise_optimisation()
+
+# bone meal efficiency can be converted to wart block efficiency and defined as the amount of wart
+# blocks your farm's blast chamber is able to harvest per fungi grown, thus bone meal efficiency
+# can be tuned and inputted using a slider and optimal layouts can factor in that bm/wb efficiency
 
 # after calculating the most optimal positions to put the dispensers for crimson
 # it should generate a list of all permutations of the order, 4 rotations, and 2 mirrors and then calculate which set of new orientations is best out of those for warped
 # further, out of the entire set, it should compare the difference between the worst possible ordering of those dispensers and the
 # best to see if it's worth worrying about activation order
-
-# need to conventionally define max bm efficiency first get a useful output
-# def calculate_max_fungi():
-    # max_bm_effic = 0
-    # optimal_effic_coords = []
-        # bm_effic = bm_for_prod / total_fungi
-        # # Update optimal perm for bm efficiency if a better combination is found
-        # if bm_effic > max_bm_effic:
-        #     max_bm_effic = bm_effic
-        #     optimal_effic_coords = disp_perm
-
-        # return max_bm_effic, optimal_effic_coords
-
-# max_effic, max_effic_coords
-# print(f'\nMaximum bm efficiency: {max_effic:.3f}')
-# print(f'Optimal coords: {max_effic_coords}')
-# # Print the location of max_effic_coords in a grid on terminal
-# for i in range(length):
-#     for j in range(width):
-#         if [i, j] in max_effic_coords:
-#             print(f'[{max_effic_coords.index([i, j])}]', end='')
-#         else:
-#             print('[ ]', end='')
-#     print()
