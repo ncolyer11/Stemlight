@@ -88,6 +88,8 @@ def optimise_dispenser(disp_index, disp_positions, width, length):
         # print(f"Optimising dispenser {disp_index + 1}/{len(disp_positions)} at {i}, {j}")
         # print(f"Foliage: {max_foliage} at {max_pos}")
         if [i, j] in disp_positions:
+            # actually ffs you should compare to see if placing the currently selected dispenser
+            # at this overlap spot is more optimal than the pre-exisiting one
             continue
         # Place the dispenser
         disp_positions[disp_index] = [i, j]
@@ -104,6 +106,13 @@ def optimise_dispenser(disp_index, disp_positions, width, length):
                 # print(f"Blocked: {block_chance} at {blocked_x}, {blocked_y}")
                 # print(f"Blocked: {np.sum(disp_foliage_grids[k], axis=0)}")
                 total_foliage_blocked += block_chance * np.sum(disp_foliage_grids[k])
+
+        # Ok something I think each dispenser optimistation should factor in, is the cost of placing 
+        # a dispenser towards the centre/middle as currently the algorithm isn't explicitly taking 
+        # into account the effect of greedily placing a dispenser in the current most optimal 
+        # position, it should look ahead somehow and take into account the amount of remaining 
+        # dispensers left to place down before chosing it's first optimal spot
+        
         # If this position results in more foliage, update the max
         total_foliage = total_foliage_added - total_foliage_blocked
         # print(f"Total foliage blocked: {total_foliage_blocked}")
