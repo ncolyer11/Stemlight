@@ -18,6 +18,12 @@ def selection_chance(x1, y1):
         0.28798973593014715, 0.3660553272880777,
         0.4997510328685407, 0.6535605838853813
     ]
+    # Integer equivalent weights (multiply by 81^9/[1,2,3,4,6,9])
+    I = [
+        15876907296999121, 15121519657190401,
+        14408571461238171, 13735735211956921,
+        12501658169617041, 10899548609196681
+    ]
     # Foliage is centrally distributed around the dispenser
     selection_cache = np.array([
         [P[5], P[4], P[2]],
@@ -49,15 +55,15 @@ def calculate_distribution(length, width, dispensers, disp_coords, fungi_weight,
         
         des_fungi_chance = foliage_chance * fungi_weight
         disp_des_fungi_grids[i] = (1 - total_foliage_grid) * des_fungi_chance
-        total_des_fungi_grid = np.sum(disp_des_fungi_grids, axis=0)
+        total_des_fungi_grid = np.sum((1 - total_foliage_grid) * des_fungi_chance, axis=0)
         
         disp_foliage_grids[i] = (1 - total_foliage_grid) * foliage_chance
-        total_foliage_grid = np.sum(disp_foliage_grids, axis=0)
+        total_foliage_grid = np.sum((1 - total_foliage_grid) * foliage_chance, axis=0)
         
         # If warped nylium, generate sprouts
         if fungi == WARPED:
             disp_foliage_grids[i] += (1 - total_foliage_grid) * foliage_chance
-            total_foliage_grid = np.sum(disp_foliage_grids, axis=0)
+            total_foliage_grid = np.sum((1 - total_foliage_grid) * foliage_chance, axis=0)
 
     return total_foliage_grid, total_des_fungi_grid, bm_for_prod, \
         disp_foliage_grids, disp_des_fungi_grids

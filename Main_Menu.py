@@ -108,7 +108,6 @@ def resize_canvas(event, canvas, start_color, end_color):
         color = "#{:02x}{:02x}{:02x}".format(r, g, b)
         canvas.create_rectangle(0, y, width, y + 1, fill=color, outline="", tags="gradient")
 
-
 # Create main window
 root = tk.Tk()
 root.title(f"Stemlight{version}: Main Menu")

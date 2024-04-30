@@ -1,6 +1,8 @@
+import ast
+import copy
 import math
 import numpy as np
-import itertools as iter
+import itertools as itertools
 import time
 
 from Assets import constants as const
@@ -8,15 +10,13 @@ from src.Fungus_Distribution_Backend import calculate_fungus_distribution
 
 WARPED = 0
 CRIMSON = 1
-FORWARD = 1
-BACKWARD = -1
 
 def generate_permutations(length, width, n):
     # Generate all possible coordinates in the grid
     coordinates = np.mgrid[0:width, 0:length].reshape(2,-1).T.tolist()
     # Generate all permutations of n distinct coordinates
-    for c in iter.combinations(coordinates, n):
-        for p in iter.permutations(c):
+    for c in itertools.combinations(coordinates, n):
+        for p in itertools.permutations(c):
             yield list(p)
 
 def brute_force_max_fungi(length, width, num_dispensers, disp_perms, fungus_type):
@@ -84,7 +84,7 @@ def optimise_dispenser(disp_index, disp_positions, width, length):
     max_foliage = -1e3
     max_pos = None
     # Try placing the dispenser at every position in the grid
-    for i, j in iter.product(range(width), range(length)):
+    for i, j in itertools.product(range(width), range(length)):
         # print(f"Optimising dispenser {disp_index + 1}/{len(disp_positions)} at {i}, {j}")
         # print(f"Foliage: {max_foliage} at {max_pos}")
         if [i, j] in disp_positions:
@@ -106,14 +106,35 @@ def optimise_dispenser(disp_index, disp_positions, width, length):
                 total_foliage_blocked += block_chance * np.sum(disp_foliage_grids[k])
         # If this position results in more foliage, update the max
         total_foliage = total_foliage_added - total_foliage_blocked
-        print(f"Total foliage blocked: {total_foliage_blocked}")
+        # print(f"Total foliage blocked: {total_foliage_blocked}")
         if total_foliage > max_foliage:
             max_foliage = total_foliage
             max_pos = [i, j]
        
     return max_pos
 
+def find_optimal_indexes(length, width, num_dispensers):
+    """Find the indexes of the optimal permutations in the list of all permutations"""
+    disp_perms = generate_permutations(length, width, num_dispensers)
+    line_list = []
+    # Paste in optimal coords into file and set below limiter to the number of optimal coords
+    with open('all_6_w_optimal.txt', 'r') as file:
+        for line in file:
+            line_list.append(ast.literal_eval(line.strip()))
+
+    optimal_perm = 0
+    indexes = []
+    for i, perm in enumerate(disp_perms):
+        if perm == line_list[optimal_perm]:
+            optimal_perm += 1
+            indexes.append(i)
+            if optimal_perm > 383:
+                break
+    for i in indexes:
+        print(i)
+
 def output_data(start_time, f_type, width, length, max_rates, max_rates_coords, all_max_coords):
+    """Output the data to the terminal and a file"""
     print(f'Calculated max fungi in {time.time() - start_time:.3f} seconds')
     print(f'Maximum {"crimson" if f_type == CRIMSON else "warped"} fungi: {max_rates:.3f}')
     print(f'Optimal coords: {max_rates_coords}')
@@ -144,11 +165,12 @@ def output_data(start_time, f_type, width, length, max_rates, max_rates_coords, 
             file.write('\n\n')
 
 def initialise_optimisation():
+    """Initialise the optimisation process by taking user input and calculating the runtime"""
     length = 5
     width = 5
     num_dispensers = int(input("Enter number of dispensers: "))
-    f_type = CRIMSON
     f_type = WARPED
+    f_type = CRIMSON
 
     permutations = np.math.perm(length * width, num_dispensers)
     # Time complexity ain't precise coz surprise Python is an interpreted language :p
@@ -157,10 +179,11 @@ def initialise_optimisation():
         
     print(f"Est. runtime: {est_time_to_run:.4f}s ({permutations} permutations) ")
     start_time = time.time()
+    # find_optimal_indexes(length, width, num_dispensers)
     disp_perms = generate_permutations(length, width, num_dispensers)
 
     # If the number of permutations is less than 1 mil, use brute force (TBD, new algo for all rn)
-    if permutations == 0:
+    if permutations != 0:
         max_rates, max_rates_coords, all_max_coords = \
             brute_force_max_fungi(length, width, num_dispensers, disp_perms, f_type)
 
