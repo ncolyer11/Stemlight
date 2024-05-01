@@ -7,7 +7,7 @@ from tkinter import ttk
 from src.Assets import colours
 from src.Assets.constants import RSF
 from src.Assets.version import version
-from src.Assets.helpers import resource_path
+from src.Assets.helpers import resource_path, set_title_and_icon
 
 
 def start(root):
@@ -19,20 +19,7 @@ def start(root):
 
     # Create the main window
     child = tk.Toplevel(root)
-    child.title(f"Stemlight{version}: Credits")
-
-    # Set the window icon
-    try:
-        # Try to use the .ico file
-        icon_path = resource_path('src/Assets/icon.ico')
-        child.iconbitmap(icon_path)
-    except:
-        # If that fails, try to use the .xbm file
-        try:
-            icon_path = resource_path('src/Assets/icon.xbm')
-            child.iconbitmap('@' + icon_path)
-        except:
-            pass  # If that also fails, do nothing
+    set_title_and_icon(child, "Credits")
 
     # Set the window size
     window_width = int(RSF*275)
