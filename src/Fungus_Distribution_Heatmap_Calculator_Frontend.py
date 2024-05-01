@@ -378,7 +378,7 @@ class App:
             )
         
         output_labels = [
-            "Total Fungi",
+            f"Total {'Warped' if fungi_type == WARPED else 'Crimson'} Fungi",
             "Bone Meal to Produce a Fungus",
             "Bone Meal for Production",
             "Bone Meal for Growth",
