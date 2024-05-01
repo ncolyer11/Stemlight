@@ -1,11 +1,9 @@
 import ast
-import copy
 import math
 import numpy as np
 import itertools as itertools
 import time
 
-from Assets import constants as const
 from src.Fungus_Distribution_Backend import calculate_fungus_distribution
 
 WARPED = 0
@@ -19,12 +17,16 @@ def generate_permutations(length, width, n):
         for p in itertools.permutations(c):
             yield list(p)
 
-def brute_force_max_fungi(length, width, num_dispensers, disp_perms, fungus_type):
+def brute_force_max_fungi(length, width, num_dispensers, disp_perms, num_perms, fungus_type):
     max_fungi = 0
     optimal_rates_coords = []
     all_optimal_coords = [optimal_rates_coords]
 
-    for disp_perm in disp_perms:
+    # For large searches, optimal solution is most likely within the first 1/3 of the perms
+    limiter = num_perms if num_perms < 1e4 else num_perms // 3
+    # First 10% of perms are clumped perms around the top 2 rows
+    for disp_perm in itertools.islice(disp_perms, num_perms // 10, limiter):
+    # for disp_perm in disp_perms:
         _, total_fungi, *_ = \
             calculate_fungus_distribution(length, width, num_dispensers, disp_perm, fungus_type)
         # Update optimal perm for rates if a better combination is found
@@ -37,10 +39,12 @@ def brute_force_max_fungi(length, width, num_dispensers, disp_perms, fungus_type
             # Reset collection of optimal coordinates if a new max is found
             all_optimal_coords = [disp_perm]
 
+
     return max_fungi, optimal_rates_coords, all_optimal_coords
 
-def calculate_max_fungi(length, width, num_dispensers):
+def dracolyer(length, width, num_dispensers, fungi_type):
     """
+    ### The Dracolyer algorithm is a greedy algorithm that optimises the placement of dispensers:
     For a 5x5 grid:
     - Start with optimising for 1 dispenser
     - To optimise, the algorithm should go through every block and track the foliage added taking
@@ -60,25 +64,33 @@ def calculate_max_fungi(length, width, num_dispensers):
 
     disp_positions = []
     # Start optimisation
+
+    # To make the algo less greedy, I think it should try optimising all current dispensers,
+    # and only update the one that yielded the highest results for that iteration
+    # I worry that the algorithm isn't looking ahead enough so it's getting stuck on local maximums
+    start_time = time.time()
     for n in range(num_dispensers):
         disp_positions.append([0,0])
         prev_positions = None
         l = 0
         # print("====================================")
         while disp_positions != prev_positions:
+            # To stop users' clients from freezing
+            if time.time() - start_time > 20:
+                return -1, [], [[]]
             prev_positions = disp_positions.copy()
             for i in range(n, 0, -1):
-                disp_positions[i] = optimise_dispenser(i, disp_positions, width, length)
+                disp_positions[i] = optimise_dispenser(i, disp_positions, length, width, fungi_type)
                 # print("   back: ", i, disp_positions, "\n")
             for i in range(n + 1):
-                disp_positions[i] = optimise_dispenser(i, disp_positions, width, length)
+                disp_positions[i] = optimise_dispenser(i, disp_positions, length, width, fungi_type)
                 # print("forward: ", i, disp_positions)
             l += 1
         # print("====================================\n")
 
-    return 1, disp_positions, disp_positions
+    return 1, disp_positions, [disp_positions]
 
-def optimise_dispenser(disp_index, disp_positions, width, length):
+def optimise_dispenser(disp_index, disp_positions, length, width, fungi_type):
     """Find the position that results in the most foliage when a new dispenser is placed there
     given a pre-exisiting nylium grid with other dispensers"""
     max_foliage = -1e3
@@ -95,8 +107,8 @@ def optimise_dispenser(disp_index, disp_positions, width, length):
         disp_positions[disp_index] = [i, j]
         # Calculate the total foliage
         total_foliage_added, _, _, _, _, disp_foliage_grids, _ = \
-            calculate_fungus_distribution(width, length, len(disp_positions), 
-                                          disp_positions, CRIMSON)
+            calculate_fungus_distribution(length, width, len(disp_positions), 
+                                          disp_positions, fungi_type)
         total_foliage_blocked = 0
         for k in range(len(disp_positions)):
             if k != disp_index:
@@ -173,37 +185,44 @@ def output_data(start_time, f_type, width, length, max_rates, max_rates_coords, 
                         file.write('[ ]')
             file.write('\n\n')
 
-def initialise_optimisation():
+def initialise_optimisation(length, width, num_dispensers, f_type):
     """Initialise the optimisation process by taking user input and calculating the runtime"""
-    length = 5
+    permutations = np.math.perm(length * width, num_dispensers)
+    # Time complexity ain't precise coz surprise Python is an interpreted language :p
+    # 'k' is now outdated due to storing foliage data across an array of all dispensers
+    # k = 1 / 669486 if f_type == WARPED else 1 / 832608
+    # est_time_to_run =  k * length * width * num_dispensers * permutations
+    # print(f"Est. runtime: {est_time_to_run:.4f}s ({permutations} permutations) ")
+    start_time = time.time()
+
+    # find_optimal_indexes(length, width, num_dispensers)
+    disp_perms = generate_permutations(length, width, num_dispensers)
+    # If the number of permutations is less than 350k, use brute force (TBD, new algo for all rn)
+    if permutations < 350e3:
+        max_rates, max_rates_coords, all_max_coords = \
+            brute_force_max_fungi(length, width, num_dispensers, disp_perms, permutations, f_type)
+    # Otherwise, use the more efficient, but still unfinished Dracolyer algorithm
+    else:
+        max_rates, max_rates_coords, all_max_coords = \
+            dracolyer(length, width, num_dispensers, f_type)
+    
+    # If manually running the optimisation algorithm output data to terminal as well
+    if __name__ == "__main__":
+        output_data(start_time, f_type, width, length, max_rates, max_rates_coords, all_max_coords)
+    # else:
+        # print("Dispensers optimised in: ", time.time() - start_time, "seconds")
+        # print("Max rates: ", max_rates, "at", max_rates_coords, "wowowo")
+
+    return all_max_coords if max_rates != -1 else -1
+    
+# For manually running the optimisation algorithm
+if __name__ == "__main__":
+    length = 1
     width = 5
     num_dispensers = int(input("Enter number of dispensers: "))
     f_type = WARPED
     f_type = CRIMSON
-
-    permutations = np.math.perm(length * width, num_dispensers)
-    # Time complexity ain't precise coz surprise Python is an interpreted language :p
-    k = 1 / 669486 if f_type == WARPED else 1 / 832608
-    est_time_to_run =  k * length * width * num_dispensers * permutations
-        
-    print(f"Est. runtime: {est_time_to_run:.4f}s ({permutations} permutations) ")
-    start_time = time.time()
-    # find_optimal_indexes(length, width, num_dispensers)
-    disp_perms = generate_permutations(length, width, num_dispensers)
-
-    # If the number of permutations is less than 1 mil, use brute force (TBD, new algo for all rn)
-    if permutations != 0:
-        max_rates, max_rates_coords, all_max_coords = \
-            brute_force_max_fungi(length, width, num_dispensers, disp_perms, f_type)
-
-    # Otherwise, use the more efficient, but possibly less accurate algorithm
-    else:
-        max_rates, max_rates_coords, all_max_coords = \
-            calculate_max_fungi(length, width, num_dispensers)
-
-    output_data(start_time, f_type, width, length, max_rates, max_rates_coords, all_max_coords)
-
-initialise_optimisation()
+    initialise_optimisation(length, width, num_dispensers, f_type)
 
 # bone meal efficiency can be converted to wart block efficiency and defined as the amount of wart
 # blocks your farm's blast chamber is able to harvest per fungi grown, thus bone meal efficiency

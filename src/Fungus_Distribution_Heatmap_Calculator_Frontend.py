@@ -2,10 +2,12 @@
 
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
 import tkinter.font as font
 import time
 from PIL import Image, ImageDraw, ImageTk
 
+from src.Dispenser_Placement_Optimiser import initialise_optimisation
 from src.Fungus_Distribution_Backend import calculate_fungus_distribution
 import src.Assets.colours as colours
 from src.Assets.constants import RSF
@@ -43,6 +45,7 @@ HGHT = 46
 PAD = 5
 RAD = 26
 DP = 5
+MAX_SIDE_LEN = 10
 
 def create_squircle(width, height, radius, fill):
     # Create a new image with transparent background
@@ -114,11 +117,10 @@ class App:
         large_button_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*10))
         small_button_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*7))
         checkbox_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*15))
-        slider_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*15))
+        slider_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
 
         output_title_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*13))
-        label_font = font.Font(family='Segoe UI', size=int((RSF**NLS)*9))
-        output_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
+        label_font = font.Font(family='Segoe UI', size=int((RSF**NLS)*5))
     
         style.configure(
             "TCheckbutton", 
@@ -138,11 +140,14 @@ class App:
         # Resize the images
         self.checked_image = self.checked_image.subsample(4, 4)
         self.unchecked_image = self.unchecked_image.subsample(4, 4)
-    
+
+        row_label = tk.Label(self.master, text="Length:", bg=colours.bg, fg=colours.fg, font=slider_font)
+        row_label.pack()
+
         self.row_slider = tk.Scale(
             self.master, 
             from_=1, 
-            to=10, 
+            to=MAX_SIDE_LEN, 
             orient=tk.HORIZONTAL, 
             command=self.update_grid, 
             bg=colours.bg, 
@@ -151,26 +156,30 @@ class App:
         )
         self.row_slider.set(5)
         self.row_slider.bind("<Double-Button-1>", self.reset_slider)
-        self.row_slider.pack(pady=10)
+        self.row_slider.pack(pady=5)
         self.row_slider.pack()
+
+        col_label = tk.Label(self.master, text="Width:", bg=colours.bg, fg=colours.fg, font=slider_font)
+        col_label.pack()
 
         self.col_slider = tk.Scale(
             self.master, 
             from_=1, 
-            to=10, 
+            to=MAX_SIDE_LEN, 
             orient=tk.HORIZONTAL, 
             command=self.update_grid, 
             bg=colours.bg, 
             fg=colours.fg, 
             length=250
         )
+
         self.col_slider.set(5)
         self.col_slider.bind("<Double-Button-1>", self.reset_slider)
-        self.col_slider.pack(pady=1)
+        self.col_slider.pack(pady=5)
         self.col_slider.pack()
 
         self.button_slider_frame = tk.Frame(self.master, bg=colours.bg)
-        self.button_slider_frame.pack(pady=5)
+        self.button_slider_frame.pack(pady=10)
 
         self.reset_button = tk.Button(self.button_slider_frame, text="Reset", command=self.reset_dispensers, font=small_button_font, bg=colours.warped)
         self.reset_button.pack(side=tk.RIGHT, padx=5)
@@ -181,7 +190,7 @@ class App:
         self.grid_frame = tk.Frame(self.master, bg=colours.bg)
         self.grid_frame.pack(padx=10, pady=5)
 
-        self.optimise_button = tk.Button(self.master, text="Optimise", command=self.calculate,
+        self.optimise_button = tk.Button(self.master, text="Optimise", command=self.optimise,
                                          font=large_button_font, bg=colours.crimson, pady=2)
         self.optimise_button.pack(pady=5)
 
@@ -189,7 +198,8 @@ class App:
         self.master_frame.pack()
 
         # Create a new frame for the output results
-        self.output_frame = tk.Frame(self.master_frame, bg=colours.bg, highlightthickness=3, highlightbackground="grey")
+        self.output_frame = tk.Frame(self.master_frame, bg=colours.bg,
+                                     highlightthickness=3, highlightbackground="grey")
         self.output_frame.grid(row=0, column=1, sticky='nsew')
         self.master_frame.grid_columnconfigure(1, weight=1)
         self.master_frame.grid_rowconfigure(0, weight=1)
@@ -218,78 +228,147 @@ class App:
         self.unchecked_image = self.unchecked_image.subsample(4, 4)
         # Update the images of the checkboxes
         for i, row in enumerate(self.grid):
-            for j, cb in enumerate(row):
+            for j, tile in enumerate(row):
                 if self.vars[i][j].get() == 0:
-                    cb.config(image=self.unchecked_image)
+                    tile[0].config(image=self.unchecked_image)
         self.calculate()
 
-    def update_grid(self, _):
-            # Save the states of the checkboxes
-            saved_states = [[var.get() for var in var_row] for var_row in self.vars]
-        
-            for row in self.grid:
-                for cb in row:
-                    cb.destroy()
-            self.grid = []
-            self.dispensers = []
-            self.vars = []
-            rows = self.row_slider.get()
-            cols = self.col_slider.get()
-            for i in range(rows):
-                row = []
-                var_row = []
-                for j in range(cols):
-                    var = tk.IntVar()
-                    cb = tk.Button(
-                        self.grid_frame,
-                        image=self.unchecked_image,
-                        borderwidth=0,
-                        highlightthickness=0,
-                        bd=1,
-                        bg=colours.phtalo_green,
-                        command=lambda x=i, y=j: self.add_dispenser(x, y)
-                    )
-                    cb.grid(row=i, column=j, padx=0, pady=0)
-                    row.append(cb)
-                    var_row.append(var)
-                    # Restore the state of the checkbox, if it existed before
-                    if i < len(saved_states) and j < len(saved_states[i]):
-                        var.set(saved_states[i][j])
-                        if saved_states[i][j] == 1:
-                            cb.config(image=self.checked_image)
-                            self.dispensers.append((i, j, time.time()))
-                self.grid.append(row)
-                self.vars.append(var_row)
-                
-            self.calculate()
+    def create_ordered_dispenser_array(self, rows, cols):
+        # Sort the dispensers list by the time data
+        sorted_dispensers = sorted(self.dispensers, key=lambda dispenser: dispenser[2])
+        filtered_dispensers = [d for d in sorted_dispensers if d[0] < rows and d[1] < cols]
+
+        # Create a 2D array with the same dimensions as self.vars, initialized with zeros
+        dispenser_array = [[0 for _ in var_row] for var_row in self.vars]
+
+        # Iterate over the sorted dispensers list
+        for i, dispenser in enumerate(filtered_dispensers):
+            # The order of the dispenser is i + 1
+            # Set the corresponding element in the dispenser array to i + 1
+            x, y = dispenser[:2]
+            dispenser_array[x][y] = (i + 1, dispenser[2])
+
+        return dispenser_array
     
+    def update_grid(self, _):
+        label_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*5))
+
+        # Save the states of the checkboxes
+        saved_states = [[var.get() for var in var_row] for var_row in self.vars]
+        rows = self.row_slider.get()
+        cols = self.col_slider.get()
+        dispenser_array = self.create_ordered_dispenser_array(rows, cols)
+
+        for row in self.grid:
+            for cb, label in row:
+                cb.destroy()
+                if isinstance(label, tk.Label):
+                    label.destroy()
+
+        self.grid = []
+        self.dispensers = []
+        self.vars = []
+
+        for i in range(rows):
+            row = []
+            var_row = []
+            for j in range(cols):
+                var = tk.IntVar()
+                cb = tk.Button(
+                    self.grid_frame,
+                    image=self.unchecked_image,
+                    borderwidth=0,
+                    highlightthickness=0,
+                    bd=1,
+                    bg=colours.phtalo_green,
+                    command=lambda x=i, y=j: self.add_dispenser(x, y)
+                )
+                cb.grid(row=i, column=j, padx=0, pady=0)
+
+                var_row.append(var)
+                row.append((cb, None))
+                # Restore the state of the checkbox, if it existed before
+                if i < len(saved_states) and j < len(saved_states[i]):
+                    var.set(saved_states[i][j])
+                    if saved_states[i][j] == 1:
+                        cb.config(image=self.checked_image)
+                        label = tk.Label(self.grid_frame, text=str(dispenser_array[i][j][0]), font=label_font)
+                        label.grid(row=i, column=j, padx=0, pady=0, sticky='se')
+                        row[j] = (cb, label)
+                        self.dispensers.append((i, j, dispenser_array[i][j][1]))
+            self.grid.append(row)
+            self.vars.append(var_row)
+
+        self.calculate()
+
     def add_dispenser(self, x, y):
+        label_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*5))
+
         # Toggle the state of the checkbox
         self.vars[x][y].set(not self.vars[x][y].get())
 
         # Update the image based on the state of the checkbox
         if self.vars[x][y].get() == 0:
-            self.grid[x][y].config(image=self.unchecked_image)
+            self.grid[x][y][0].config(image=self.unchecked_image)
+            new_dispensers = []
+            for d in self.dispensers:
+                if d[:2] == (x, y):
+                    continue
+                new_dispensers.append(d)
+                # Reorder dispensers after removing one in the middle
+                label = tk.Label(self.grid_frame, text=len(new_dispensers), font=label_font)
+                d_x = d[0]
+                d_y = d[1]
+                label.grid(row=d_x, column=d_y, padx=0, pady=0, sticky='se')  
+                self.grid[d_x][d_y][1].destroy()
+                # Update the grid with the label
+                self.grid[d_x][d_y] = (self.grid[d_x][d_y][0], label) 
+            
+
             self.dispensers = [d for d in self.dispensers if d[:2] != (x, y)]
+            self.grid[x][y][1].destroy()
         else:
-            self.grid[x][y].config(image=self.checked_image)
+            self.grid[x][y][0].config(image=self.checked_image)
             self.dispensers.append((x, y, time.time()))
+            label = tk.Label(self.grid_frame, text=str(len(self.dispensers)), font=label_font)
+            # Place label in the bottom right corner
+            label.grid(row=x, column=y, padx=0, pady=0, sticky='se')  
+            # Update the grid with the label
+            self.grid[x][y] = (self.grid[x][y][0], label)  
         self.calculate()
 
     def reset_dispensers(self):
         for i, row in enumerate(self.grid):
-            for j, cb in enumerate(row):
+            for j, tile in enumerate(row):
                 self.vars[i][j].set(0)
-                cb.config(image=self.unchecked_image)
+                tile[0].config(image=self.unchecked_image)
+                if isinstance(tile[1], tk.Label):
+                    tile[1].destroy()
         self.dispensers = []
         self.calculate()
+
+    def optimise(self):
+        fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
+        dispenser_coordinates = [(d[0], d[1]) for d in self.dispensers]
+        all_optimal_coords = initialise_optimisation(
+            self.col_slider.get(), 
+            self.row_slider.get(),
+            len(dispenser_coordinates),
+            fungi_type
+        )
+        if (all_optimal_coords == -1):
+            messagebox.showinfo("Error", "Maximum runtime exceeded")
+            return
+        
+        self.reset_dispensers()
+        for disp_coord in all_optimal_coords[0]:
+            self.add_dispenser(disp_coord[0], disp_coord[1])
 
     def calculate(self):
         self.dispensers.sort(key=lambda d: d[2])
         dispenser_coordinates = [(d[0], d[1]) for d in self.dispensers]
         fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
-        total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, \
-        disp_foliage_grids, disp_des_fungi_grids = \
+        total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, *_ = \
             calculate_fungus_distribution(
                 self.col_slider.get(), 
                 self.row_slider.get(),

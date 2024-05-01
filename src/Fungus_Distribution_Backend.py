@@ -51,6 +51,7 @@ def calculate_distribution(length, width, dispensers, disp_coords, fungi_weight,
 
     x, y = np.ogrid[:width, :length]
     for i in range(dispensers):
+        # print(f"disp_coords before calling generate_foliage: {disp_coords}")
         foliage_chance, bm_for_prod = generate_foliage(disp_coords, total_foliage_grid, bm_for_prod, i, x, y)
         
         des_fungi_chance = foliage_chance * fungi_weight
@@ -73,6 +74,7 @@ def calculate_distribution(length, width, dispensers, disp_coords, fungi_weight,
 def generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y,):
     disp_x = disp_coords[i][0]
     disp_y = disp_coords[i][1]
+    # print("Dispenser", i, "at", disp_row, disp_col, "with offset", x, y)
     disp_bm_chance = 1 - foliage_grid[disp_x, disp_y]
     bm_for_prod += disp_bm_chance
 
