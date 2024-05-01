@@ -103,34 +103,22 @@ class App:
         self.nylium_type = tk.StringVar(value="warped")
         self.vars = []
         self.create_widgets()
-
-        # Create a new frame for the output results
-        self.output_frame = tk.Frame(self.master, bg=colours.bg)
-        self.output_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-        # Add a label to the output frame
-        output_label = tk.Label(self.output_frame, text="Output",
-                                font=("Segoe UI Semibold", int((RSF**NLS)*15)),
-                                bg=colours.bg, fg=colours.fg)
-        output_label.pack()
-        # Add a text widget to this frame
-        self.output_text = tk.Text(self.output_frame,
-                                   bg=colours.bg, fg=colours.fg, height=12)
-        self.output_text.pack(fill=tk.BOTH, expand=True)
-
-        label_font = ("Segoe UI Semibold", int((RSF**NLS)*9))
-        output_font = ("Segoe UI", int((RSF**NLS)*9))
-
-        self.output_text.tag_configure("label", font=label_font)
-        self.output_text.tag_configure("output", font=output_font)
+        self.output_text_label = {}
+        self.output_text_value = {}
 
     def create_widgets(self):
         self.master.configure(bg=colours.bg)
         style = ttk.Style()
     
-        # Define the font
-        button_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*11))
+        # Define the fonts
+        large_button_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*10))
+        small_button_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*7))
         checkbox_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*15))
         slider_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*15))
+
+        output_title_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*13))
+        label_font = font.Font(family='Segoe UI', size=int((RSF**NLS)*9))
+        output_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
     
         style.configure(
             "TCheckbutton", 
@@ -162,6 +150,7 @@ class App:
             length=250
         )
         self.row_slider.set(5)
+        self.row_slider.bind("<Double-Button-1>", self.reset_slider)
         self.row_slider.pack(pady=10)
         self.row_slider.pack()
 
@@ -176,17 +165,48 @@ class App:
             length=250
         )
         self.col_slider.set(5)
+        self.col_slider.bind("<Double-Button-1>", self.reset_slider)
         self.col_slider.pack(pady=1)
         self.col_slider.pack()
 
-        self.nylium_switch = SlideSwitch(self.master, callback=self.update_nylium_type)
-        self.nylium_switch.pack(pady=10)
+        self.button_slider_frame = tk.Frame(self.master, bg=colours.bg)
+        self.button_slider_frame.pack(pady=5)
 
-        self.grid_frame = tk.Frame(self.master, bg=colours.bg, padx=10, pady=10)
-        self.grid_frame.pack()
-        self.calc_button = tk.Button(self.master, text="Calculate", command=self.calculate, font=button_font, bg=colours.crimson)
-        self.calc_button.pack()
+        self.reset_button = tk.Button(self.button_slider_frame, text="Reset", command=self.reset_dispensers, font=small_button_font, bg=colours.warped)
+        self.reset_button.pack(side=tk.RIGHT, padx=5)
 
+        self.nylium_switch = SlideSwitch(self.button_slider_frame, callback=self.update_nylium_type)
+        self.nylium_switch.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.grid_frame = tk.Frame(self.master, bg=colours.bg)
+        self.grid_frame.pack(padx=10, pady=5)
+
+        self.optimise_button = tk.Button(self.master, text="Optimise", command=self.calculate,
+                                         font=large_button_font, bg=colours.crimson, pady=2)
+        self.optimise_button.pack(pady=5)
+
+        self.master_frame = tk.Frame(self.master)
+        self.master_frame.pack()
+
+        # Create a new frame for the output results
+        self.output_frame = tk.Frame(self.master_frame, bg=colours.bg, highlightthickness=3, highlightbackground="grey")
+        self.output_frame.grid(row=0, column=1, sticky='nsew')
+        self.master_frame.grid_columnconfigure(1, weight=1)
+        self.master_frame.grid_rowconfigure(0, weight=1)
+    
+        # Add a label to the output frame for output labels
+        self.output_label = tk.Label(self.output_frame, text="Outputs", font=output_title_font,
+                    bg=colours.bg, fg=colours.fg)
+        self.output_label.grid(row=0, column=0, sticky='w')
+
+        # Add a label to the output frame for output values
+        self.output_value = tk.Label(self.output_frame, text="\t", font=output_title_font,
+                    bg=colours.bg, fg=colours.fg)
+        self.output_value.grid(row=0, column=1, sticky='w')
+
+    def reset_slider(self, event):
+        self.master.after(10, lambda: event.widget.set(5))
+    
     def update_nylium_type(self):
         if self.nylium_type.get() == "warped":
             self.nylium_type.set("crimson")
@@ -201,45 +221,48 @@ class App:
             for j, cb in enumerate(row):
                 if self.vars[i][j].get() == 0:
                     cb.config(image=self.unchecked_image)
+        self.calculate()
 
     def update_grid(self, _):
-        # Save the states of the checkboxes
-        saved_states = [[var.get() for var in var_row] for var_row in self.vars]
+            # Save the states of the checkboxes
+            saved_states = [[var.get() for var in var_row] for var_row in self.vars]
+        
+            for row in self.grid:
+                for cb in row:
+                    cb.destroy()
+            self.grid = []
+            self.dispensers = []
+            self.vars = []
+            rows = self.row_slider.get()
+            cols = self.col_slider.get()
+            for i in range(rows):
+                row = []
+                var_row = []
+                for j in range(cols):
+                    var = tk.IntVar()
+                    cb = tk.Button(
+                        self.grid_frame,
+                        image=self.unchecked_image,
+                        borderwidth=0,
+                        highlightthickness=0,
+                        bd=1,
+                        bg=colours.phtalo_green,
+                        command=lambda x=i, y=j: self.add_dispenser(x, y)
+                    )
+                    cb.grid(row=i, column=j, padx=0, pady=0)
+                    row.append(cb)
+                    var_row.append(var)
+                    # Restore the state of the checkbox, if it existed before
+                    if i < len(saved_states) and j < len(saved_states[i]):
+                        var.set(saved_states[i][j])
+                        if saved_states[i][j] == 1:
+                            cb.config(image=self.checked_image)
+                            self.dispensers.append((i, j, time.time()))
+                self.grid.append(row)
+                self.vars.append(var_row)
+                
+            self.calculate()
     
-        for row in self.grid:
-            for cb in row:
-                cb.destroy()
-        self.grid = []
-        self.dispensers = []
-        self.vars = []
-        rows = self.row_slider.get()
-        cols = self.col_slider.get()
-        for i in range(rows):
-            row = []
-            var_row = []
-            for j in range(cols):
-                var = tk.IntVar()
-                cb = tk.Button(
-                    self.grid_frame,
-                    image=self.unchecked_image,
-                    borderwidth=0,
-                    highlightthickness=0,
-                    bd=1,
-                    bg=colours.phtalo_green,
-                    command=lambda x=i, y=j: self.add_dispenser(x, y)
-                )
-                cb.grid(row=i, column=j, padx=0, pady=0)
-                row.append(cb)
-                var_row.append(var)
-                # Restore the state of the checkbox, if it existed before
-                if i < len(saved_states) and j < len(saved_states[i]):
-                    var.set(saved_states[i][j])
-                    if saved_states[i][j] == 1:
-                        cb.config(image=self.checked_image)
-                        self.dispensers.append((i, j, time.time()))
-            self.grid.append(row)
-            self.vars.append(var_row)
-
     def add_dispenser(self, x, y):
         # Toggle the state of the checkbox
         self.vars[x][y].set(not self.vars[x][y].get())
@@ -251,12 +274,22 @@ class App:
         else:
             self.grid[x][y].config(image=self.checked_image)
             self.dispensers.append((x, y, time.time()))
+        self.calculate()
+
+    def reset_dispensers(self):
+        for i, row in enumerate(self.grid):
+            for j, cb in enumerate(row):
+                self.vars[i][j].set(0)
+                cb.config(image=self.unchecked_image)
+        self.dispensers = []
+        self.calculate()
 
     def calculate(self):
         self.dispensers.sort(key=lambda d: d[2])
         dispenser_coordinates = [(d[0], d[1]) for d in self.dispensers]
         fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
-        total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total = \
+        total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, \
+        disp_foliage_grids, disp_des_fungi_grids = \
             calculate_fungus_distribution(
                 self.col_slider.get(), 
                 self.row_slider.get(),
@@ -265,21 +298,54 @@ class App:
                 fungi_type
             )
         
-        self.output_text.delete('1.0', tk.END)
-        self.output_text.insert(tk.END, "Total Fungi: ", "label")
-        self.output_text.insert(tk.END,
-            f"{round(total_fungi, DP)} {'Warped' if fungi_type == 0 else 'Crimson'} Fungi\n", "output")
-        self.output_text.insert(tk.END, "Bone Meal to Produce a Fungus: ", "label")
-        self.output_text.insert(tk.END,
-            f"{round(bm_for_prod / total_fungi, DP) if total_fungi != 0 else 0}\n", "output")
-        self.output_text.insert(tk.END, "Bone Meal for Production: ", "label")
-        self.output_text.insert(tk.END, f"{round(bm_for_prod, DP)}\n", "output")
-        self.output_text.insert(tk.END, "Bone Meal for Growth: ", "label")
-        self.output_text.insert(tk.END, f"{round(bm_for_grow, DP)}\n", "output")
-        self.output_text.insert(tk.END, "Total Bone Meal Used: ", "label")
-        self.output_text.insert(tk.END, f"{round(bm_total, DP)}\n", "output")
-        self.output_text.insert(tk.END, "Total Foliage: ", "label")
-        self.output_text.insert(tk.END, f"{round(total_plants, DP)}\n", "output")
+        output_labels = [
+            "Total Fungi",
+            "Bone Meal to Produce a Fungus",
+            "Bone Meal for Production",
+            "Bone Meal for Growth",
+            "Total Bone Meal Used",
+            "Total Foliage"
+        ]
+        
+        output_values = [
+            round(total_fungi, DP),
+            round(bm_for_prod / total_fungi, DP) if total_fungi != 0 else 0.0,
+            round(bm_for_prod, DP),
+            round(bm_for_grow, DP),
+            round(bm_total, DP),
+            round(total_plants, DP)
+        ]
+        label_font = font.Font(family='Segoe UI', size=int((RSF**NLS)*9))
+        output_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
+
+        # Clear existing labels
+        for label in self.output_text_label.values():
+            label.destroy()
+        self.output_text_label = {}
+
+        for value_label in self.output_text_value.values():
+            value_label.destroy()
+        self.output_text_value = {}
+
+        # Create the labels for outputs
+        for i, label_text in enumerate(output_labels):
+            # Create a label for the output
+            label = tk.Label(self.output_frame, text=label_text, bg=colours.bg, fg=colours.fg, font=label_font)
+            label.grid(row=i + 2, column=0, padx=PAD, pady=PAD, sticky="W")
+
+            # Store the label in the dictionary for later use
+            self.output_text_label[i] = label
+
+        # Create the labels for output values
+        for i, output_value in enumerate(output_values):
+            # Create a label for the output value
+            value_label = tk.Label(self.output_frame, text=output_value, bg=colours.bg, fg=colours.fg, font=output_font)
+            value_label.grid(row=i + 2, column=1, padx=PAD, pady=PAD, sticky="WE")
+            value_label.grid_columnconfigure(0, weight=1)  # Ensure the label fills the cell horizontally
+
+            # Store the value label in the dictionary for later use
+            self.output_text_value[i] = value_label
+        
 
 def start(root):
     child = tk.Toplevel(root)

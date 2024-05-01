@@ -9,7 +9,7 @@ import os
 from src.Assets import colours as col, constants as const
 from src.Assets.constants import RSF
 from src.Assets.version import version
-from src.Assets.helpers import resource_path
+from src.Assets.helpers import resource_path, set_title_and_icon
 from src.Assets.helpers import schem_layout_to_rates_data
 
 def start(root):
@@ -123,18 +123,8 @@ def start(root):
         return file_path
 
     child = tk.Toplevel(root)
-    child.title(f"Stemlight{version}: Nether Tree Farm Rates Calculator")
-    try:
-        # Try to use the .ico file
-        icon_path = resource_path('src/Assets/icon.ico')
-        child.iconbitmap(icon_path)
-    except:
-        # If that fails, try to use the .xbm file
-        try:
-            icon_path = resource_path('src/Assets/icon.xbm')
-            child.iconbitmap('@' + icon_path)
-        except:
-            pass  # If that also fails, do nothing
+    set_title_and_icon(child, "Nether Tree Farm Rates Calculator")
+
     child.configure(bg=col.bg)
     child.minsize(int((RSF**1.68)*620), int((RSF**1.3)*515))
 

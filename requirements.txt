@@ -3,9 +3,3 @@ litemapy
 openpyxl
 pillow
 questionary
-# tkinter
-# ctypes
-# threading
-# subprocess
-# os
-# math

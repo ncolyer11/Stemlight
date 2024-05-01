@@ -47,7 +47,7 @@ def calculate_distribution(length, width, dispensers, disp_coords, fungi_weight,
     # 2D array for storing distribution of desired fungus
     total_des_fungi_grid = np.zeros((width, length))
     # 'bm_for_prod': bone meal used during 1 cycle of firing all the given dispensers
-    bm_for_prod = 0
+    bm_for_prod = 0.0
 
     x, y = np.ogrid[:width, :length]
     for i in range(dispensers):
@@ -55,15 +55,17 @@ def calculate_distribution(length, width, dispensers, disp_coords, fungi_weight,
         
         des_fungi_chance = foliage_chance * fungi_weight
         disp_des_fungi_grids[i] = (1 - total_foliage_grid) * des_fungi_chance
-        total_des_fungi_grid = np.sum((1 - total_foliage_grid) * des_fungi_chance, axis=0)
+        total_des_fungi_grid += disp_des_fungi_grids[i]
         
         disp_foliage_grids[i] = (1 - total_foliage_grid) * foliage_chance
-        total_foliage_grid = np.sum((1 - total_foliage_grid) * foliage_chance, axis=0)
+        total_foliage_grid += disp_foliage_grids[i]
         
         # If warped nylium, generate sprouts
         if fungi == WARPED:
-            disp_foliage_grids[i] += (1 - total_foliage_grid) * foliage_chance
-            total_foliage_grid = np.sum((1 - total_foliage_grid) * foliage_chance, axis=0)
+            sprouts_chance = (1 - total_foliage_grid) * foliage_chance
+            disp_foliage_grids[i] += sprouts_chance
+            total_foliage_grid += sprouts_chance
+            
 
     return total_foliage_grid, total_des_fungi_grid, bm_for_prod, \
         disp_foliage_grids, disp_des_fungi_grids
