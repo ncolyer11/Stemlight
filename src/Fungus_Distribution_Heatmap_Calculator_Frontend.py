@@ -19,22 +19,12 @@ CRIMSON = 1
 
 # @TODO:
 # label input for number of cycles
-# reset button to clear all selections 
 # hover over any cell to give you a tooltip of how many fungi and foliage are generated on top of
 # it after N input cycles (usually just 1) and how much bm is used to grow in that spot, and if
-# the cell is a dispenser, also show what position that dispenser fires in and how much bm it
-# uses to produce fungi, and if it's a cleared dispenser
-# Add a button that switches from nylium and dispenser mode,
-# to displaying numbers 1 through to 100 to indicate dispenser firing order
+# the cell is a dispenser,show how much bm it uses to produce fungi, 
+# and if it's a cleared dispenser
 # in each program, add a help menu item to the toolbar explaining how to use it
-# add an optimise dispenser placement button, where for a given amount of dispensers already
-# placed on the nylium platform, it will find an arrangement and order of dispensers that 
-# maximises the amount of fungi produced
 # Button to export nether tree growth heatmap from the fungi distribution data
-# tidy up output labels and functionality to be on the left, consider using grids
-# .pack inside one of the grids so you can have input fields on the left and outputs
-# on the right
-# replace current dispenser png with 10 of them with numbers 0 - 9 overlayed
 # slider for selecting desired wart block/ bone meal efficiency
 # an option for each dispenser to make it so it isn't affected by overlap (cleared by piston above)
 
@@ -47,16 +37,6 @@ RAD = 26
 DP = 5
 MAX_SIDE_LEN = 10
 
-def create_squircle(width, height, radius, fill):
-    # Create a new image with transparent background
-    image = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-
-    # Create a rounded rectangle on the image
-    draw = ImageDraw.Draw(image)
-    draw.rounded_rectangle([(0, 0), (width, height)], radius=radius, fill=fill, outline=colours.bg)
-
-    return ImageTk.PhotoImage(image)
-
 class SlideSwitch(tk.Canvas):
     def __init__(self, parent, callback=None, *args, **kwargs):
         tk.Canvas.__init__(self, parent, *args, **kwargs)
@@ -67,7 +47,7 @@ class SlideSwitch(tk.Canvas):
         self.fungi_type = tk.StringVar(value="warped")
 
         # Create an image of a rounded rectangle
-        self.rect_image = create_squircle(WDTH, HGHT, RAD, colours.warped)
+        self.rect_image = self.create_squircle(WDTH, HGHT, RAD, colours.warped)
         self.rect = self.create_image(0, 0, image=self.rect_image, anchor='nw')
         self.new_image = self.rect_image
 
@@ -84,12 +64,12 @@ class SlideSwitch(tk.Canvas):
 
     def toggle(self, event):
         if self.state:
-            self.new_image = create_squircle(WDTH, HGHT, RAD, colours.warped)
+            self.new_image = self.create_squircle(WDTH, HGHT, RAD, colours.warped)
             self.itemconfig(self.rect, image=self.new_image)
             self.coords(self.oval, WDTH//4, HGHT//2)
             self.fungi_type.set("warped")
         else:
-            self.new_image = create_squircle(WDTH, HGHT, RAD, colours.crimson)
+            self.new_image = self.create_squircle(WDTH, HGHT, RAD, colours.crimson)
             self.itemconfig(self.rect, image=self.new_image)
             self.coords(self.oval, 3 * WDTH//4, HGHT//2)
             self.fungi_type.set("crimson")
@@ -97,6 +77,16 @@ class SlideSwitch(tk.Canvas):
         self.state = not self.state
         if self.callback:
             self.callback()
+    
+    def create_squircle(width, height, radius, fill):
+        # Create a new image with transparent background
+        image = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+
+        # Create a rounded rectangle on the image
+        draw = ImageDraw.Draw(image)
+        draw.rounded_rectangle([(0, 0), (width, height)], radius=radius, fill=fill, outline=colours.bg)
+
+        return ImageTk.PhotoImage(image)
 
 class App:
     def __init__(self, master):
@@ -236,6 +226,7 @@ class App:
     def create_ordered_dispenser_array(self, rows, cols):
         # Sort the dispensers list by the time data
         sorted_dispensers = sorted(self.dispensers, key=lambda dispenser: dispenser[2])
+        # Filter out only valid dispensers
         filtered_dispensers = [d for d in sorted_dispensers if d[0] < rows and d[1] < cols]
 
         # Create a 2D array with the same dimensions as self.vars, initialized with zeros
@@ -246,6 +237,7 @@ class App:
             # The order of the dispenser is i + 1
             # Set the corresponding element in the dispenser array to i + 1
             x, y = dispenser[:2]
+            # Preserve initial time value 
             dispenser_array[x][y] = (i + 1, dispenser[2])
 
         return dispenser_array
@@ -424,7 +416,6 @@ class App:
 
             # Store the value label in the dictionary for later use
             self.output_text_value[i] = value_label
-        
 
 def start(root):
     child = tk.Toplevel(root)

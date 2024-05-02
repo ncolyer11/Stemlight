@@ -8,7 +8,6 @@ DP_VAL = 5
 WARPED = 0
 CRIMSON = 1
 
-
 def selection_chance(x1, y1):
     """Calculates the probability of a block being selected for 
     foliage generation given its offset from a dispenser"""
