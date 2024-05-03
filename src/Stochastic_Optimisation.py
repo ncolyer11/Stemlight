@@ -1,11 +1,13 @@
 import time
 import numpy as np
 
+from Fast_Dispenser_Distribution import fast_calculate_distribution
 from src.Fungus_Distribution_Backend import CRIMSON, calculate_fungus_distribution
 from src.Dispenser_Distribution_Matrix import SIZE, foliage_distribution
 
 def simulated_annealing(discrete_function, initial_solution, temperature, cooling_rate,
                         min_temperature, max_iterations):
+    """Simulated annealing algorithm for discrete optimisation problems."""
     current_solution = initial_solution
     best_solution = initial_solution
     i = 0
@@ -23,16 +25,18 @@ def simulated_annealing(discrete_function, initial_solution, temperature, coolin
                 best_solution = neighbor_solution
 
         temperature *= cooling_rate
-    print(temperature, i)
+    print("Last temperature:", temperature, "Iterations:", i)
     return best_solution
 
 def acceptance_probability(current_energy, neighbor_energy, temperature):
+    """Calculate the probability of accepting a worse solution."""
     if neighbor_energy > current_energy:
         return 1.0
     else:
         return np.exp((neighbor_energy - current_energy) / temperature)
 
 def generate_neighbor(solution):
+    """Generate a new dispenser permutation by altering 1 to all of their offsets slightly"""
     # Create a copy of the current solution
     neighbor_solution = solution.copy()
     # Randomly select offsets to change
@@ -59,16 +63,19 @@ def generate_neighbor(solution):
     return neighbor_solution
 
 def calc_fungus_dist_wrapper(offsets):
+    """Wrapper for the fungus distribution function to allow it to be used in 
+    the optimisation algorithm."""
     disp_coords = np.array(offsets) + 2
-    return calculate_fungus_distribution(SIZE, SIZE, len(offsets), disp_coords, CRIMSON)[0]
+    return fast_calculate_distribution(SIZE, SIZE, disp_coords)
 
 def start_optimisation():
-    offsets = [[2,2], [2,1], [2,0], [2,-1], [1,0], [1,-1], [1,-2], [0,-2], [0,0]]
+    """Start optimising the function using the simulated annealing algorithm."""
+    offsets = [[0,0] for _ in range(int(input("Enter number of dispensers: ")))] 
     initial_solution = offsets
     temperature = 100.0
-    cooling_rate = 0.995
-    min_temperature = 0.01
-    max_iterations = 10000
+    cooling_rate = 0.9999997
+    min_temperature = 0.001
+    max_iterations = 10000000
     
     function_choice = str(input("Select function (m/a): ")).lower()
     to_optimise_function = None
@@ -83,8 +90,18 @@ def start_optimisation():
     start_time = time.time()
     best_solution = simulated_annealing(to_optimise_function, initial_solution, temperature,
                                         cooling_rate, min_temperature, max_iterations)
-    print("Time taken: ", time.time() - start_time)
-    print("Optimal coords: \n", np.array(best_solution) + 2)
+    print("Time taken:", time.time() - start_time)
+    best_coords = np.array(best_solution) + 2
+    print("Optimal coords: \n", best_coords)
     print("Optimal value: ", to_optimise_function(best_solution))
+        # Print the location of max_rates_coords in a grid on terminal
+    for row in range(SIZE):
+        for col in range(SIZE):
+            if [row - 2, col - 2] in best_solution:
+                print(f'[{best_solution.index([row - 2, col - 2])}]', end='')
+            else:
+                print('[ ]', end='')
+        print()
+    print()
 
 start_optimisation()

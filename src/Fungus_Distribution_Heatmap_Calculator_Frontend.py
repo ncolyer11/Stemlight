@@ -78,7 +78,7 @@ class SlideSwitch(tk.Canvas):
         if self.callback:
             self.callback()
     
-    def create_squircle(width, height, radius, fill):
+    def create_squircle(self, width, height, radius, fill):
         # Create a new image with transparent background
         image = Image.new('RGBA', (width, height), (0, 0, 0, 0))
 
