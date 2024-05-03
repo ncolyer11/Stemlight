@@ -6,6 +6,8 @@ import sys
 from litemapy import Schematic
 import time
 
+import numpy as np
+
 from src.Assets import heatmap_data, constants as const
 
 from src.Assets.version import version
@@ -208,3 +210,29 @@ def schem_layout_to_efficiency_and_vrms(path):
     print(f"Elapsed time: {elapsed_time} seconds")
 
     return avg_stems, avg_shroomlights, avg_wart_blocks, stem_E, shroomlight_E, wart_block_E, vrm0, vrm1, vrm2, vrm3
+
+def create_dispenser_distribution(size):
+    """Create the dispenser distribution matrix for foliage generated after bone-mealing nylium.
+    \n Note that the matrix is padded with 0's surrounding the centred distribution for sizes > 5"""
+    # Selection probabilities for blocks offset around a centred dispenser on a 5x5 grid of nylium
+    sp = [
+        0.10577931226910778, 0.20149313967509574,
+        0.28798973593014715, 0.3660553272880777,
+        0.4997510328685407, 0.6535605838853813
+    ]
+    
+    dist_5x5 = np.array([
+        [sp[0], sp[1], sp[2], sp[1], sp[0]],
+        [sp[1], sp[3], sp[4], sp[3], sp[1]],
+        [sp[2], sp[4], sp[5], sp[4], sp[2]],
+        [sp[1], sp[3], sp[4], sp[3], sp[1]],
+        [sp[0], sp[1], sp[2], sp[1], sp[0]],
+    ])
+    
+    padded_dist = np.zeros((size, size))
+    # Find the start indices for centering the 5x5 matrix within the SIZE x SIZE matrix
+    offset = (size - 5) // 2
+    # Insert the 5x5 matrix into the SIZE x SIZE matrix
+    padded_dist[offset:offset+5, offset:offset+5] = dist_5x5
+    
+    return padded_dist

@@ -1,34 +1,15 @@
 import numpy as np
 
-# Selection probabilities for blocks offset around a centred dispenser on a 5x5 grid of nylium
-SP = [
-    0.10577931226910778, 0.20149313967509574,
-    0.28798973593014715, 0.3660553272880777,
-    0.4997510328685407, 0.6535605838853813
-]
-DISP_DIST = np.array([
-    [SP[0], SP[1], SP[2], SP[1], SP[0]],
-    [SP[1], SP[3], SP[4], SP[3], SP[1]],
-    [SP[2], SP[4], SP[5], SP[4], SP[2]],
-    [SP[1], SP[3], SP[4], SP[3], SP[1]],
-    [SP[0], SP[1], SP[2], SP[1], SP[0]],
-])
+from Assets.helpers import create_dispenser_distribution
+
+# Nylium Platform/Grid Size
+SIZE = 5
+# Distribution describing foliage spread after bone-mealing the centre nylium on a 5x5 platform
+DISP_DIST = create_dispenser_distribution(SIZE)
 # Shift matrix
-S = np.array([
-    [0, 1, 0, 0, 0],
-    [0, 0, 1, 0, 0],
-    [0, 0, 0, 1, 0],
-    [0, 0, 0, 0, 1],
-    [0, 0, 0, 0, 0]
-])
+S = np.eye(SIZE, k=1)
 # Reflection matrix
-R = np.array([
-    [0, 0, 0, 0, 1],
-    [0, 0, 0, 1, 0],
-    [0, 0, 1, 0, 0],
-    [0, 1, 0, 0, 0],
-    [1, 0, 0, 0, 0]
-])
+R = np.fliplr(np.eye(SIZE))
 # Define shorthand for exponentiating a matrix
 mpow = np.linalg.matrix_power
 
@@ -50,21 +31,21 @@ def compute_weights(offsets):
     
     return vertical_shift @ DISP_DIST @ horizontal_shift
 
+def calculate_empty_chance_matrix(k, offsets):
+    """Calculate the chance of there being an air block above a given offset on the nylium grid"""
+    blocked_chance = np.zeros((5, 5))
+    for j in range(1, k):
+        blocked_chance += compute_weights(offsets[j-1])
+    return 1 - blocked_chance
+
 def calculate_disp_fire_chance(k, offsets):
     """Calculate the chance of an air block being above a given dispenser."""
-    fire_chance = 1
+    blocked_chance = 0
     for j in range(1, k):
         h_k = offsets[k-1][0]
         v_k = offsets[k-1][1]
-        fire_chance -= compute_weights(offsets[j-1])[h_k][v_k]
-    return fire_chance
-
-def calculate_empty_chance_matrix(k, offsets):
-    """Calculate the chance of there being an air block above a given offset on the nylium grid"""
-    empty_chance = np.ones((5, 5))
-    for j in range(1, k):
-        empty_chance -= compute_weights(offsets[j-1])
-    return empty_chance
+        blocked_chance += compute_weights(offsets[j-1])[2 + v_k][2 + h_k]
+    return 1 - blocked_chance
 
 def foliage_distribution(offsets):
     """Sum the foliage distribution on a grid of nylium for a given set of dispenser offsets."""
@@ -77,7 +58,7 @@ def foliage_distribution(offsets):
     return np.sum(distribution)
 
 if __name__ == '__main__':
-    offsets = [[0,0], [1,1]]
+    offsets = [[1, 0], [-1, 0]]
     result = foliage_distribution(offsets)
     print("Offsets: \n", offsets)
     print("Distribution: \n", result)
