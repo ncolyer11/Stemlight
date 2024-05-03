@@ -58,7 +58,7 @@ def foliage_distribution(offsets):
     return np.sum(distribution)
 
 if __name__ == '__main__':
-    offsets = [[1, 0], [-1, 0]]
+    offsets = [[-2, 0], [1, 0], [0, -2]]
     result = foliage_distribution(offsets)
     print("Offsets: \n", offsets)
     print("Distribution: \n", result)
