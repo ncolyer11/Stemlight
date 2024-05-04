@@ -6,27 +6,35 @@ from tkinter import messagebox
 import tkinter.font as font
 import time
 from PIL import Image, ImageDraw, ImageTk
+import numpy as np
 
-from src.Dispenser_Placement_Optimiser import initialise_optimisation
-from src.Fungus_Distribution_Backend import calculate_fungus_distribution
-import src.Assets.colours as colours
+from Main_Menu import ToolTip
+from src.Assets import colours
 from src.Assets.constants import RSF
 from src.Assets.helpers import set_title_and_icon
 from src.Assets.helpers import resource_path
-
-WARPED = 0
-CRIMSON = 1
+from src.Custom_Nylium_Grid_Heatmap_Calculator import export_custom_heatmaps
+from src.Dispenser_Placement_Optimiser import initialise_optimisation
+from src.Fungus_Distribution_Backend import calculate_fungus_distribution
 
 # @TODO:
-# label input for number of cycles
 # hover over any cell to give you a tooltip of how many fungi and foliage are generated on top of
-# it after N input cycles (usually just 1) and how much bm is used to grow in that spot, and if
-# the cell is a dispenser,show how much bm it uses to produce fungi, 
-# and if it's a cleared dispenser
-# in each program, add a help menu item to the toolbar explaining how to use it
-# Button to export nether tree growth heatmap from the fungi distribution data
-# slider for selecting desired wart block/ bone meal efficiency
+# it after N input cycles (usually just 1) and how much bm is used to grow in that spot, and if the
+# cell is a dispenser, show how much bm it uses to produce fungi, and if it's a cleared dispenser
+
 # an option for each dispenser to make it so it isn't affected by overlap (cleared by piston above)
+# ^ middle click dispenser
+
+# tooltip over bm to produce fungi includes composting foliage
+
+# make it so if optimise 
+
+# in each program, add a help menu item to the toolbar explaining how to use it
+
+# Button to export nether tree growth heatmap from the fungi distribution data
+
+# try having sliders in a 2x2 grid at the top, and then extend the output grid at the bottom
+# by 2 columns to fit individual block info that appears for any block you right click on
 
 # Non-linear scaling 
 NLS = 1.765
@@ -35,7 +43,9 @@ HGHT = 46
 PAD = 5
 RAD = 26
 DP = 5
-MAX_SIDE_LEN = 10
+MAX_SIDE_LEN = 9
+WARPED = 0
+CRIMSON = 1
 
 class SlideSwitch(tk.Canvas):
     def __init__(self, parent, callback=None, *args, **kwargs):
@@ -84,7 +94,8 @@ class SlideSwitch(tk.Canvas):
 
         # Create a rounded rectangle on the image
         draw = ImageDraw.Draw(image)
-        draw.rounded_rectangle([(0, 0), (width, height)], radius=radius, fill=fill, outline=colours.bg)
+        draw.rounded_rectangle([(0, 0), (width, height)], 
+                               radius=radius, fill=fill, outline=colours.bg)
 
         return ImageTk.PhotoImage(image)
 
@@ -131,45 +142,7 @@ class App:
         self.checked_image = self.checked_image.subsample(4, 4)
         self.unchecked_image = self.unchecked_image.subsample(4, 4)
 
-        row_label = tk.Label(self.master, text="Length:", bg=colours.bg, fg=colours.fg, font=slider_font)
-        row_label.pack()
-
-        self.row_slider = tk.Scale(
-            self.master, 
-            from_=1, 
-            to=MAX_SIDE_LEN, 
-            orient=tk.HORIZONTAL, 
-            command=self.update_grid, 
-            bg=colours.bg, 
-            fg=colours.fg, 
-            length=250
-        )
-        self.row_slider.set(5)
-        self.row_slider.bind("<Double-Button-1>", self.reset_slider)
-        self.row_slider.pack(pady=5)
-        self.row_slider.pack()
-
-        col_label = tk.Label(self.master, text="Width:", bg=colours.bg, fg=colours.fg, font=slider_font)
-        col_label.pack()
-
-        self.col_slider = tk.Scale(
-            self.master, 
-            from_=1, 
-            to=MAX_SIDE_LEN, 
-            orient=tk.HORIZONTAL, 
-            command=self.update_grid, 
-            bg=colours.bg, 
-            fg=colours.fg, 
-            length=250
-        )
-
-        self.col_slider.set(5)
-        self.col_slider.bind("<Double-Button-1>", self.reset_slider)
-        self.col_slider.pack(pady=5)
-        self.col_slider.pack()
-
-        self.button_slider_frame = tk.Frame(self.master, bg=colours.bg)
-        self.button_slider_frame.pack(pady=10)
+        self.create_sliders()
 
         self.reset_button = tk.Button(self.button_slider_frame, text="Reset", command=self.reset_dispensers, font=small_button_font, bg=colours.warped)
         self.reset_button.pack(side=tk.RIGHT, padx=5)
@@ -178,14 +151,19 @@ class App:
         self.nylium_switch.pack(side=tk.LEFT, padx=5, pady=5)
 
         self.grid_frame = tk.Frame(self.master, bg=colours.bg)
-        self.grid_frame.pack(padx=10, pady=5)
+        self.grid_frame.pack(pady=5)
 
         self.optimise_button = tk.Button(self.master, text="Optimise", command=self.optimise,
                                          font=large_button_font, bg=colours.crimson, pady=2)
         self.optimise_button.pack(pady=5)
 
+        self.export_button = tk.Button(self.master, text="Export", command=self.export_heatmaps,
+                                         font=large_button_font, bg=colours.aqua_green,
+                                         pady=2, padx=16)
+        self.export_button.pack(pady=5)
+
         self.master_frame = tk.Frame(self.master)
-        self.master_frame.pack()
+        self.master_frame.pack(pady=5)
 
         # Create a new frame for the output results
         self.output_frame = tk.Frame(self.master_frame, bg=colours.bg,
@@ -204,8 +182,95 @@ class App:
                     bg=colours.bg, fg=colours.fg)
         self.output_value.grid(row=0, column=1, sticky='w')
 
-    def reset_slider(self, event):
-        self.master.after(10, lambda: event.widget.set(5))
+    def create_sliders(self):
+        slider_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
+        row_label = tk.Label(self.master, text="Length:", bg=colours.bg, fg=colours.fg, font=slider_font)
+        row_label.pack()
+        self.row_slider = tk.Scale(
+            self.master, 
+            from_=1, 
+            to=MAX_SIDE_LEN, 
+            orient=tk.HORIZONTAL, 
+            command=self.update_grid, 
+            bg=colours.bg, 
+            fg=colours.fg, 
+            length=250
+        )
+        self.row_slider.set(5)
+        self.row_slider.bind("<Double-Button-1>", self.reset_slider)
+        self.row_slider.pack(pady=5)
+        self.row_slider.pack()
+
+        col_label = tk.Label(self.master, text="Width:", bg=colours.bg, fg=colours.fg, font=slider_font)
+        col_label.pack()
+        self.col_slider = tk.Scale(
+            self.master, 
+            from_=1, 
+            to=MAX_SIDE_LEN, 
+            orient=tk.HORIZONTAL, 
+            command=self.update_grid, 
+            bg=colours.bg, 
+            fg=colours.fg, 
+            length=250
+        )
+        self.col_slider.set(5)
+        self.col_slider.bind("<Double-Button-1>", self.reset_slider)
+        self.col_slider.pack(pady=5)
+        self.col_slider.pack()
+        
+        self.cycles_label = tk.Label(self.master, text="No. Cycles:", bg=colours.bg, fg=colours.fg, font=slider_font)
+        self.cycles_label.pack()
+        cycles_tooltip = ToolTip(self.cycles_label)
+        self.cycles_label.bind("<Enter>", lambda event: 
+                    cycles_tooltip.show_tip((
+                        "Set how many times the dispensers are activated"),
+                        event.x_root, event.y_root))
+        self.cycles_label.bind("<Leave>", lambda event: cycles_tooltip.hide_tip())
+        self.cycles_slider = tk.Scale(
+            self.master, 
+            from_=1, 
+            to=7,
+            orient=tk.HORIZONTAL, 
+            command=self.update_grid, 
+            bg=colours.bg, 
+            fg=colours.fg, 
+            length=250
+        )
+        self.cycles_slider.set(1)
+        self.cycles_slider.bind("<Double-Button-1>", lambda event: self.reset_slider(event, 1))
+        self.cycles_slider.pack(pady=5)
+        self.cycles_slider.pack()
+
+        self.wb_effic_label = tk.Label(self.master, text="Wart Blocks/Fungus:", 
+                                       bg=colours.bg, fg=colours.fg, font=slider_font)
+        self.wb_effic_label.pack()
+        wb_effic_tooltip = ToolTip(self.wb_effic_label)
+        self.wb_effic_label.bind("<Enter>", lambda event: 
+                    wb_effic_tooltip.show_tip((
+                        "Restrict optimal solutions to require a certain bone meal\n"
+                        "(or ~8 composted wart blocks) per fungus produced efficiency"),
+                        event.x_root, event.y_root))
+        self.wb_effic_label.bind("<Leave>", lambda event: wb_effic_tooltip.hide_tip())
+        self.wb_effic_slider = tk.Scale(
+            self.master, 
+            from_=20, 
+            to=60, 
+            orient=tk.HORIZONTAL, 
+            bg=colours.bg, 
+            fg=colours.fg, 
+            length=250,
+            resolution=0.1
+        )
+        self.wb_effic_slider.set(60)
+        self.wb_effic_slider.bind("<Double-Button-1>", lambda event: self.reset_slider(event, 60))
+        self.wb_effic_slider.pack(pady=5)
+        self.wb_effic_slider.pack()
+
+        self.button_slider_frame = tk.Frame(self.master, bg=colours.bg)
+        self.button_slider_frame.pack(pady=10)        
+
+    def reset_slider(self, event, default=5):
+        self.master.after(10, lambda: event.widget.set(default))
     
     def update_nylium_type(self):
         if self.nylium_type.get() == "warped":
@@ -346,15 +411,48 @@ class App:
             self.col_slider.get(), 
             self.row_slider.get(),
             len(dispenser_coordinates),
-            fungi_type
+            fungi_type,
+            self.wb_effic_slider.get()
         )
-        if (all_optimal_coords == -1):
-            messagebox.showinfo("Error", "Maximum runtime exceeded")
+        if all_optimal_coords == -1:
+            messagebox.showwarning("Error", "Maximum runtime exceeded.")
+            return
+        elif len(all_optimal_coords[0]) == 0:
+            messagebox.showinfo(
+                "Optimisation notice",
+                "No optimal solution found for\n"
+                "given wart block efficiency."
+            )
             return
         
         self.reset_dispensers()
         for disp_coord in all_optimal_coords[0]:
             self.add_dispenser(disp_coord[0], disp_coord[1])
+            
+    def export_heatmaps(self):
+        self.dispensers.sort(key=lambda d: d[2])
+        dispenser_coordinates = [(d[0], d[1]) for d in self.dispensers]
+        fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED        
+        disp_foliage_grids = \
+            calculate_fungus_distribution(
+                self.col_slider.get(), 
+                self.row_slider.get(),
+                len(dispenser_coordinates),
+                dispenser_coordinates,
+                fungi_type,
+                self.cycles_slider.get()
+            )[5]
+        print(disp_foliage_grids)
+        print(np.sum(disp_foliage_grids, axis=0))
+        result = export_custom_heatmaps(
+            self.row_slider.get(),
+            self.col_slider.get(),
+            np.sum(disp_foliage_grids, axis=0)
+        )
+        if result == 0:
+            messagebox.showinfo("Success", "Heatmaps exported to weighted_fungi_heatmap.xlsx")
+        else:
+            messagebox.showwarning("Error", f"An error occurred:\n{result}")    
 
     def calculate(self):
         self.dispensers.sort(key=lambda d: d[2])
@@ -366,7 +464,8 @@ class App:
                 self.row_slider.get(),
                 len(dispenser_coordinates),
                 dispenser_coordinates,
-                fungi_type
+                fungi_type,
+                self.cycles_slider.get()
             )
         
         output_labels = [

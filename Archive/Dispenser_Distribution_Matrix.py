@@ -1,3 +1,6 @@
+"""Uses pure math to calculate the foliage distribution on a nylium grid,
+representing the nylium platform and dispenser distributions using matrices"""
+
 import numpy as np
 
 from Assets.helpers import create_dispenser_distribution
