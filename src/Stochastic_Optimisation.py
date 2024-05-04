@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from Fast_Dispenser_Distribution import fast_calculate_distribution
-from src.Dispenser_Distribution_Matrix import SIZE, foliage_distribution
+from src.Dispenser_Distribution_Matrix import SIZE
 
 ACCEPTANCE_RATE = 0.995
 REJECTION_POINT = 0.1
@@ -144,7 +144,7 @@ def plot_cooling_rate_data():
         for rate in cooling_rates:
             print("\nDispenser", disp, "'s cooling rate:", rate)
             results = []
-            for _ in range((10*disp)//3):
+            for _ in range((100*disp)//3):
                 result = start_optimisation(disp, function_choice, rate)
                 results.append(result)
             mean_value = np.mean(results)
@@ -170,8 +170,7 @@ def start_optimisation(num_dispensers, func_to_optimise, cooling_rate):
     offsets = [[0,0] for _ in range(num_dispensers)] 
     initial_solution = offsets
     start_temperature, end_temperature, *_ = calculate_temp_bounds(num_dispensers, func_to_optimise)
-    min_temperature = 1e-6
-    # should be able to get away with just 0.1?
+    min_temperature = end_temperature
     max_iterations = 100000
 
     start_time = time.time()
