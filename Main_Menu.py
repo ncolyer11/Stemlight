@@ -7,8 +7,8 @@ from tkinter import messagebox
 from src import (
     Nether_Tree_Farm_Rates_Calculator,
     Chart_Display,
-    Fungus_Distribution_Heatmap_Calculator_Frontend,
     Nether_Tree_Farm_Layout_Efficiency_Calculator,
+    Playerless_Core_Tools_Frontend,
     Trunk_Distribution_Calculator,
     Credits,
 )
@@ -121,7 +121,7 @@ def main():
     programs = [
         Program(1, Nether_Tree_Farm_Rates_Calculator, "Farm Rates & Efficiency"),
         Program(2, Chart_Display, "Chart Viewer"),
-        Program(3, Fungus_Distribution_Heatmap_Calculator_Frontend, "Playerless Core Tools"),
+        Program(3, Playerless_Core_Tools_Frontend, "Playerless Core Tools"),
         Program(4, Nether_Tree_Farm_Layout_Efficiency_Calculator, "VRM Decoder"),
         Program(5, Trunk_Distribution_Calculator, "Trunk Distribution"),
         Program(99, Credits, "Credits"),

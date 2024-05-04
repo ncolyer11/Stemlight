@@ -2,8 +2,9 @@ import time
 import numpy as np
 
 from Fast_Dispenser_Distribution import fast_calculate_distribution
-from src.Fungus_Distribution_Backend import CRIMSON, calculate_fungus_distribution
 from src.Dispenser_Distribution_Matrix import SIZE, foliage_distribution
+
+ACCEPTANCE_RATE = 0.995
 
 def simulated_annealing(discrete_function, initial_solution, temperature, cooling_rate,
                         min_temperature, max_iterations):
@@ -25,7 +26,7 @@ def simulated_annealing(discrete_function, initial_solution, temperature, coolin
                 best_solution = neighbor_solution
 
         temperature *= cooling_rate
-    print("Last temperature:", temperature, "Iterations:", i)
+    print("End temperature:", temperature, "Iterations:", i)
     return best_solution
 
 def acceptance_probability(current_energy, neighbor_energy, temperature):
@@ -68,15 +69,39 @@ def calc_fungus_dist_wrapper(offsets):
     disp_coords = np.array(offsets) + 2
     return fast_calculate_distribution(SIZE, SIZE, disp_coords)
 
+def output_results(function, solution, start_time):
+    """Output the results of the optimisation."""
+    print("Time taken:", time.time() - start_time)
+    best_coords = np.array(solution) + 2
+    print("Optimal coords: \n", best_coords)
+    print("Optimal value: ", function(solution))
+        # Print the location of max_rates_coords in a grid on terminal
+    for row in range(SIZE):
+        for col in range(SIZE):
+            if [row - 2, col - 2] in solution:
+                print(f'[{solution.index([row - 2, col - 2])}]', end='')
+            else:
+                print('[ ]', end='')
+        print()
+    print()
+
+def calculate_start_temp(N, function):
+    """Calculate the starting temperature for the simulated annealing algorithm."""
+    # Generate a random initial solution
+    initial_solution = [[np.random.randint(-2, 3), np.random.randint(-2, 3)] for _ in range(N)]
+    # Calculate the average energy of the initial solution
+    avg_energy = np.mean([function(initial_solution) for _ in range(100)])
+    # Calculate the average energy of the initial solution with a small change
+    avg_energy_change = np.mean([function(generate_neighbor(initial_solution)) for _ in range(100)])
+    # Calculate the starting temperature
+    start_temperature = -avg_energy / np.log(ACCEPTANCE_RATE)
+    print("Start temperature:", start_temperature)
+    print("Average energy change:", avg_energy_change - avg_energy)
+    return start_temperature
+
 def start_optimisation():
     """Start optimising the function using the simulated annealing algorithm."""
-    offsets = [[0,0] for _ in range(int(input("Enter number of dispensers: ")))] 
-    initial_solution = offsets
-    temperature = 100.0
-    cooling_rate = 0.9999997
-    min_temperature = 0.001
-    max_iterations = 10000000
-    
+    num_dispensers = int(input("Enter number of dispensers: "))
     function_choice = str(input("Select function (m/a): ")).lower()
     to_optimise_function = None
     if function_choice == "m":
@@ -86,22 +111,18 @@ def start_optimisation():
     else:
         print("Invalid function choice")
         return
+    
+    offsets = [[0,0] for _ in range(num_dispensers)] 
+    initial_solution = offsets
+    start_temperature = calculate_start_temp(num_dispensers, to_optimise_function)
+    cooling_rate = 0.9995
+    min_temperature = 1e-4
+    max_iterations = 10000000
+    
 
     start_time = time.time()
-    best_solution = simulated_annealing(to_optimise_function, initial_solution, temperature,
+    best_solution = simulated_annealing(to_optimise_function, initial_solution, start_temperature,
                                         cooling_rate, min_temperature, max_iterations)
-    print("Time taken:", time.time() - start_time)
-    best_coords = np.array(best_solution) + 2
-    print("Optimal coords: \n", best_coords)
-    print("Optimal value: ", to_optimise_function(best_solution))
-        # Print the location of max_rates_coords in a grid on terminal
-    for row in range(SIZE):
-        for col in range(SIZE):
-            if [row - 2, col - 2] in best_solution:
-                print(f'[{best_solution.index([row - 2, col - 2])}]', end='')
-            else:
-                print('[ ]', end='')
-        print()
-    print()
+    output_results(to_optimise_function, best_solution, start_time)
 
 start_optimisation()

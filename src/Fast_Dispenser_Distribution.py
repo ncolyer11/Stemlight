@@ -1,4 +1,5 @@
-"""A minimal program that helps calculate the optimal position to place n dispensers on a custom size grid of nylium as fast as possible"""
+"""A minimal program that helps calculate the optimal position to place
+n dispensers on a custom size grid of nylium as fast as possible"""
 
 import numpy as np
 
