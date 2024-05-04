@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from Fast_Dispenser_Distribution import fast_calculate_distribution
-from src.Dispenser_Distribution_Matrix import SIZE
+from archive.Dispenser_Distribution_Matrix import SIZE
 
 ACCEPTANCE_RATE = 0.995
 REJECTION_POINT = 0.1
@@ -132,8 +132,8 @@ def run_optimisation():
 
 def plot_cooling_rate_data():
     """Analyse how different cooling rates affect accuracy using plotted emperical data."""
-    num_dispensers = [3,4,5,6]
-    cooling_rates = [0.85,0.925,0.95,0.9725,0.995,0.999]
+    num_dispensers = [5,6]
+    cooling_rates = [0.9995, 0.9999]
     function_choice = calc_fungus_dist_wrapper
 
     # Create a DataFrame to store the results
@@ -148,7 +148,7 @@ def plot_cooling_rate_data():
                 result = start_optimisation(disp, function_choice, rate)
                 results.append(result)
             mean_value = np.mean(results)
-            mogged_rate = 0.99995 if disp >= 5 else 0.9995
+            mogged_rate = 0.999995 if disp >= 5 else 0.9995
             actual_value = start_optimisation(disp, function_choice, mogged_rate)
             print("Mean value:", mean_value)
             print("Actual value:", actual_value)

@@ -4,12 +4,14 @@ import numpy as np
 import itertools as itertools
 import time
 
+from src.Assets import constants as const
 from src.Fungus_Distribution_Backend import calculate_fungus_distribution
 
 WARPED = 0
 CRIMSON = 1
 
 def generate_permutations(length, width, n):
+    """Generate all permutations of n dispensers in a length x width grid"""
     # Generate all possible coordinates in the grid
     coordinates = np.mgrid[0:width, 0:length].reshape(2,-1).T.tolist()
     # Generate all permutations of n distinct coordinates
@@ -17,7 +19,9 @@ def generate_permutations(length, width, n):
         for p in itertools.permutations(c):
             yield list(p)
 
-def brute_force_max_fungi(length, width, num_dispensers, disp_perms, num_perms, fungus_type):
+def brute_force_max_fungi(length, width, num_dispensers, disp_perms, 
+                          num_perms, fungus_type, wb_per_fungi):
+    """Brute force the optimal dispenser placement by checking all permutations of dispensers"""
     max_fungi = 0
     optimal_rates_coords = []
     all_optimal_coords = [optimal_rates_coords]
@@ -27,13 +31,17 @@ def brute_force_max_fungi(length, width, num_dispensers, disp_perms, num_perms, 
     # First 10% of perms are clumped perms around the top 2 rows
     for disp_perm in itertools.islice(disp_perms, num_perms // 10, limiter):
     # for disp_perm in disp_perms:
-        _, total_fungi, *_ = \
+        total_foliage, total_fungi, bm_for_prod, *_ = \
             calculate_fungus_distribution(length, width, num_dispensers, disp_perm, fungus_type)
         # Update optimal perm for rates if a better combination is found
+        compost = (total_foliage - total_fungi) / const.FOLIAGE_PER_BM
         if math.isclose(total_fungi, max_fungi, abs_tol=1e-7):
             # Add to collection of optimal coordinates if the same max is found
             all_optimal_coords.append(disp_perm)
-        elif total_fungi > max_fungi:
+            # Ensure bone meal efficiency requirement is met for any max solution
+        elif total_fungi > max_fungi and \
+             bm_for_prod < wb_per_fungi / const.WARTS_PER_BM - const.AVG_BM_TO_GROW_FUNG:
+
             max_fungi = total_fungi
             optimal_rates_coords = disp_perm
             # Reset collection of optimal coordinates if a new max is found
@@ -185,7 +193,7 @@ def output_data(start_time, f_type, width, length, max_rates, max_rates_coords, 
                         file.write('[ ]')
             file.write('\n\n')
 
-def initialise_optimisation(length, width, num_dispensers, f_type):
+def initialise_optimisation(length, width, num_dispensers, f_type, wb_per_fungi):
     """Initialise the optimisation process by taking user input and calculating the runtime"""
     permutations = np.math.perm(length * width, num_dispensers)
     # Time complexity ain't precise coz surprise Python is an interpreted language :p
@@ -200,7 +208,8 @@ def initialise_optimisation(length, width, num_dispensers, f_type):
     # If the number of permutations is less than 350k, use brute force (TBD, new algo for all rn)
     if permutations < 350e3:
         max_rates, max_rates_coords, all_max_coords = \
-            brute_force_max_fungi(length, width, num_dispensers, disp_perms, permutations, f_type)
+            brute_force_max_fungi(length, width, num_dispensers, disp_perms, 
+                                  permutations, f_type, wb_per_fungi)
     # Otherwise, use the more efficient, but still unfinished Dracolyer algorithm
     else:
         max_rates, max_rates_coords, all_max_coords = \
@@ -222,7 +231,7 @@ if __name__ == "__main__":
     num_dispensers = int(input("Enter number of dispensers: "))
     f_type = WARPED
     f_type = CRIMSON
-    initialise_optimisation(length, width, num_dispensers, f_type)
+    initialise_optimisation(length, width, num_dispensers, f_type, 30)
 
 # bone meal efficiency can be converted to wart block efficiency and defined as the amount of wart
 # blocks your farm's blast chamber is able to harvest per fungi grown, thus bone meal efficiency

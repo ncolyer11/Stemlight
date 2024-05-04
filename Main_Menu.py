@@ -45,7 +45,7 @@ class ToolTip:
         main_font = font.Font(family='Segoe UI', size=int((RSF**1.765)*8))
 
         # @TODO update formatting for tooltips
-        label = tk.Label(tw, text=tip_text, justify=tk.LEFT,
+        label = tk.Label(tw, text=tip_text, justify=tk.CENTER,
                     background="#ffffe0", relief=tk.SOLID, borderwidth=1,
                     font=main_font)
         label.pack(ipadx=1)
@@ -55,7 +55,6 @@ class ToolTip:
         self.tip_window = None
         if tw:
             tw.destroy()
-
 
 def run_python_code(root, python_file):
     python_file.start(root)
