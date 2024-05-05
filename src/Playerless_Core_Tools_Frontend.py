@@ -18,21 +18,18 @@ from src.Dispenser_Placement_Optimiser import initialise_optimisation
 from src.Fungus_Distribution_Backend import calculate_fungus_distribution
 
 # @TODO:
-# hover over any cell to give you a tooltip of how many fungi and foliage are generated on top of
+# right click any cell to show how many fungi and foliage are generated on top of
 # it after N input cycles (usually just 1) and how much bm is used to grow in that spot, and if the
-# cell is a dispenser, show how much bm it uses to produce fungi, and if it's a cleared dispenser
+# cell is a dispenser, show how much bm it uses to produce fungi, and if it's a cleared dispenser (this will show bottom right corner next to current output labels)
+# try having sliders in a 2x2 grid at the top, and then extend the output grid at the bottom
+# by 2 columns to fit individual block info that appears for any block you right click on
 
 # an option for each dispenser to make it so it isn't affected by overlap (cleared by piston above)
 # ^ middle click dispenser
 
-# tooltip over bm to produce fungi: includes composting foliage
-
 # in each program, add a help menu item to the toolbar explaining how to use it
 
-# Button to export nether tree growth heatmap from the fungi distribution data
 
-# try having sliders in a 2x2 grid at the top, and then extend the output grid at the bottom
-# by 2 columns to fit individual block info that appears for any block you right click on
 
 # Non-linear scaling 
 NLS = 1.765
@@ -221,7 +218,7 @@ class App:
         cycles_tooltip = ToolTip(self.cycles_label)
         self.cycles_label.bind("<Enter>", lambda event: 
                     cycles_tooltip.show_tip((
-                        "Set how many times the dispensers are activated"),
+                        "Set how many times the dispensers are activated."),
                         event.x_root, event.y_root))
         self.cycles_label.bind("<Leave>", lambda event: cycles_tooltip.hide_tip())
         self.cycles_slider = tk.Scale(
@@ -246,7 +243,7 @@ class App:
         self.wb_effic_label.bind("<Enter>", lambda event: 
                     wb_effic_tooltip.show_tip((
                         "Restrict optimal solutions to require a certain bone meal\n"
-                        "(or ~8 composted wart blocks) per fungus produced efficiency"),
+                        "(or ~8 composted wart blocks) per fungus produced efficiency."),
                         event.x_root, event.y_root))
         self.wb_effic_label.bind("<Leave>", lambda event: wb_effic_tooltip.hide_tip())
         self.wb_effic_slider = tk.Scale(
@@ -502,7 +499,22 @@ class App:
 
             # Store the label in the dictionary for later use
             self.output_text_label[i] = label
-
+        
+        bm_for_prod_tooltip = ToolTip(self.output_text_label[2])
+        self.output_text_label[2].bind("<Enter>", lambda event: 
+                    bm_for_prod_tooltip.show_tip((
+                        "Bone meal spent by the nylium dispensers that creates the fungi.\n"
+                        "Factors in bone meal retrieved from composting excess foliage."),
+                        event.x_root, event.y_root))
+        self.output_text_label[2].bind("<Leave>", lambda event: bm_for_prod_tooltip.hide_tip())
+        
+        bm_for_growth_tooltip = ToolTip(self.output_text_label[2])
+        self.output_text_label[3].bind("<Enter>", lambda event: 
+                    bm_for_growth_tooltip.show_tip((
+                        "Bone meal spent on growing already produced fungi."),
+                        event.x_root, event.y_root))
+        self.output_text_label[3].bind("<Leave>", lambda event: bm_for_growth_tooltip.hide_tip())
+        
         # Create the labels for output values
         for i, output_value in enumerate(output_values):
             # Create a label for the output value
