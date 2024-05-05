@@ -25,9 +25,7 @@ from src.Fungus_Distribution_Backend import calculate_fungus_distribution
 # an option for each dispenser to make it so it isn't affected by overlap (cleared by piston above)
 # ^ middle click dispenser
 
-# tooltip over bm to produce fungi includes composting foliage
-
-# make it so if optimise 
+# tooltip over bm to produce fungi: includes composting foliage
 
 # in each program, add a help menu item to the toolbar explaining how to use it
 
@@ -407,26 +405,25 @@ class App:
     def optimise(self):
         fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
         dispenser_coordinates = [(d[0], d[1]) for d in self.dispensers]
-        all_optimal_coords = initialise_optimisation(
+        optimal_coords = initialise_optimisation(
             self.col_slider.get(), 
             self.row_slider.get(),
             len(dispenser_coordinates),
             fungi_type,
             self.wb_effic_slider.get()
         )
-        if all_optimal_coords == -1:
+        if optimal_coords == -1:
             messagebox.showwarning("Error", "Maximum runtime exceeded.")
             return
-        elif len(all_optimal_coords[0]) == 0:
+        elif [-1, -1] in optimal_coords or len(optimal_coords) == 0:
             messagebox.showinfo(
-                "Optimisation notice",
+                "Optimisation Notice",
                 "No optimal solution found for\n"
                 "given wart block efficiency."
             )
             return
-        
         self.reset_dispensers()
-        for disp_coord in all_optimal_coords[0]:
+        for disp_coord in optimal_coords:
             self.add_dispenser(disp_coord[0], disp_coord[1])
             
     def export_heatmaps(self):
