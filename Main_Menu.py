@@ -15,8 +15,7 @@ from src import (
 
 from src.Assets import colours
 from src.Assets.constants import RSF
-from src.Assets.version import version
-from src.Assets.helpers import resource_path, set_title_and_icon
+from src.Assets.helpers import set_title_and_icon
 
 # Program class to cleanly store program data
 class Program:
