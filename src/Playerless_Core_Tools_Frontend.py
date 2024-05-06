@@ -436,17 +436,15 @@ class App:
                 fungi_type,
                 self.cycles_slider.get()
             )[5]
-        print(disp_foliage_grids)
-        print(np.sum(disp_foliage_grids, axis=0))
         result = export_custom_heatmaps(
-            self.row_slider.get(),
             self.col_slider.get(),
+            self.row_slider.get(),
             np.sum(disp_foliage_grids, axis=0)
         )
         if result == 0:
             messagebox.showinfo("Success", "Heatmaps exported to weighted_fungi_heatmap.xlsx")
         else:
-            messagebox.showwarning("Error", f"An error occurred:\n{result}")    
+            messagebox.showwarning("Export Error", f"An error occurred:\n{result}")    
 
     def calculate(self):
         self.dispensers.sort(key=lambda d: d[2])
