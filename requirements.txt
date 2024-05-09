@@ -3,3 +3,4 @@ litemapy
 openpyxl
 pillow
 questionary
+pyinstaller
