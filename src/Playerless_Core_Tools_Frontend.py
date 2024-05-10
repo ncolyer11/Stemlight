@@ -9,12 +9,12 @@ from PIL import Image, ImageDraw, ImageTk
 import numpy as np
 
 from Main_Menu import ToolTip
+from src.Stochastic_Optimisation import start_optimisation
 from src.Assets import colours
 from src.Assets.constants import RSF
 from src.Assets.helpers import set_title_and_icon
 from src.Assets.helpers import resource_path
 from src.Custom_Nylium_Grid_Heatmap_Calculator import export_custom_heatmaps
-from src.Dispenser_Placement_Optimiser import initialise_optimisation
 from src.Fungus_Distribution_Backend import calculate_fungus_distribution
 
 # @TODO:
@@ -28,8 +28,6 @@ from src.Fungus_Distribution_Backend import calculate_fungus_distribution
 # ^ middle click dispenser
 
 # in each program, add a help menu item to the toolbar explaining how to use it
-
-
 
 # Non-linear scaling 
 NLS = 1.765
@@ -100,10 +98,41 @@ class App:
         self.grid = []
         self.dispensers = []
         self.nylium_type = tk.StringVar(value="warped")
+        self.run_time = 7
         self.vars = []
         self.create_widgets()
         self.output_text_label = {}
         self.output_text_value = {}
+
+            # Create menu
+        toolbar = tk.Menu(master)
+        master.config(menu=toolbar)
+
+        file_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
+        toolbar.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label="Exit", command=master.destroy)
+
+        help_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
+        toolbar.add_cascade(label="Help", menu=help_menu)
+        help_menu.add_command(label="What's this Tool for?", command=self.show_info_message)
+
+        run_time_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
+        toolbar.add_cascade(label="Run Time", menu=run_time_menu)
+
+        time_init = tk.StringVar(value="7")
+        for time in [1, 4, 7, 10, 15, 30, 60]:
+            run_time_menu.add_radiobutton(label=time, variable=time_init, value=time,
+                                        command=lambda time=time: self.set_rt(time))
+
+    def show_info_message(self):
+        """Provide some information to the user about what this tool is used for"""
+        messagebox.showinfo(
+            "Information",
+            "This tool is used to optimise the placement of dispensers on a platform of nylium "
+            "such that their position and ordering maximises fungi production, whilst not exceeding "
+            "a given bone meal efficiency requirement.",
+            icon='question'
+        )
 
     def create_widgets(self):
         self.master.configure(bg=colours.bg)
@@ -402,17 +431,22 @@ class App:
     def optimise(self):
         fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
         disp_coords = [(d[0], d[1]) for d in self.dispensers]
-        optimal_coords = initialise_optimisation(
+        if len(disp_coords) == 0:
+            return
+
+        optimal_coords = start_optimisation(
+            len(disp_coords),
             self.col_slider.get(), 
             self.row_slider.get(),
-            len(disp_coords),
+            self.wb_effic_slider.get(),
             fungi_type,
-            self.wb_effic_slider.get()
+            self.run_time
         )
+
         if optimal_coords == -1:
             messagebox.showwarning("Error", "Maximum runtime exceeded.")
             return
-        elif ([-1, -1] in optimal_coords or len(optimal_coords) == 0) and len(disp_coords) != 0:
+        elif ([-1, -1] in optimal_coords or len(optimal_coords) == 0):
             messagebox.showinfo(
                 "Optimisation Notice",
                 "No optimal solution found for\n"
@@ -523,20 +557,15 @@ class App:
             # Store the value label in the dictionary for later use
             self.output_text_value[i] = value_label
 
+    def set_rt(self, time):
+        self.run_time = time
+
 def start(root):
     child = tk.Toplevel(root)
     set_title_and_icon(child, "Playerless Core Tools")
 
     child.configure(bg=colours.bg)
     child.size = (int(RSF*300), int(RSF*325))
-
-    # Create menu
-    toolbar = tk.Menu(child)
-    child.config(menu=toolbar)
-
-    file_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
-    toolbar.add_cascade(label="File", menu=file_menu)
-    file_menu.add_command(label="Exit", command=child.destroy)
 
     # Get the root window's position and size
     root_x = root.winfo_x()

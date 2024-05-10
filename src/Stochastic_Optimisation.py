@@ -10,10 +10,30 @@ ACCEPTANCE_RATE = 0.995
 REJECTION_POINT = 0.1
 # Time taken for the CPU to compute ~one iteration of the simulated annealing algorithm
 # Dependant on hardware as well as number of permutations (grid size and num_dispensers)
-CPU = 5e-4
+CPU = 5.5e-4
+
+def start_optimisation(num_dispensers, length, width, wb_per_fungi, f_type, run_time):
+    """Start optimising the function using the simulated annealing algorithm."""
+    if num_dispensers == 0:
+        return [], 0
+    initial_solution = [[-1,-1] for _ in range(num_dispensers)]
+    start_temp, end_temp, *_ = calculate_temp_bounds(num_dispensers, length, width, f_type)
+    cooling_rate = (end_temp / start_temp) ** (CPU / run_time)
+    max_iterations = 100000
+
+    start_time = time.time()
+    # iterations = math.floor(math.log(end_temp / start_temp) / math.log(cooling_rate)) + 1
+    # print(f"S: {start_temp} E: {end_temp} I: {iterations} C: {cooling_rate}")
+
+    best_solution = simulated_annealing(initial_solution, start_temp, cooling_rate, end_temp,
+                                        max_iterations, length, width, f_type, wb_per_fungi)
+    
+    print("Time taken:", time.time() - start_time)
+
+    return best_solution
 
 def simulated_annealing(initial_sol, temperature, cooling_rate, min_temperature, max_iterations,
-                        length, width, wb_per_fungi):
+                        length, width, f_type, wb_per_fungi):
     """Simulated annealing algorithm for discrete optimisation of fungus distribution."""
     current_sol = initial_sol
     best_sol = initial_sol
@@ -21,15 +41,14 @@ def simulated_annealing(initial_sol, temperature, cooling_rate, min_temperature,
         if temperature < min_temperature:
             break
         neighbour_sol = generate_neighbour(current_sol, length, width)
-        current_energy = fast_calculate_dist(length, width, current_sol)[0]
-        neighbour_energy, bm_for_prod = fast_calculate_dist(length, width, neighbour_sol)
+        current_energy = fast_calculate_dist(length, width, f_type, current_sol)[0]
+        neighbour_energy, bm_for_prod = fast_calculate_dist(length, width, f_type, neighbour_sol)
 
         bm_req = bm_for_prod < wb_per_fungi / const.WARTS_PER_BM - const.AVG_BM_TO_GROW_FUNG
-        print(bm_for_prod, wb_per_fungi / const.WARTS_PER_BM - const.AVG_BM_TO_GROW_FUNG)
         if neighbour_energy > current_energy and bm_req or \
            np.random.rand() < acceptance_probability(current_energy, neighbour_energy, temperature):
             current_sol = neighbour_sol
-            if neighbour_energy > fast_calculate_dist(length, width, best_sol)[0] and bm_req:
+            if neighbour_energy > fast_calculate_dist(length, width, f_type, best_sol)[0] and bm_req:
                 best_sol = neighbour_sol
 
         temperature *= cooling_rate
@@ -54,10 +73,8 @@ def generate_neighbour(solution, length, width):
     indexes_to_change = np.random.choice(len(solution), len(solution), replace=False)
     for index_to_change in indexes_to_change:
         # Randomly select a small change in horizontal and vertical coord (-1, 0, or 1)
-        # print(f"curr: {solution[index_to_change]}")
         new_coords = [solution[index_to_change][0] + rand_s(-step_h, step_h + 1),
                     solution[index_to_change][1] + rand_s(-step_v, step_v + 1)]  
-        # print(f"new: {new_coords} ")
         
         # Ensure the new coord stays within the bounds of the 5x5 nylium grid (coords centred at 0,0)
         new_coords[0] = max(0, min(width - 1, new_coords[0]))
@@ -65,46 +82,35 @@ def generate_neighbour(solution, length, width):
 
         # Make sure no two coords can be the same
         while new_coords in neighbour_solution[:index_to_change] + neighbour_solution[index_to_change+1:]:
-            # print(neighbour_solution, "\n", new_coords)
-            new_coords = [solution[index_to_change][0] + rand_s(-width // 2, 1 + width // 2),
-                        solution[index_to_change][1] + rand_s(-length // 2, 1 + length // 2)]  
-            # print(f"cycle: {new_coords} ")
+            new_coords = [solution[index_to_change][0] + rand_s(-width, width + 1),
+                        solution[index_to_change][1] + rand_s(-length, length + 1)]  
             new_coords[0] = max(0, min(width - 1, new_coords[0]))
             new_coords[1] = max(0, min(length - 1, new_coords[1]))
-        # print(f"updated: {new_coords} ")
     
     # Update the solution with the new coord
     neighbour_solution[index_to_change] = new_coords
-    # print(solution, neighbour_solution)
     return neighbour_solution
 
-def calculate_temp_bounds(N, length, width):
+def calculate_temp_bounds(N, length, width, f_type):
     """Calculate the starting temperature for the simulated annealing algorithm."""
     func = fast_calculate_dist
     # Find the lowest energy point
     rand_s = np.random.randint
-    lowest_energy = func(length, width, [[0, 0] for _ in range(N)])[0]
+    lowest_energy = func(length, width, f_type, [[0, 0] for _ in range(N)])[0]
     # Create a valid set of coords by passing it through generate_neighbour
     average_solutions = []
     for _ in range(300*N):
         coords = [[rand_s(0, width), rand_s(0, length)] for _ in range(N)]
         average_solutions.append(generate_neighbour(coords, length, width))
     
-    # print(average_solutions)
     # Calculate the average energy of the initial solution
     avg_energy = np.mean(
-        [func(length, width, average_solutions[i])[0] for i in range(len(average_solutions))]
+        [func(length, width, f_type, average_solutions[i])[0] for i in range(300*N)]
     )
-    print(lowest_energy, avg_energy)
     high_energy_change = avg_energy - lowest_energy
-    
     start_temperature = -high_energy_change / np.log(ACCEPTANCE_RATE)
     end_temperature = -high_energy_change / np.log(REJECTION_POINT)
-    # print("Lowest energy:", lowest_energy)
-    # print("Average energy:", avg_energy)
-    # print("Average worst case energy change:", high_energy_change)
-    # print("Start temperature:", start_temperature)
-    # print("End temperature:", end_temperature)
+
     return start_temperature, end_temperature, lowest_energy, avg_energy
 
 def output_results(length, width, function, solution, start_time):
@@ -173,27 +179,6 @@ def plot_cooling_rate_data():
 
     # Write the DataFrame to an Excel file
     df.to_excel("cooling_rate_data.xlsx", index=False)
-
-def start_optimisation(num_dispensers, length, width, wb_per_fungi, run_time):
-    """Start optimising the function using the simulated annealing algorithm."""
-    if num_dispensers == 0:
-        return [], 0
-    initial_solution = [[-1,-1] for _ in range(num_dispensers)]
-    start_temp, end_temp, *_ = calculate_temp_bounds(num_dispensers, length, width)
-    cooling_rate = (end_temp / start_temp) ** (CPU / run_time)
-    max_iterations = 100000
-
-    start_time = time.time()
-    # print(end_temp, start_temp, cooling_rate)
-    iterations = math.floor(math.log(end_temp / start_temp) / math.log(cooling_rate)) + 1
-    print(f"S: {start_temp} E: {end_temp} I: {iterations} C: {cooling_rate}")
-
-    best_solution = simulated_annealing(initial_solution, start_temp, cooling_rate, end_temp,
-                                        max_iterations, length, width, wb_per_fungi)
-    
-    print("Time taken:", time.time() - start_time)
-
-    return best_solution, fast_calculate_dist(length, width, best_solution)[0]
 
 if __name__ == "__main__":
     for i in range(1, 11):
