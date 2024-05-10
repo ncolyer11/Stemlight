@@ -104,6 +104,11 @@ class App:
         self.output_text_value = {}
         self.info_text_label = {}
         self.info_text_value = {}
+        self.selected_block = ()
+
+        clearing_path = resource_path("src/Images/cleared_dispenser.png")
+        self.clearing_image = tk.PhotoImage(file=clearing_path)
+        self.clearing_image = self.clearing_image.subsample(3, 3)
 
         # Create menu
         toolbar = tk.Menu(master)
@@ -177,6 +182,8 @@ class App:
 
         self.nylium_switch = SlideSwitch(self.button_slider_frame, callback=self.update_nylium_type)
         self.nylium_switch.pack(side=tk.LEFT, padx=5, pady=5)
+
+
 
         self.grid_frame = tk.Frame(self.master, bg=colours.bg)
         self.grid_frame.pack(pady=5)
@@ -323,6 +330,7 @@ class App:
                 if self.vars[i][j].get() == 0:
                     tile[0].config(image=self.unchecked_image)
         self.calculate()
+        self.display_block_info()
 
     def create_ordered_dispenser_array(self, rows, cols):
         # Sort the dispensers list by the time data
@@ -377,7 +385,10 @@ class App:
                     command=lambda x=i, y=j: self.add_dispenser(x, y)
                 )
                 cb.grid(row=i, column=j, padx=0, pady=0)
-                cb.bind("<Button-1>", lambda event, x=i, y=j: self.display_block_info(x, y))
+                # Right-click to view individual block info
+                cb.bind("<Button-3>", lambda event, x=i, y=j: self.display_block_info(x, y))
+                # Middle-click to set to a clearing dispenser
+                cb.bind("<Button-2>", lambda event, x=i, y=j: self.set_clearing_dispenser(x, y))
 
                 var_row.append(var)
                 row.append((cb, None))
@@ -394,9 +405,13 @@ class App:
             self.vars.append(var_row)
 
         self.calculate()
+        self.display_block_info()
 
-    def add_dispenser(self, x, y):
+    def add_dispenser(self, x, y, cleared=False):
         label_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*5))
+        border_path = resource_path("src/Images/selected_block.png")
+        self.border_image = tk.PhotoImage(file=border_path)
+        self.border_image = self.border_image.subsample(3, 3)
 
         # Toggle the state of the checkbox
         self.vars[x][y].set(not self.vars[x][y].get())
@@ -422,14 +437,19 @@ class App:
             self.dispensers = [d for d in self.dispensers if d[:2] != (x, y)]
             self.grid[x][y][1].destroy()
         else:
-            self.grid[x][y][0].config(image=self.checked_image)
-            self.dispensers.append((x, y, time.time()))
+            if cleared == True:
+                self.grid[x][y][0].config(image=self.clearing_image)
+                self.dispensers.append((x, y, time.time(), 1))
+            else:
+                self.grid[x][y][0].config(image=self.checked_image)
+                self.dispensers.append((x, y, time.time(), 0))
             label = tk.Label(self.grid_frame, text=str(len(self.dispensers)), font=label_font)
             # Place label in the bottom right corner
             label.grid(row=x, column=y, padx=0, pady=0, sticky='se')  
             # Update the grid with the label
             self.grid[x][y] = (self.grid[x][y][0], label)  
         self.calculate()
+        self.display_block_info()
 
     def reset_dispensers(self):
         for i, row in enumerate(self.grid):
@@ -440,10 +460,12 @@ class App:
                     tile[1].destroy()
         self.dispensers = []
         self.calculate()
+        self.display_block_info()
 
     def optimise(self):
         fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
         disp_coords = [(d[0], d[1]) for d in self.dispensers]
+        cleared_array = [d[3] for d in self.dispensers]
         if len(disp_coords) == 0:
             return
 
@@ -467,8 +489,8 @@ class App:
             )
             return
         self.reset_dispensers()
-        for disp_coord in optimal_coords:
-            self.add_dispenser(disp_coord[0], disp_coord[1])
+        for i, disp_coord in enumerate(optimal_coords):
+            self.add_dispenser(disp_coord[0], disp_coord[1], cleared_array[i])
             
     def export_heatmaps(self):
         self.dispensers.sort(key=lambda d: d[2])
@@ -570,8 +592,28 @@ class App:
             # Store the value label in the dictionary for later use
             self.output_text_value[i] = value_label
     
-    def display_block_info(self, x, y):
-        print("we in")
+    def display_block_info(self, x=None, y=None):
+        # Return if no block is selected
+        if not self.selected_block and x == None:
+            return
+        # Reset labels and deselect block if already selected
+        elif (x, y) == self.selected_block:
+            self.selected_block = ()
+            for label in self.info_text_label.values():
+                label.destroy()
+            self.info_text_label = {}
+
+            for value_label in self.info_text_value.values():
+                value_label.destroy()
+            self.info_text_value = {}
+            return
+        # Calling with empty arguments simply updates the currently selected block
+        elif x is None and y is None:
+            x, y = self.selected_block
+        # Default behaviour is to just select a new block
+        else:
+            self.selected_block = (x, y)
+    
         self.dispensers.sort(key=lambda d: d[2])
         dispenser_coordinates = [(d[0], d[1]) for d in self.dispensers]
         fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
@@ -589,18 +631,18 @@ class App:
             f"{'Warped' if fungi_type == WARPED else 'Crimson'} Fungi",
         ]
         info_values = [
-            42
+            round(np.sum(disp_des_fungi_grids, axis=0)[x, y], DP)
         ]
-        print(dispenser_coordinates)
         # If selected block is a dispenser, include additional info
-        if [x,y] in dispenser_coordinates:
+        if (x,y) in dispenser_coordinates:
+            index = dispenser_coordinates.index((x, y))
+            disp_chance = np.sum(disp_foliage_grids[:index], axis=0)[x,y]
             info_labels.append("Bone meal used")
             info_labels.append("Position")
             info_labels.append(f"{'Warped' if fungi_type == WARPED else 'Crimson'} Fungi Produced")
-            print("we inss")
-            info_values.append(3)
-            info_values.append(6)
-            info_values.append(4.5)
+            info_values.append(round(1 - disp_chance, DP))
+            info_values.append(index + 1)
+            info_values.append(round(np.sum(disp_des_fungi_grids[index]), DP))
         
         label_font = font.Font(family='Segoe UI', size=int((RSF**NLS)*9))
         output_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
@@ -630,6 +672,18 @@ class App:
 
             # Store the value label in the dictionary for later use
             self.info_text_value[i] = label
+    
+    def set_clearing_dispenser(self, x, y):
+        """Set a dispenser to a clearing dispenser by middle clicking"""
+        for i, dispenser in enumerate(self.dispensers):
+            if dispenser[:2] == (x, y):
+                if dispenser[3] == 1:
+                    self.dispensers[i] = (x, y, dispenser[2], 0)
+                    self.grid[x][y][0].config(image=self.checked_image)
+                else:
+                    self.dispensers[i] = (x, y, dispenser[2], 1)
+                    self.grid[x][y][0].config(image=self.clearing_image)
+                break
 
     def set_rt(self, time):
         self.run_time = time
