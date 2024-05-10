@@ -401,18 +401,18 @@ class App:
 
     def optimise(self):
         fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
-        dispenser_coordinates = [(d[0], d[1]) for d in self.dispensers]
+        disp_coords = [(d[0], d[1]) for d in self.dispensers]
         optimal_coords = initialise_optimisation(
             self.col_slider.get(), 
             self.row_slider.get(),
-            len(dispenser_coordinates),
+            len(disp_coords),
             fungi_type,
             self.wb_effic_slider.get()
         )
         if optimal_coords == -1:
             messagebox.showwarning("Error", "Maximum runtime exceeded.")
             return
-        elif [-1, -1] in optimal_coords or len(optimal_coords) == 0:
+        elif ([-1, -1] in optimal_coords or len(optimal_coords) == 0) and len(disp_coords) != 0:
             messagebox.showinfo(
                 "Optimisation Notice",
                 "No optimal solution found for\n"

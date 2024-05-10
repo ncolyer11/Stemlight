@@ -4,11 +4,13 @@ import numpy as np
 import itertools as itertools
 import time
 
+from src.Stochastic_Optimisation import start_optimisation
 from src.Assets import constants as const
 from src.Fungus_Distribution_Backend import calculate_fungus_distribution
 
 WARPED = 0
 CRIMSON = 1
+MEDIAN_RUNTIME = 7
 
 def generate_permutations(length, width, n):
     """Generate all permutations of n dispensers in a length x width grid"""
@@ -150,36 +152,36 @@ def find_optimal_indexes(length, width, num_dispensers):
     for i in indexes:
         print(i)
 
-def output_data(start_time, f_type, width, length, max_rates, max_rates_coords, all_max_coords):
+def output_data(start_time, f_type, width, length, max_rates, max_rates_coords):
     """Output the data to the terminal and a file"""
     print(f'Calculated max fungi in {time.time() - start_time:.3f} seconds')
     print(f'Maximum {"crimson" if f_type == CRIMSON else "warped"} fungi: {max_rates:.3f}')
     print(f'Optimal coords: {max_rates_coords}')
     # Print the location of max_rates_coords in a grid on terminal
-    for row in range(width):
-        for col in range(length):
-            if [row, col] in max_rates_coords:
-                print(f'[{max_rates_coords.index([row, col])}]', end='')
+    for y in range(length):
+        for x in range(width):
+            if [x, y] in max_rates_coords:
+                print(f'[{max_rates_coords.index([x, y])}]', end='')
             else:
                 print('[ ]', end='')
         print()
     print()
 
-    print(f"{len(all_max_coords)} optimal positions found (see file)" )
-    with open('optimal_placements.txt', 'w') as file:
-        file.write(f'{len(all_max_coords)} optimal positions found:')
-        for i, coords in enumerate(all_max_coords):
-            file.write(f'{i + 1:3}: {coords}\n')
-            for row in range(width):
-                if row != 0:
-                    file.write('\n')
-                file.write("    ")
-                for col in range(length):
-                    if [row, col] in coords:
-                        file.write(f'[{coords.index([row, col])}]')
-                    else:
-                        file.write('[ ]')
-            file.write('\n\n')
+    # print(f"{len(all_max_coords)} optimal positions found (see file)" )
+    # with open('optimal_placements.txt', 'w') as file:
+    #     file.write(f'{len(all_max_coords)} optimal positions found:')
+    #     for i, coords in enumerate(all_max_coords):
+    #         file.write(f'{i + 1:3}: {coords}\n')
+    #         for row in range(width):
+    #             if row != 0:
+    #                 file.write('\n')
+    #             file.write("    ")
+    #             for col in range(length):
+    #                 if [row, col] in coords:
+    #                     file.write(f'[{coords.index([row, col])}]')
+    #                 else:
+    #                     file.write('[ ]')
+    #         file.write('\n\n')
 
 def initialise_optimisation(length, width, num_dispensers, f_type, wb_per_fungi):
     """Initialise the optimisation process by taking user input and calculating the runtime"""
@@ -187,23 +189,24 @@ def initialise_optimisation(length, width, num_dispensers, f_type, wb_per_fungi)
     start_time = time.time()
 
     disp_perms = generate_permutations(length, width, num_dispensers)
+    max_coords, max_fungi = start_optimisation(num_dispensers, length, width, wb_per_fungi, MEDIAN_RUNTIME)
     # If the number of permutations is less than 350k, use brute force (TBD, new algo for all rn)
-    if permutations < 350e3:
-        max_coords = brute_force_max_fungi(length, width, num_dispensers, disp_perms, 
-                                           permutations, f_type, wb_per_fungi)
+    # if permutations < 350e3:
+    #     max_coords = brute_force_max_fungi(length, width, num_dispensers, disp_perms, 
+    #                                        permutations, f_type, wb_per_fungi)
     # Otherwise, use the more efficient, but still unfinished Dracolyer algorithm
-    else:
-        max_coords = dracolyer(length, width, num_dispensers, f_type, wb_per_fungi)
+    # else:
+    #     max_coords = dracolyer(length, width, num_dispensers, f_type, wb_per_fungi)
     
     # If manually running the optimisation algorithm output data to terminal as well
     if __name__ == "__main__":
-        output_data(start_time, f_type, width, length, -1, max_coords)
+        output_data(start_time, f_type, width, length, max_fungi, max_coords)
 
     return max_coords
     
 # For manually running the optimisation algorithm
 if __name__ == "__main__":
-    length = 1
+    length = 5
     width = 5
     num_dispensers = int(input("Enter number of dispensers: "))
     f_type = WARPED
