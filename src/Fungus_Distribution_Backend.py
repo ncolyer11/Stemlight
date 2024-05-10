@@ -50,24 +50,47 @@ def calculate_distribution(length, width, dispensers, disp_coords,
     bm_for_prod = 0.0
 
     x, y = np.ogrid[:width, :length]
+    # @TODO need to fix N=cycle bugs with bm fungi values not being right
     for _ in range(cycles):
         for i in range(dispensers):
             # print(f"disp_coords before calling generate_foliage: {disp_coords}")
             foliage_chance, bm_for_prod = generate_foliage(disp_coords, total_foliage_grid, bm_for_prod, i, x, y)
-            
+            disp_x = disp_coords[i][0]
+            disp_y = disp_coords[i][1]
+            cleared = disp_coords[i][2]
+
             des_fungi_chance = foliage_chance * fungi_weight
-            disp_des_fungi_grids[i] = (1 - total_foliage_grid) * des_fungi_chance
+            disp_des_fungi_grids[i] += (1 - total_foliage_grid) * des_fungi_chance
+            # Clearing doesn't occur on the last cycle
+            if cleared and i != dispensers - 1:
+                disp_des_fungi_grids[:(dispensers - 1)][disp_x, disp_y] = 0
             total_des_fungi_grid += disp_des_fungi_grids[i]
             
-            disp_foliage_grids[i] = (1 - total_foliage_grid) * foliage_chance
+            disp_foliage_grids[i] += (1 - total_foliage_grid) * foliage_chance
+            if cleared and i != dispensers - 1:
+                disp_foliage_grids[:(dispensers - 1)][disp_x, disp_y] = 0
             total_foliage_grid += disp_foliage_grids[i]
+            print(disp_des_fungi_grids, "\n", total_des_fungi_grid, "\n\n")
             
             # If warped nylium, generate sprouts
             if fungi == WARPED:
                 sprouts_chance = (1 - total_foliage_grid) * foliage_chance
+                if cleared and i != dispensers - 1:
+                    sprouts_chance[disp_x, disp_y] = 0
                 disp_foliage_grids[i] += sprouts_chance
                 total_foliage_grid += sprouts_chance
                 sprouts_total += sprouts_chance
+        
+        total_des_fungi_grid = np.sum(disp_des_fungi_grids, axis=0)
+        total_foliage_grid = np.sum(disp_foliage_grids, axis=0)
+        
+        # Replicate triggering pistons to clear foliage on top of selected dispensers
+        for i in range(dispensers):
+            cleared = disp_coords[i][2]
+            if cleared == 0 and i != dispensers - 1:
+                continue
+            disp_x = disp_coords[i][0]
+            disp_y = disp_coords[i][1]
 
     return total_foliage_grid, total_des_fungi_grid, bm_for_prod, \
         disp_foliage_grids, disp_des_fungi_grids, sprouts_total
@@ -76,7 +99,10 @@ def generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y,):
     disp_x = disp_coords[i][0]
     disp_y = disp_coords[i][1]
     # print("Dispenser", i, "at", disp_row, disp_col, "with offset", x, y)
-    disp_bm_chance = 1 - foliage_grid[disp_x, disp_y]
+    if disp_coords[i][2] == 1:
+        disp_bm_chance = 1
+    else:
+        disp_bm_chance = 1 - foliage_grid[disp_x, disp_y]
     bm_for_prod += disp_bm_chance
 
     # P(foliage at x,y) = P(Air above dispensers) * P(x,y being selected)

@@ -18,11 +18,6 @@ from src.Custom_Nylium_Grid_Heatmap_Calculator import export_custom_heatmaps
 from src.Fungus_Distribution_Backend import calculate_fungus_distribution
 
 # @TODO:
-# right click any cell to show how many fungi and foliage are generated on top of
-# it after N input cycles (usually just 1) and how much bm is used to grow in that spot, and if the
-# cell is a dispenser, show how much bm it uses to produce fungi, and if it's a cleared dispenser (this can actually be shown by replacing the dispenser png with a half piston half dispenser png)
-# by 2 columns to fit individual block info that appears for any block you right click on
-
 # an option for each dispenser to make it so it isn't affected by overlap (cleared by piston above)
 # ^ middle click dispenser
 
@@ -346,8 +341,8 @@ class App:
             # The order of the dispenser is i + 1
             # Set the corresponding element in the dispenser array to i + 1
             x, y = dispenser[:2]
-            # Preserve initial time value 
-            dispenser_array[x][y] = (i + 1, dispenser[2])
+            # Preserve initial time value and cleared status
+            dispenser_array[x][y] = (i + 1, dispenser[2], dispenser[3])
 
         return dispenser_array
     
@@ -389,6 +384,8 @@ class App:
                 cb.bind("<Button-3>", lambda event, x=i, y=j: self.display_block_info(x, y))
                 # Middle-click to set to a clearing dispenser
                 cb.bind("<Button-2>", lambda event, x=i, y=j: self.set_clearing_dispenser(x, y))
+                # Accesible ctrl+right click option for users without a mouse/middle-click
+                cb.bind("<Control-Button-1>", lambda event, x=i, y=j: self.set_clearing_dispenser(x, y))
 
                 var_row.append(var)
                 row.append((cb, None))
@@ -396,11 +393,15 @@ class App:
                 if i < len(saved_states) and j < len(saved_states[i]):
                     var.set(saved_states[i][j])
                     if saved_states[i][j] == 1:
-                        cb.config(image=self.checked_image)
+                        cleared = dispenser_array[i][j][2]
+                        if cleared == 1:
+                            cb.config(image=self.clearing_image)
+                        else:
+                            cb.config(image=self.checked_image)
                         label = tk.Label(self.grid_frame, text=str(dispenser_array[i][j][0]), font=label_font)
                         label.grid(row=i, column=j, padx=0, pady=0, sticky='se')
                         row[j] = (cb, label)
-                        self.dispensers.append((i, j, dispenser_array[i][j][1]))
+                        self.dispensers.append((i, j, dispenser_array[i][j][1], cleared))
             self.grid.append(row)
             self.vars.append(var_row)
 
@@ -464,7 +465,7 @@ class App:
 
     def optimise(self):
         fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
-        disp_coords = [(d[0], d[1]) for d in self.dispensers]
+        disp_coords = [(d[0], d[1], d[3]) for d in self.dispensers]
         cleared_array = [d[3] for d in self.dispensers]
         if len(disp_coords) == 0:
             return
@@ -494,7 +495,7 @@ class App:
             
     def export_heatmaps(self):
         self.dispensers.sort(key=lambda d: d[2])
-        dispenser_coordinates = [(d[0], d[1]) for d in self.dispensers]
+        dispenser_coordinates = [(d[0], d[1], d[3]) for d in self.dispensers]
         fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED        
         disp_foliage_grids = \
             calculate_fungus_distribution(
@@ -517,7 +518,7 @@ class App:
 
     def calculate(self):
         self.dispensers.sort(key=lambda d: d[2])
-        dispenser_coordinates = [(d[0], d[1]) for d in self.dispensers]
+        dispenser_coordinates = [(d[0], d[1], d[3]) for d in self.dispensers]
         fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
         total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, *_ = \
             calculate_fungus_distribution(
@@ -615,7 +616,7 @@ class App:
             self.selected_block = (x, y)
     
         self.dispensers.sort(key=lambda d: d[2])
-        dispenser_coordinates = [(d[0], d[1]) for d in self.dispensers]
+        dispenser_coordinates = [(d[0], d[1], d[3]) for d in self.dispensers]
         fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
         *_, disp_foliage_grids, disp_des_fungi_grids = \
             calculate_fungus_distribution(
@@ -628,22 +629,35 @@ class App:
             )
         
         info_labels = [
-            f"{'Warped' if fungi_type == WARPED else 'Crimson'} Fungi",
+            f"{'Warped' if fungi_type == WARPED else 'Crimson'} Fungi at {(x,y)}",
+            f"Foliage at {(x,y)}",
         ]
+        print(disp_des_fungi_grids)
+        sel_fungi_amount = np.sum(disp_des_fungi_grids, axis=0)[x, y]
+        sel_foliage_amount = np.sum(disp_foliage_grids, axis=0)[x, y] - sel_fungi_amount
         info_values = [
-            round(np.sum(disp_des_fungi_grids, axis=0)[x, y], DP)
+            round(sel_fungi_amount, DP),
+            round(sel_foliage_amount, DP)
         ]
         # If selected block is a dispenser, include additional info
-        if (x,y) in dispenser_coordinates:
-            index = dispenser_coordinates.index((x, y))
+        if (x, y, 0) in dispenser_coordinates or (x, y, 1) in dispenser_coordinates:
+            try:
+                index = dispenser_coordinates.index((x, y, 0))
+            except ValueError:
+                index = dispenser_coordinates.index((x, y, 1))
             disp_chance = np.sum(disp_foliage_grids[:index], axis=0)[x,y]
-            info_labels.append("Bone meal used")
-            info_labels.append("Position")
             info_labels.append(f"{'Warped' if fungi_type == WARPED else 'Crimson'} Fungi Produced")
-            info_values.append(round(1 - disp_chance, DP))
-            info_values.append(index + 1)
-            info_values.append(round(np.sum(disp_des_fungi_grids[index]), DP))
-        
+            info_labels.append("Bone Meal Used")
+            info_labels.append("Bone Meal per Fungi")
+            info_labels.append("Position | Cleared")
+
+            fungi_produced = np.sum(disp_des_fungi_grids[index])
+            bone_meal_used = 1 - disp_chance
+            info_values.append(round(fungi_produced, DP))
+            info_values.append(round(bone_meal_used, DP))
+            info_values.append(round(bone_meal_used / fungi_produced, DP))
+            info_values.append(f'{index + 1} | {"Yes" if self.dispensers[index][3] == 1 else "No"}')
+
         label_font = font.Font(family='Segoe UI', size=int((RSF**NLS)*9))
         output_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
 
@@ -665,14 +679,21 @@ class App:
             self.info_text_label[i] = label
 
         # Create the labels for block info values
-        for i, output_value in enumerate(info_values):
-            label = tk.Label(self.output_frame, text=output_value, bg=colours.bg, fg=colours.fg, font=output_font)
+        for i, info_value in enumerate(info_values):
+            label = tk.Label(self.output_frame, text=info_value, bg=colours.bg, fg=colours.fg, font=output_font)
             label.grid(row=i + 2, column=3, padx=PAD, pady=PAD, sticky="WE")
             label.grid_columnconfigure(0, weight=1)  # Ensure the label fills the cell horizontally
 
             # Store the value label in the dictionary for later use
             self.info_text_value[i] = label
-    
+        
+        foliage_tooltip = ToolTip(self.output_text_label[2])
+        self.info_text_label[1].bind("<Enter>", lambda event: 
+                    foliage_tooltip.show_tip((
+                        "All other foliage generated at this position (excluding desired fungi)."),
+                        event.x_root, event.y_root))
+        self.info_text_label[1].bind("<Leave>", lambda event: foliage_tooltip.hide_tip())
+        
     def set_clearing_dispenser(self, x, y):
         """Set a dispenser to a clearing dispenser by middle clicking"""
         for i, dispenser in enumerate(self.dispensers):
@@ -684,6 +705,10 @@ class App:
                     self.dispensers[i] = (x, y, dispenser[2], 1)
                     self.grid[x][y][0].config(image=self.clearing_image)
                 break
+
+        self.calculate()
+        self.display_block_info()
+        return "break"
 
     def set_rt(self, time):
         self.run_time = time
