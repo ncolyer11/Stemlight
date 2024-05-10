@@ -20,8 +20,7 @@ from src.Fungus_Distribution_Backend import calculate_fungus_distribution
 # @TODO:
 # right click any cell to show how many fungi and foliage are generated on top of
 # it after N input cycles (usually just 1) and how much bm is used to grow in that spot, and if the
-# cell is a dispenser, show how much bm it uses to produce fungi, and if it's a cleared dispenser (this will show bottom right corner next to current output labels)
-# try having sliders in a 2x2 grid at the top, and then extend the output grid at the bottom
+# cell is a dispenser, show how much bm it uses to produce fungi, and if it's a cleared dispenser (this can actually be shown by replacing the dispenser png with a half piston half dispenser png)
 # by 2 columns to fit individual block info that appears for any block you right click on
 
 # an option for each dispenser to make it so it isn't affected by overlap (cleared by piston above)
@@ -103,8 +102,10 @@ class App:
         self.create_widgets()
         self.output_text_label = {}
         self.output_text_value = {}
+        self.info_text_label = {}
+        self.info_text_value = {}
 
-            # Create menu
+        # Create menu
         toolbar = tk.Menu(master)
         master.config(menu=toolbar)
 
@@ -129,7 +130,7 @@ class App:
         messagebox.showinfo(
             "Information",
             "This tool is used to optimise the placement of dispensers on a platform of nylium "
-            "such that their position and ordering maximises fungi production, whilst not exceeding "
+            "such that their position and ordering maximises fungus production, whilst not exceeding "
             "a given bone meal efficiency requirement.",
             icon='question'
         )
@@ -145,7 +146,7 @@ class App:
         slider_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
 
         output_title_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*13))
-        label_font = font.Font(family='Segoe UI', size=int((RSF**NLS)*5))
+        output_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
     
         style.configure(
             "TCheckbutton", 
@@ -163,10 +164,13 @@ class App:
         self.unchecked_image = tk.PhotoImage(file=unchecked_path)
 
         # Resize the images
-        self.checked_image = self.checked_image.subsample(4, 4)
-        self.unchecked_image = self.unchecked_image.subsample(4, 4)
+        self.checked_image = self.checked_image.subsample(3, 3)
+        self.unchecked_image = self.unchecked_image.subsample(3, 3)
 
         self.create_sliders()
+
+        self.button_slider_frame = tk.Frame(self.master, bg=colours.bg)
+        self.button_slider_frame.pack(pady=10)  
 
         self.reset_button = tk.Button(self.button_slider_frame, text="Reset", command=self.reset_dispensers, font=small_button_font, bg=colours.warped)
         self.reset_button.pack(side=tk.RIGHT, padx=5)
@@ -193,8 +197,6 @@ class App:
         self.output_frame = tk.Frame(self.master_frame, bg=colours.bg,
                                      highlightthickness=3, highlightbackground="grey")
         self.output_frame.grid(row=0, column=1, sticky='nsew')
-        self.master_frame.grid_columnconfigure(1, weight=1)
-        self.master_frame.grid_rowconfigure(0, weight=1)
     
         # Add a label to the output frame for output labels
         self.output_label = tk.Label(self.output_frame, text="Outputs", font=output_title_font,
@@ -206,12 +208,29 @@ class App:
                     bg=colours.bg, fg=colours.fg)
         self.output_value.grid(row=0, column=1, sticky='w')
 
+        # Add a label to display the stats of a selected individual block
+        self.block_info_title = tk.Label(self.output_frame, text="Block Stats\t", font=output_title_font,
+                    bg=colours.bg, fg=colours.fg)
+        self.block_info_title.grid(row=0, column=2, sticky='w')
+
+        # Add a label to the output frame for output values
+        self.info_value = tk.Label(self.output_frame, text="\t", font=output_title_font,
+                    bg=colours.bg, fg=colours.fg)
+        self.info_value.grid(row=0, column=3, sticky='w')
+
     def create_sliders(self):
+        self.master_frame = tk.Frame(self.master)
+        self.master_frame.pack(pady=5)
+
+        # Create a new frame for the output results
+        self.slider_frame = tk.Frame(self.master_frame, bg=colours.bg)
+        self.slider_frame.grid(row=0, column=0, sticky='nsew')
+
         slider_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
-        row_label = tk.Label(self.master, text="Length:", bg=colours.bg, fg=colours.fg, font=slider_font)
-        row_label.pack()
+        row_label = tk.Label(self.slider_frame, text="Length:", bg=colours.bg, fg=colours.fg, font=slider_font)
+        row_label.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
         self.row_slider = tk.Scale(
-            self.master, 
+            self.slider_frame, 
             from_=1, 
             to=MAX_SIDE_LEN, 
             orient=tk.HORIZONTAL, 
@@ -222,13 +241,12 @@ class App:
         )
         self.row_slider.set(5)
         self.row_slider.bind("<Double-Button-1>", self.reset_slider)
-        self.row_slider.pack(pady=5)
-        self.row_slider.pack()
+        self.row_slider.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
 
-        col_label = tk.Label(self.master, text="Width:", bg=colours.bg, fg=colours.fg, font=slider_font)
-        col_label.pack()
+        col_label = tk.Label(self.slider_frame, text="Width:", bg=colours.bg, fg=colours.fg, font=slider_font)
+        col_label.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
         self.col_slider = tk.Scale(
-            self.master, 
+            self.slider_frame, 
             from_=1, 
             to=MAX_SIDE_LEN, 
             orient=tk.HORIZONTAL, 
@@ -239,11 +257,10 @@ class App:
         )
         self.col_slider.set(5)
         self.col_slider.bind("<Double-Button-1>", self.reset_slider)
-        self.col_slider.pack(pady=5)
-        self.col_slider.pack()
+        self.col_slider.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
         
-        self.cycles_label = tk.Label(self.master, text="No. Cycles:", bg=colours.bg, fg=colours.fg, font=slider_font)
-        self.cycles_label.pack()
+        self.cycles_label = tk.Label(self.slider_frame, text="No. Cycles:", bg=colours.bg, fg=colours.fg, font=slider_font)
+        self.cycles_label.grid(row=2, column=0, padx=5, pady=5, sticky="nsew")
         cycles_tooltip = ToolTip(self.cycles_label)
         self.cycles_label.bind("<Enter>", lambda event: 
                     cycles_tooltip.show_tip((
@@ -251,7 +268,7 @@ class App:
                         event.x_root, event.y_root))
         self.cycles_label.bind("<Leave>", lambda event: cycles_tooltip.hide_tip())
         self.cycles_slider = tk.Scale(
-            self.master, 
+            self.slider_frame, 
             from_=1, 
             to=7,
             orient=tk.HORIZONTAL, 
@@ -262,12 +279,11 @@ class App:
         )
         self.cycles_slider.set(1)
         self.cycles_slider.bind("<Double-Button-1>", lambda event: self.reset_slider(event, 1))
-        self.cycles_slider.pack(pady=5)
-        self.cycles_slider.pack()
+        self.cycles_slider.grid(row=3, column=0, padx=5, pady=5, sticky="nsew")
 
-        self.wb_effic_label = tk.Label(self.master, text="Wart Blocks/Fungus:", 
+        self.wb_effic_label = tk.Label(self.slider_frame, text="Wart Blocks/Fungus:", 
                                        bg=colours.bg, fg=colours.fg, font=slider_font)
-        self.wb_effic_label.pack()
+        self.wb_effic_label.grid(row=2, column=1, padx=5, pady=5, sticky="nsew")
         wb_effic_tooltip = ToolTip(self.wb_effic_label)
         self.wb_effic_label.bind("<Enter>", lambda event: 
                     wb_effic_tooltip.show_tip((
@@ -276,7 +292,7 @@ class App:
                         event.x_root, event.y_root))
         self.wb_effic_label.bind("<Leave>", lambda event: wb_effic_tooltip.hide_tip())
         self.wb_effic_slider = tk.Scale(
-            self.master, 
+            self.slider_frame, 
             from_=20, 
             to=60, 
             orient=tk.HORIZONTAL, 
@@ -287,11 +303,7 @@ class App:
         )
         self.wb_effic_slider.set(60)
         self.wb_effic_slider.bind("<Double-Button-1>", lambda event: self.reset_slider(event, 60))
-        self.wb_effic_slider.pack(pady=5)
-        self.wb_effic_slider.pack()
-
-        self.button_slider_frame = tk.Frame(self.master, bg=colours.bg)
-        self.button_slider_frame.pack(pady=10)        
+        self.wb_effic_slider.grid(row=3, column=1, padx=5, pady=5, sticky="nsew")      
 
     def reset_slider(self, event, default=5):
         self.master.after(10, lambda: event.widget.set(default))
@@ -304,7 +316,7 @@ class App:
             self.nylium_type.set("warped")
             unchecked_path = resource_path("src/Images/warped_nylium.png")
         self.unchecked_image = tk.PhotoImage(file=unchecked_path)
-        self.unchecked_image = self.unchecked_image.subsample(4, 4)
+        self.unchecked_image = self.unchecked_image.subsample(3, 3)
         # Update the images of the checkboxes
         for i, row in enumerate(self.grid):
             for j, tile in enumerate(row):
@@ -365,6 +377,7 @@ class App:
                     command=lambda x=i, y=j: self.add_dispenser(x, y)
                 )
                 cb.grid(row=i, column=j, padx=0, pady=0)
+                cb.bind("<Button-1>", lambda event, x=i, y=j: self.display_block_info(x, y))
 
                 var_row.append(var)
                 row.append((cb, None))
@@ -556,6 +569,67 @@ class App:
 
             # Store the value label in the dictionary for later use
             self.output_text_value[i] = value_label
+    
+    def display_block_info(self, x, y):
+        print("we in")
+        self.dispensers.sort(key=lambda d: d[2])
+        dispenser_coordinates = [(d[0], d[1]) for d in self.dispensers]
+        fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
+        *_, disp_foliage_grids, disp_des_fungi_grids = \
+            calculate_fungus_distribution(
+                self.col_slider.get(), 
+                self.row_slider.get(),
+                len(dispenser_coordinates),
+                dispenser_coordinates,
+                fungi_type,
+                self.cycles_slider.get()
+            )
+        
+        info_labels = [
+            f"{'Warped' if fungi_type == WARPED else 'Crimson'} Fungi",
+        ]
+        info_values = [
+            42
+        ]
+        print(dispenser_coordinates)
+        # If selected block is a dispenser, include additional info
+        if [x,y] in dispenser_coordinates:
+            info_labels.append("Bone meal used")
+            info_labels.append("Position")
+            info_labels.append(f"{'Warped' if fungi_type == WARPED else 'Crimson'} Fungi Produced")
+            print("we inss")
+            info_values.append(3)
+            info_values.append(6)
+            info_values.append(4.5)
+        
+        label_font = font.Font(family='Segoe UI', size=int((RSF**NLS)*9))
+        output_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
+
+        # Clear existing labels
+        for label in self.info_text_label.values():
+            label.destroy()
+        self.info_text_label = {}
+
+        for value_label in self.info_text_value.values():
+            value_label.destroy()
+        self.info_text_value = {}
+
+        # Create the labels for info labels
+        for i, label_text in enumerate(info_labels):
+            label = tk.Label(self.output_frame, text=label_text, bg=colours.bg, fg=colours.fg, font=label_font)
+            label.grid(row=i + 2, column=2, padx=PAD, pady=PAD, sticky="W")
+
+            # Store the label in the dictionary for later use
+            self.info_text_label[i] = label
+
+        # Create the labels for block info values
+        for i, output_value in enumerate(info_values):
+            label = tk.Label(self.output_frame, text=output_value, bg=colours.bg, fg=colours.fg, font=output_font)
+            label.grid(row=i + 2, column=3, padx=PAD, pady=PAD, sticky="WE")
+            label.grid_columnconfigure(0, weight=1)  # Ensure the label fills the cell horizontally
+
+            # Store the value label in the dictionary for later use
+            self.info_text_value[i] = label
 
     def set_rt(self, time):
         self.run_time = time

@@ -43,7 +43,6 @@ class ToolTip:
         tw.wm_geometry(f"+{x}+{y}")
         main_font = font.Font(family='Segoe UI', size=int((RSF**1.765)*8))
 
-        # @TODO update formatting for tooltips
         label = tk.Label(tw, text=tip_text, justify=tk.CENTER,
                     background="#ffffe0", relief=tk.SOLID, borderwidth=1,
                     font=main_font)
