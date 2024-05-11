@@ -618,23 +618,24 @@ class App:
         self.dispensers.sort(key=lambda d: d[2])
         dispenser_coordinates = [(d[0], d[1], d[3]) for d in self.dispensers]
         fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
+        dispensers = len(dispenser_coordinates)
+        cycles = self.cycles_slider.get()
         *_, disp_foliage_grids, disp_des_fungi_grids = \
             calculate_fungus_distribution(
                 self.col_slider.get(), 
                 self.row_slider.get(),
-                len(dispenser_coordinates),
+                dispensers,
                 dispenser_coordinates,
                 fungi_type,
-                self.cycles_slider.get()
+                cycles
             )
         
         info_labels = [
             f"{'Warped' if fungi_type == WARPED else 'Crimson'} Fungi at {(x,y)}",
             f"Foliage at {(x,y)}",
         ]
-        print(disp_des_fungi_grids)
-        sel_fungi_amount = np.sum(disp_des_fungi_grids, axis=0)[x, y]
-        sel_foliage_amount = np.sum(disp_foliage_grids, axis=0)[x, y] - sel_fungi_amount
+        sel_fungi_amount = np.sum(disp_des_fungi_grids, axis=(0,1))[x, y]
+        sel_foliage_amount = np.sum(disp_foliage_grids, axis=(0,1))[x, y] - sel_fungi_amount
         info_values = [
             round(sel_fungi_amount, DP),
             round(sel_foliage_amount, DP)
@@ -642,14 +643,30 @@ class App:
         # If selected block is a dispenser, include additional info
         if any((x, y) == coord[:2] for coord in dispenser_coordinates):
             index = next(i for i, coord in enumerate(dispenser_coordinates) if (x, y) == coord[:2])
-            disp_chance = np.sum(disp_foliage_grids[:index], axis=0)[x,y]
+            bone_meal_used = 0
+            for c in range(cycles):
+                # First sum only earlierly ordered dispensers affect the current one
+                if c == 0:
+                    if index != 0:
+                        cycle_sum = np.sum(disp_foliage_grids[:index, c, :, :], axis=0)
+                        print("1:::", cycle_sum)
+                    else:
+                        cycle_sum = np.zeros((self.row_slider.get(), self.col_slider.get()))
+                        print("2:::", cycle_sum)
+                else:
+                    cycle_sum = np.sum(disp_foliage_grids[:, :c, :, :], axis=(0, 1))
+                    print(cycle_sum)
+                    cycle_sum += np.sum(disp_foliage_grids[:index, c, :, :], axis=0)
+                print(cycle_sum)
+                bone_meal_used += 1 - cycle_sum[x, y]
+
+
             info_labels.append(f"{'Warped' if fungi_type == WARPED else 'Crimson'} Fungi Produced")
             info_labels.append("Bone Meal Used")
             info_labels.append("Bone Meal per Fungi")
             info_labels.append("Position | Cleared")
 
             fungi_produced = np.sum(disp_des_fungi_grids[index])
-            bone_meal_used = 1 - disp_chance
             info_values.append(round(fungi_produced, DP))
             info_values.append(round(bone_meal_used, DP))
             info_values.append(round(bone_meal_used / fungi_produced, DP))
