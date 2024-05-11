@@ -640,11 +640,8 @@ class App:
             round(sel_foliage_amount, DP)
         ]
         # If selected block is a dispenser, include additional info
-        if (x, y, 0) in dispenser_coordinates or (x, y, 1) in dispenser_coordinates:
-            try:
-                index = dispenser_coordinates.index((x, y, 0))
-            except ValueError:
-                index = dispenser_coordinates.index((x, y, 1))
+        if any((x, y) == coord[:2] for coord in dispenser_coordinates):
+            index = next(i for i, coord in enumerate(dispenser_coordinates) if (x, y) == coord[:2])
             disp_chance = np.sum(disp_foliage_grids[:index], axis=0)[x,y]
             info_labels.append(f"{'Warped' if fungi_type == WARPED else 'Crimson'} Fungi Produced")
             info_labels.append("Bone Meal Used")
