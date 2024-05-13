@@ -12,7 +12,8 @@ REJECTION_POINT = 0.1
 # Dependant on hardware as well as number of permutations (grid size and num_dispensers)
 CPU = 5.5e-4
 
-def start_optimisation(num_dispensers, length, width, wb_per_fungi, f_type, run_time):
+def start_optimisation(num_dispensers, length, width, wb_per_fungi, f_type,
+                       run_time, blocked_coords=[[]]):
     """Start optimising the function using the simulated annealing algorithm."""
     if num_dispensers == 0:
         return [], 0
@@ -33,7 +34,7 @@ def start_optimisation(num_dispensers, length, width, wb_per_fungi, f_type, run_
     return best_solution
 
 def simulated_annealing(initial_sol, temperature, cooling_rate, min_temperature, max_iterations,
-                        length, width, f_type, wb_per_fungi):
+                        length, width, f_type, wb_per_fungi, blocked_coords=[[]]):
     """Simulated annealing algorithm for discrete optimisation of fungus distribution."""
     current_sol = initial_sol
     best_sol = initial_sol
@@ -61,7 +62,7 @@ def acceptance_probability(current_energy, neighbour_energy, temperature):
     else:
         return np.exp((neighbour_energy - current_energy) / temperature)
 
-def generate_neighbour(solution, length, width):
+def generate_neighbour(solution, length, width, blocked_coords=[[]]):
     """Generate a new dispenser permutation by altering 1 to all of their coords slightly"""
     step_h = 1 if width != 1 else 0
     step_v = 1 if length != 1 else 0
@@ -91,7 +92,7 @@ def generate_neighbour(solution, length, width):
     neighbour_solution[index_to_change] = new_coords
     return neighbour_solution
 
-def calculate_temp_bounds(N, length, width, f_type):
+def calculate_temp_bounds(N, length, width, f_type, blocked_coords=[[]]):
     """Calculate the starting temperature for the simulated annealing algorithm."""
     func = fast_calculate_dist
     # Find the lowest energy point

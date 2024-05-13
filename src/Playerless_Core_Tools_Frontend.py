@@ -92,6 +92,7 @@ class App:
         self.master = master
         self.grid = []
         self.dispensers = []
+        self.blocked_blocks = []
         self.nylium_type = tk.StringVar(value="warped")
         self.run_time = 7
         self.vars = []
@@ -158,22 +159,25 @@ class App:
         )
         style.configure("TScale", font=slider_font)
 
-        # Create images for the checked and unchecked states
+        # Create images for the checked and unchecked, and blocked states
         checked_path = resource_path("src/Images/dispenser.png")
         unchecked_path = resource_path("src/Images/warped_nylium.png")
+        blocked_path = resource_path("src/Images/blocked_block.png")
         self.checked_image = tk.PhotoImage(file=checked_path)
         self.unchecked_image = tk.PhotoImage(file=unchecked_path)
+        self.blocked_image = tk.PhotoImage(file=blocked_path)
 
         # Resize the images
         self.checked_image = self.checked_image.subsample(3, 3)
         self.unchecked_image = self.unchecked_image.subsample(3, 3)
+        self.blocked_image = self.blocked_image.subsample(3, 3)
 
         self.create_sliders()
 
         self.button_slider_frame = tk.Frame(self.master, bg=colours.bg)
         self.button_slider_frame.pack(pady=10)  
 
-        self.reset_button = tk.Button(self.button_slider_frame, text="Reset", command=self.reset_dispensers, font=small_button_font, bg=colours.warped)
+        self.reset_button = tk.Button(self.button_slider_frame, text="Reset", command=self.reset_grid, font=small_button_font, bg=colours.warped)
         self.reset_button.pack(side=tk.RIGHT, padx=5)
 
         self.nylium_switch = SlideSwitch(self.button_slider_frame, callback=self.update_nylium_type)
@@ -365,6 +369,7 @@ class App:
         self.grid = []
         self.dispensers = []
         self.vars = []
+        self.blocked_blocks = []
 
         for i in range(rows):
             row = []
@@ -383,10 +388,11 @@ class App:
                 cb.grid(row=i, column=j, padx=0, pady=0)
                 # Right-click to view individual block info
                 cb.bind("<Button-3>", lambda event, x=i, y=j: self.display_block_info(x, y))
-                # Middle-click to set to a clearing dispenser
-                cb.bind("<Button-2>", lambda event, x=i, y=j: self.set_clearing_dispenser(x, y))
+                # Middle-click to set to a clearing dispenser or blocked block
+                # depending on if clicked block is a dispenser or nylium block
+                cb.bind("<Button-2>", lambda event, x=i, y=j: self.set_cleared_or_blocked(x, y))
                 # Accesible ctrl+right click option for users without a mouse/middle-click
-                cb.bind("<Control-Button-1>", lambda event, x=i, y=j: self.set_clearing_dispenser(x, y))
+                cb.bind("<Control-Button-1>", lambda event, x=i, y=j: self.set_cleared_or_blocked(x, y))
 
                 var_row.append(var)
                 row.append((cb, None))
@@ -403,6 +409,8 @@ class App:
                         label.grid(row=i, column=j, padx=0, pady=0, sticky='se')
                         row[j] = (cb, label)
                         self.dispensers.append((i, j, dispenser_array[i][j][1], cleared))
+                    if (i, j) in self.blocked_blocks:
+                        cb.config(image=self.blocked_image)
             self.grid.append(row)
             self.vars.append(var_row)
 
@@ -453,13 +461,21 @@ class App:
         self.calculate()
         self.display_block_info()
 
-    def reset_dispensers(self):
+    def reset_grid(self, remove_blocked=True):
         for i, row in enumerate(self.grid):
             for j, tile in enumerate(row):
                 self.vars[i][j].set(0)
                 tile[0].config(image=self.unchecked_image)
                 if isinstance(tile[1], tk.Label):
                     tile[1].destroy()
+                # need to remove blocked blocks that are overlapped by a dispenser
+                # give a warning or something to let user know optimising doesnt and wont support blocked blocks
+        if remove_blocked:
+            self.blocked_blocks = []  
+        else:
+            for x, y in self.blocked_blocks:
+                self.grid[x][y][0].config(image=self.blocked_image)
+
         self.dispensers = []
         self.calculate()
         self.display_block_info()
@@ -490,7 +506,7 @@ class App:
                 "given wart block efficiency."
             )
             return
-        self.reset_dispensers()
+        self.reset_grid(remove_blocked=False)
         for i, disp_coord in enumerate(optimal_coords):
             self.add_dispenser(disp_coord[0], disp_coord[1], cleared_array[i])
             
@@ -706,17 +722,26 @@ class App:
                         event.x_root, event.y_root))
         self.info_text_label[1].bind("<Leave>", lambda event: foliage_tooltip.hide_tip())
         
-    def set_clearing_dispenser(self, x, y):
-        """Set a dispenser to a clearing dispenser by middle clicking"""
-        for i, dispenser in enumerate(self.dispensers):
-            if dispenser[:2] == (x, y):
-                if dispenser[3] == 1:
-                    self.dispensers[i] = (x, y, dispenser[2], 0)
-                    self.grid[x][y][0].config(image=self.checked_image)
-                else:
-                    self.dispensers[i] = (x, y, dispenser[2], 1)
-                    self.grid[x][y][0].config(image=self.clearing_image)
-                break
+    def set_cleared_or_blocked(self, x, y):
+        """Set a dispenser to a clearing dispenser by middle clicking or nylium to a blocked block"""
+        if self.vars[x][y].get() == 0:
+            # Toggle block between blocked and unblocked
+            if (x, y) in self.blocked_blocks:
+                self.blocked_blocks.remove((x, y))
+                self.grid[x][y][0].config(image=self.unchecked_image)
+            else:
+                self.blocked_blocks.append((x, y))
+                self.grid[x][y][0].config(image=self.blocked_image)
+        else: 
+            for i, dispenser in enumerate(self.dispensers):
+                if dispenser[:2] == (x, y):
+                    if dispenser[3] == 1:
+                        self.dispensers[i] = (x, y, dispenser[2], 0)
+                        self.grid[x][y][0].config(image=self.checked_image)
+                    else:
+                        self.dispensers[i] = (x, y, dispenser[2], 1)
+                        self.grid[x][y][0].config(image=self.clearing_image)
+                    break
 
         self.calculate()
         self.display_block_info()
