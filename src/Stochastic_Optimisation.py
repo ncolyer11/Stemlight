@@ -1,35 +1,58 @@
+import math
 import time
 import numpy as np
 import pandas as pd
 
-from Fast_Dispenser_Distribution import fast_calculate_distribution
-from archive.Dispenser_Distribution_Matrix import SIZE
+from src.Fast_Dispenser_Distribution import fast_calculate_dist
+import src.Assets.constants as const
 
 ACCEPTANCE_RATE = 0.995
 REJECTION_POINT = 0.1
+# Time taken for the CPU to compute ~one iteration of the simulated annealing algorithm
+# Dependant on hardware as well as number of permutations (grid size and num_dispensers)
+CPU = 5.5e-4
 
-def simulated_annealing(discrete_function, initial_solution, temperature, cooling_rate,
-                        min_temperature, max_iterations):
-    """Simulated annealing algorithm for discrete optimisation problems."""
-    current_solution = initial_solution
-    best_solution = initial_solution
-    i = 0
+def start_optimisation(num_dispensers, length, width, wb_per_fungi, f_type, run_time):
+    """Start optimising the function using the simulated annealing algorithm."""
+    if num_dispensers == 0:
+        return [], 0
+    initial_solution = [[-1,-1] for _ in range(num_dispensers)]
+    start_temp, end_temp, *_ = calculate_temp_bounds(num_dispensers, length, width, f_type)
+    cooling_rate = (end_temp / start_temp) ** (CPU / run_time)
+    max_iterations = 100000
+
+    start_time = time.time()
+    # iterations = math.floor(math.log(end_temp / start_temp) / math.log(cooling_rate)) + 1
+    # print(f"S: {start_temp} E: {end_temp} I: {iterations} C: {cooling_rate}")
+
+    best_solution = simulated_annealing(initial_solution, start_temp, cooling_rate, end_temp,
+                                        max_iterations, length, width, f_type, wb_per_fungi)
+    
+    print("Time taken:", time.time() - start_time)
+
+    return best_solution
+
+def simulated_annealing(initial_sol, temperature, cooling_rate, min_temperature, max_iterations,
+                        length, width, f_type, wb_per_fungi):
+    """Simulated annealing algorithm for discrete optimisation of fungus distribution."""
+    current_sol = initial_sol
+    best_sol = initial_sol
     for i in range(max_iterations):
         if temperature < min_temperature:
             break
-        neighbour_solution = generate_neighbour(current_solution)
-        current_energy = discrete_function(current_solution)
-        neighbour_energy = discrete_function(neighbour_solution)
+        neighbour_sol = generate_neighbour(current_sol, length, width)
+        current_energy = fast_calculate_dist(length, width, f_type, current_sol)[0]
+        neighbour_energy, bm_for_prod = fast_calculate_dist(length, width, f_type, neighbour_sol)
 
-        if neighbour_energy > current_energy or \
+        bm_req = bm_for_prod < wb_per_fungi / const.WARTS_PER_BM - const.AVG_BM_TO_GROW_FUNG
+        if neighbour_energy > current_energy and bm_req or \
            np.random.rand() < acceptance_probability(current_energy, neighbour_energy, temperature):
-            current_solution = neighbour_solution
-            if neighbour_energy > discrete_function(best_solution):
-                best_solution = neighbour_solution
+            current_sol = neighbour_sol
+            if neighbour_energy > fast_calculate_dist(length, width, f_type, best_sol)[0] and bm_req:
+                best_sol = neighbour_sol
 
         temperature *= cooling_rate
-    # print("End temperature:", temperature, "Iterations:", i)
-    return best_solution
+    return best_sol
 
 def acceptance_probability(current_energy, neighbour_energy, temperature):
     """Calculate the probability of accepting a worse solution."""
@@ -38,89 +61,82 @@ def acceptance_probability(current_energy, neighbour_energy, temperature):
     else:
         return np.exp((neighbour_energy - current_energy) / temperature)
 
-def generate_neighbour(solution):
-    """Generate a new dispenser permutation by altering 1 to all of their offsets slightly"""
+def generate_neighbour(solution, length, width):
+    """Generate a new dispenser permutation by altering 1 to all of their coords slightly"""
+    step_h = 1 if width != 1 else 0
+    step_v = 1 if length != 1 else 0
+
+    rand_s = np.random.randint
     # Create a copy of the current solution
     neighbour_solution = solution.copy()
-    # Randomly select offsets to change
+    # Randomly select coords to change
     indexes_to_change = np.random.choice(len(solution), len(solution), replace=False)
     for index_to_change in indexes_to_change:
-        # Randomly select a small change in horizontal and vertical offset (-1, 0, or 1)
-        new_offset = [solution[index_to_change][0] + np.random.randint(-1, 2),
-                    solution[index_to_change][1] + np.random.randint(-1, 2)]  
+        # Randomly select a small change in horizontal and vertical coord (-1, 0, or 1)
+        new_coords = [solution[index_to_change][0] + rand_s(-step_h, step_h + 1),
+                    solution[index_to_change][1] + rand_s(-step_v, step_v + 1)]  
         
-        # Ensure the new offset stays within the bounds of the 5x5 nylium grid (coords centred at 0,0)
-        new_offset[0] = max(-2, min(2, new_offset[0]))
-        new_offset[1] = max(-2, min(2, new_offset[1]))
+        # Ensure the new coord stays within the bounds of the 5x5 nylium grid (coords centred at 0,0)
+        new_coords[0] = max(0, min(width - 1, new_coords[0]))
+        new_coords[1] = max(0, min(length - 1, new_coords[1]))
 
-        # Make sure no two offsets can be the same
-        while new_offset in neighbour_solution[:index_to_change] + neighbour_solution[index_to_change+1:]:
-            # print(neighbour_solution, "\n", new_offset)
-            new_offset = [solution[index_to_change][0] + np.random.randint(-2, 3),
-                        solution[index_to_change][1] + np.random.randint(-2, 3)]  
-            new_offset[0] = max(-2, min(2, new_offset[0]))
-            new_offset[1] = max(-2, min(2, new_offset[1]))
+        # Make sure no two coords can be the same
+        while new_coords in neighbour_solution[:index_to_change] + neighbour_solution[index_to_change+1:]:
+            new_coords = [solution[index_to_change][0] + rand_s(-width, width + 1),
+                        solution[index_to_change][1] + rand_s(-length, length + 1)]  
+            new_coords[0] = max(0, min(width - 1, new_coords[0]))
+            new_coords[1] = max(0, min(length - 1, new_coords[1]))
     
-    # Update the solution with the new offset
-    neighbour_solution[index_to_change] = new_offset
-    
+    # Update the solution with the new coord
+    neighbour_solution[index_to_change] = new_coords
     return neighbour_solution
 
-def calc_fungus_dist_wrapper(offsets):
-    """Wrapper for the fungus distribution function to allow it to be used in 
-    the optimisation algorithm."""
-    disp_coords = np.array(offsets) + 2
-    return fast_calculate_distribution(SIZE, SIZE, disp_coords)
-
-def calculate_temp_bounds(N, function):
+def calculate_temp_bounds(N, length, width, f_type):
     """Calculate the starting temperature for the simulated annealing algorithm."""
+    func = fast_calculate_dist
     # Find the lowest energy point
-    lowest_energy = function([[np.random.randint(-2, -1), np.random.randint(-2, -1)] for _ in range(N)])
-    # Create a valid set of offsets by passing it through generate_neighbour
+    rand_s = np.random.randint
+    lowest_energy = func(length, width, f_type, [[0, 0] for _ in range(N)])[0]
+    # Create a valid set of coords by passing it through generate_neighbour
     average_solutions = []
     for _ in range(300*N):
-        offsets = [[np.random.randint(-2, 3),np.random.randint(-2, 3)] for _ in range(N)] 
-        average_solutions.append(
-            generate_neighbour(offsets)
-        )
+        coords = [[rand_s(0, width), rand_s(0, length)] for _ in range(N)]
+        average_solutions.append(generate_neighbour(coords, length, width))
     
     # Calculate the average energy of the initial solution
-    avg_energy = np.mean([function(average_solutions[i]) for i in range(len(average_solutions))])
+    avg_energy = np.mean(
+        [func(length, width, f_type, average_solutions[i])[0] for i in range(300*N)]
+    )
     high_energy_change = avg_energy - lowest_energy
-    
     start_temperature = -high_energy_change / np.log(ACCEPTANCE_RATE)
     end_temperature = -high_energy_change / np.log(REJECTION_POINT)
-    # print("Lowest energy:", lowest_energy)
-    # print("Average energy:", avg_energy)
-    # print("Average worst case energy change:", high_energy_change)
-    # print("Start temperature:", start_temperature)
-    # print("End temperature:", end_temperature)
+
     return start_temperature, end_temperature, lowest_energy, avg_energy
 
-def output_results(function, solution, start_time):
+def output_results(length, width, function, solution, start_time):
     """Output the results of the optimisation."""
     print("Time taken:", time.time() - start_time)
-    best_coords = np.array(solution) + 2
+    best_coords = np.array(solution)
     print("Optimal coords: \n", best_coords)
     print("Optimal value: ", function(solution))
         # Print the location of max_rates_coords in a grid on terminal
-    for row in range(SIZE):
-        for col in range(SIZE):
-            if [row - 2, col - 2] in solution:
-                print(f'[{solution.index([row - 2, col - 2])}]', end='')
+    for row in range(length):
+        for col in range(width):
+            if [row, col] in solution:
+                print(f'[{solution.index([row, col])}]', end='')
             else:
                 print('[ ]', end='')
         print()
     print()
     
-def run_optimisation():
+def run_optimisation(length, width):
     """Run the optimisation for 1 to 10 dispensers and write the results to an Excel file."""
     results = pd.DataFrame(columns=["Num_Dispensers", "Lowest_Energy",
                                     "Average_Energy", "Start_Temperature"])
 
     for num_dispensers in range(1, 11):
         start_temperature, end_temperature, lowest_energy, avg_energy = \
-            calculate_temp_bounds(num_dispensers, calc_fungus_dist_wrapper)
+            calculate_temp_bounds(num_dispensers, length, width)
         results = pd.concat([results, pd.DataFrame([{
             "Num_Dispensers": num_dispensers, 
             "Lowest_Energy": lowest_energy, 
@@ -134,7 +150,6 @@ def plot_cooling_rate_data():
     """Analyse how different cooling rates affect accuracy using plotted emperical data."""
     num_dispensers = [5,6]
     cooling_rates = [0.9995, 0.9999]
-    function_choice = calc_fungus_dist_wrapper
 
     # Create a DataFrame to store the results
     df = pd.DataFrame(columns=["Num_Dispensers", "Cooling_Rate", "Mean_Value", 
@@ -145,11 +160,11 @@ def plot_cooling_rate_data():
             print("\nDispenser", disp, "'s cooling rate:", rate)
             results = []
             for _ in range((100*disp)//3):
-                result = start_optimisation(disp, function_choice, rate)
+                result = start_optimisation(disp, rate)
                 results.append(result)
             mean_value = np.mean(results)
             mogged_rate = 0.999995 if disp >= 5 else 0.9995
-            actual_value = start_optimisation(disp, function_choice, mogged_rate)
+            actual_value = start_optimisation(disp, mogged_rate)
             print("Mean value:", mean_value)
             print("Actual value:", actual_value)
             print("Accuracy:", mean_value / actual_value)
@@ -165,19 +180,6 @@ def plot_cooling_rate_data():
     # Write the DataFrame to an Excel file
     df.to_excel("cooling_rate_data.xlsx", index=False)
 
-def start_optimisation(num_dispensers, func_to_optimise, cooling_rate):
-    """Start optimising the function using the simulated annealing algorithm."""
-    offsets = [[0,0] for _ in range(num_dispensers)] 
-    initial_solution = offsets
-    start_temperature, end_temperature, *_ = calculate_temp_bounds(num_dispensers, func_to_optimise)
-    min_temperature = end_temperature
-    max_iterations = 100000
-
-    start_time = time.time()
-    best_solution = simulated_annealing(func_to_optimise, initial_solution, start_temperature,
-                                        cooling_rate, min_temperature, max_iterations)
-    # output_results(func_to_optimise, best_solution, start_time)
-    return func_to_optimise(best_solution)
-
 if __name__ == "__main__":
-    plot_cooling_rate_data()
+    for i in range(1, 11):
+        start_optimisation(i, 5)
