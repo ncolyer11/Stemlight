@@ -52,7 +52,6 @@ def calculate_distribution(length, width, dispensers, disp_coords,
     x, y = np.ogrid[:width, :length]
     for i in range(cycles):
         for j in range(dispensers):
-            # print(f"disp_coords before calling generate_foliage: {disp_coords}")
             foliage_chance, bm_for_prod = generate_foliage(disp_coords, total_foliage_grid, bm_for_prod, j, x, y)
 
             des_fungi_chance = foliage_chance * fungi_weight
@@ -61,7 +60,6 @@ def calculate_distribution(length, width, dispensers, disp_coords,
             
             disp_foliage_grids[j][i] = (1 - total_foliage_grid) * foliage_chance
             total_foliage_grid += disp_foliage_grids[j][i]
-            # print(total_des_fungi_grid, "\n\n")
             
             # If warped nylium, generate sprouts
             if fungi == WARPED:
@@ -70,18 +68,16 @@ def calculate_distribution(length, width, dispensers, disp_coords,
                 total_foliage_grid += sprouts_chance
                 sprouts_total += sprouts_chance
         
-        # total_des_fungi_grid = np.sum(disp_des_fungi_grids, axis=0)
-        # total_foliage_grid = np.sum(disp_foliage_grids, axis=0)
         # Replicate triggering pistons to clear foliage on top of selected dispensers
-        # for i in range(dispensers):
-        #     # Clear foliage only on top of cleared dispensers except for on the last cycle
-        #     if disp_coords[i][2] == 0 or i == cycles - 1:
-        #         continue
-        #     disp_x, disp_y, _ = disp_coords[j]
-        #     total_foliage_grid[disp_x, disp_y] = 0
-        #     total_des_fungi_grid[disp_x, disp_y] = 0
-        #     disp_foliage_grids[:, disp_x, disp_y] = 0
-        #     disp_des_fungi_grids[:, disp_x, disp_y] = 0
+        for k in range(dispensers):
+            # Clear foliage only on top of cleared dispensers except for on the last cycle
+            if disp_coords[k][2] == 0 or i == cycles - 1:
+                continue
+            disp_x, disp_y, _ = disp_coords[k]
+            total_foliage_grid[disp_x, disp_y] = 0
+            total_des_fungi_grid[disp_x, disp_y] = 0
+            disp_foliage_grids[:, :, disp_x, disp_y] = 0
+            disp_des_fungi_grids[:, :, disp_x, disp_y] = 0
 
     return total_foliage_grid, total_des_fungi_grid, bm_for_prod, \
         disp_foliage_grids, disp_des_fungi_grids, sprouts_total

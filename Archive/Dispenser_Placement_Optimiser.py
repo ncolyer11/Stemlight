@@ -212,12 +212,3 @@ if __name__ == "__main__":
     f_type = WARPED
     f_type = CRIMSON
     initialise_optimisation(length, width, num_dispensers, f_type, 30)
-
-# bone meal efficiency can be converted to wart block efficiency and defined as the amount of wart
-# blocks your farm's blast chamber is able to harvest per fungi grown, thus bone meal efficiency
-# can be tuned and inputted using a slider and optimal layouts can factor in that bm/wb efficiency
-
-# after calculating the most optimal positions to put the dispensers for crimson
-# it should generate a list of all permutations of the order, 4 rotations, and 2 mirrors and then calculate which set of new orientations is best out of those for warped
-# further, out of the entire set, it should compare the difference between the worst possible ordering of those dispensers and the
-# best to see if it's worth worrying about activation order

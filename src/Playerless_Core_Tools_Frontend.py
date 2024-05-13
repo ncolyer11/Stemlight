@@ -9,19 +9,20 @@ from PIL import Image, ImageDraw, ImageTk
 import numpy as np
 
 from Main_Menu import ToolTip
-from src.Stochastic_Optimisation import start_optimisation
 from src.Assets import colours
 from src.Assets.constants import RSF
 from src.Assets.helpers import set_title_and_icon
 from src.Assets.helpers import resource_path
 from src.Custom_Nylium_Grid_Heatmap_Calculator import export_custom_heatmaps
 from src.Fungus_Distribution_Backend import calculate_fungus_distribution
+from src.Stochastic_Optimisation import start_optimisation
 
-# @TODO:
-# an option for each dispenser to make it so it isn't affected by overlap (cleared by piston above)
-# ^ middle click dispenser
+# after calculating the most optimal positions to put the dispensers for crimson
+# it should generate a list of all permutations of the order, 4 rotations, and 2 mirrors and then calculate which set of new orientations is best out of those for warped
+# further, out of the entire set, it should compare the difference between the worst possible ordering of those dispensers and the
+# best to see if it's worth worrying about activation order
 
-# in each program, add a help menu item to the toolbar explaining how to use it
+# Option to middle/ctrl click on nylium blocks to exclude them from generation
 
 # Non-linear scaling 
 NLS = 1.765
@@ -640,6 +641,7 @@ class App:
             round(sel_fungi_amount, DP),
             round(sel_foliage_amount, DP)
         ]
+
         # If selected block is a dispenser, include additional info
         if any((x, y) == coord[:2] for coord in dispenser_coordinates):
             index = next(i for i, coord in enumerate(dispenser_coordinates) if (x, y) == coord[:2])
@@ -649,15 +651,11 @@ class App:
                 if c == 0:
                     if index != 0:
                         cycle_sum = np.sum(disp_foliage_grids[:index, c, :, :], axis=0)
-                        print("1:::", cycle_sum)
                     else:
                         cycle_sum = np.zeros((self.row_slider.get(), self.col_slider.get()))
-                        print("2:::", cycle_sum)
                 else:
                     cycle_sum = np.sum(disp_foliage_grids[:, :c, :, :], axis=(0, 1))
-                    print(cycle_sum)
                     cycle_sum += np.sum(disp_foliage_grids[:index, c, :, :], axis=0)
-                print(cycle_sum)
                 bone_meal_used += 1 - cycle_sum[x, y]
 
 

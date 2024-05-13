@@ -36,8 +36,6 @@ class ToolTip:
         "Display text in a tooltip window"
         if self.tip_window or not tip_text:
             return
-        # x += self.widget.winfo_width() // 2
-        # y += self.widget.winfo_height() // 2
         self.tip_window = tw = tk.Toplevel(self.widget)
         tw.wm_overrideredirect(True)
         tw.wm_geometry(f"+{x}+{y}")
