@@ -35,8 +35,9 @@ def selection_chance(x1, y1):
     # Need to take min of x1 and y1 to avoid index out of bounds as numpy evaluates both branches
     return np.where((x1 > 2) | (y1 > 2), 0, selection_cache[np.minimum(x1, 2), np.minimum(y1, 2)])
 
-def calculate_distribution(length, width, dispensers, disp_coords,
-                           fungi_weight, fungi, sprouts_total, cycles=1):
+def calculate_distribution(length, width, dispensers, disp_coords, fungi_weight,
+                           fungi, sprouts_total, cycles=1, blocked_blocks=[]):
+    """Calculates the distribution of foliage and fungi on a custom size grid of nylium"""
     # 4D array for storing distribution of foliage for all dispensers and cycles
     disp_foliage_grids = np.zeros((dispensers, cycles, width, length))
     # 2D array for storing distribution of all the foliage
@@ -52,7 +53,10 @@ def calculate_distribution(length, width, dispensers, disp_coords,
     x, y = np.ogrid[:width, :length]
     for i in range(cycles):
         for j in range(dispensers):
-            foliage_chance, bm_for_prod = generate_foliage(disp_coords, total_foliage_grid, bm_for_prod, j, x, y)
+            foliage_chance, bm_for_prod = generate_foliage(disp_coords, total_foliage_grid,
+                                                           bm_for_prod, j, x, y)
+            for x1, y1 in blocked_blocks:
+                foliage_chance[x1][y1] = 0
 
             des_fungi_chance = foliage_chance * fungi_weight
             disp_des_fungi_grids[j][i] = (1 - total_foliage_grid) * des_fungi_chance
@@ -82,7 +86,8 @@ def calculate_distribution(length, width, dispensers, disp_coords,
     return total_foliage_grid, total_des_fungi_grid, bm_for_prod, \
         disp_foliage_grids, disp_des_fungi_grids, sprouts_total
 
-def generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y,):
+def generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y):
+    """Generates the distribution of foliage around a dispenser at a given position"""
     disp_x, disp_y, _ = disp_coords[i]
     disp_bm_chance = 1 - foliage_grid[disp_x, disp_y]
     bm_for_prod += disp_bm_chance
@@ -92,6 +97,7 @@ def generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y,):
     return foliage_chance, bm_for_prod
 
 def get_totals(des_fungi_grid, foliage_grid, bm_for_prod):
+    """Calculates the total amount of foliage, fungi and bone meal required to grow the fungi"""
     total_fungi = np.sum(des_fungi_grid)
     total_foliage = np.sum(foliage_grid)
     bm_for_grow = const.AVG_BM_TO_GROW_FUNG * total_fungi
@@ -99,15 +105,16 @@ def get_totals(des_fungi_grid, foliage_grid, bm_for_prod):
 
     return total_fungi, total_foliage, bm_for_grow, bm_total
 
-def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungi_type, cycles=1):
+def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungi_type,
+                                  cycles=1, blocked_blocks=[]):
     """Calculates the distribution of foliage and fungi on a custom size grid of nylium"""
     fungi_weight = const.WARP_FUNG_CHANCE if fungi_type == WARPED else const.CRMS_FUNG_CHANCE
     # Keep track of total sprouts to subtract from compost bm as they aren't collected
     sprouts_total = 0
     foliage_grid, des_fungi_grid, bm_for_prod, disp_foliage_grids, \
     disp_des_fungi_grids, sprouts_total = \
-        calculate_distribution(length, width, dispensers, disp_coords, 
-                               fungi_weight, fungi_type, sprouts_total, cycles)
+        calculate_distribution(length, width, dispensers, disp_coords, fungi_weight,
+                               fungi_type, sprouts_total, cycles, blocked_blocks)
 
     total_des_fungi, total_foliage, bm_for_grow, bm_total = \
         get_totals(des_fungi_grid, foliage_grid, bm_for_prod)

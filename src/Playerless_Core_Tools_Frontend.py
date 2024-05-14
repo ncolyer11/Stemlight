@@ -369,6 +369,7 @@ class App:
         self.grid = []
         self.dispensers = []
         self.vars = []
+        blocked_copy = self.blocked_blocks.copy()
         self.blocked_blocks = []
 
         for i in range(rows):
@@ -409,8 +410,9 @@ class App:
                         label.grid(row=i, column=j, padx=0, pady=0, sticky='se')
                         row[j] = (cb, label)
                         self.dispensers.append((i, j, dispenser_array[i][j][1], cleared))
-                    if (i, j) in self.blocked_blocks:
+                    if (i, j) in blocked_copy:
                         cb.config(image=self.blocked_image)
+                        self.blocked_blocks.append((i, j))
             self.grid.append(row)
             self.vars.append(var_row)
 
@@ -544,7 +546,8 @@ class App:
                 len(dispenser_coordinates),
                 dispenser_coordinates,
                 fungi_type,
-                self.cycles_slider.get()
+                self.cycles_slider.get(),
+                self.blocked_blocks
             )
         
         output_labels = [

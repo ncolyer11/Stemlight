@@ -88,8 +88,9 @@ def generate_neighbour(solution, length, width, blocked_coords=[[]]):
             new_coords[0] = max(0, min(width - 1, new_coords[0]))
             new_coords[1] = max(0, min(length - 1, new_coords[1]))
     
-    # Update the solution with the new coord
-    neighbour_solution[index_to_change] = new_coords
+        # Update the solution with the new coord
+        neighbour_solution[index_to_change] = new_coords
+
     return neighbour_solution
 
 def calculate_temp_bounds(N, length, width, f_type, blocked_coords=[[]]):
