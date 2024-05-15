@@ -523,7 +523,8 @@ class App:
                 len(dispenser_coordinates),
                 dispenser_coordinates,
                 fungi_type,
-                self.cycles_slider.get()
+                self.cycles_slider.get(),
+                self.blocked_blocks
             )[5]
         result = export_custom_heatmaps(
             self.col_slider.get(),
@@ -647,7 +648,8 @@ class App:
                 dispensers,
                 dispenser_coordinates,
                 fungi_type,
-                cycles
+                cycles,
+                self.blocked_blocks
             )
         
         info_labels = [
