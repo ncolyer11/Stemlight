@@ -14,6 +14,7 @@ def get_cell_value(sheet_name, row_number, column_number):
 def export_custom_heatmaps(length, width, nyliumGrid):
     """Export the custom nether tree heatmap data, generated\n 
     from the dispenser placements, to an Excel file."""
+    print(nyliumGrid)
     try:
         outSheet = []
         outWorkbook = xlsxwriter.Workbook(r"weighted_fungi_heatmap.xlsx")

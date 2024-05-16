@@ -121,5 +121,12 @@ def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungi_
 
     # Subtract the amount of bone meal retrieved from composting the excess foliage losslessly
     bm_from_compost = (total_foliage - np.sum(sprouts_total) - total_des_fungi ) / const.FOLIAGE_PER_BM
-    return total_foliage, total_des_fungi, bm_for_prod - bm_from_compost, bm_for_grow, bm_total, \
-        disp_foliage_grids, disp_des_fungi_grids
+    return {
+        "total_foliage": total_foliage,
+        "total_des_fungi": total_des_fungi,
+        "bm_for_prod": bm_for_prod - bm_from_compost,
+        "bm_for_grow": bm_for_grow,
+        "bm_total": bm_total,
+        "disp_foliage_grids": disp_foliage_grids,
+        "disp_des_fungi_grids": disp_des_fungi_grids
+    }

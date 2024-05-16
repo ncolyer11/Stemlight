@@ -515,8 +515,9 @@ class App:
     def export_heatmaps(self):
         self.dispensers.sort(key=lambda d: d[2])
         dispenser_coordinates = [(d[0], d[1], d[3]) for d in self.dispensers]
-        fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED        
-        disp_foliage_grids = \
+        fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED   
+        # Calculate fungus distribution     
+        disp_des_fungi_grids = \
             calculate_fungus_distribution(
                 self.col_slider.get(), 
                 self.row_slider.get(),
@@ -525,31 +526,39 @@ class App:
                 fungi_type,
                 self.cycles_slider.get(),
                 self.blocked_blocks
-            )[5]
+            )["disp_des_fungi_grids"]
+
         result = export_custom_heatmaps(
             self.col_slider.get(),
             self.row_slider.get(),
-            np.sum(disp_foliage_grids, axis=0)
+            np.sum(disp_des_fungi_grids, axis=(0,1))
         )
+
         if result == 0:
-            messagebox.showinfo("Success", "Heatmaps exported to weighted_fungi_heatmap.xlsx")
+            messagebox.showinfo("Success", "Heatmaps successfully exported to weighted_fungi_heatmap.xlsx")
         else:
-            messagebox.showwarning("Export Error", f"An error occurred:\n{result}")    
+            messagebox.showwarning("Export Error", f"An error has occurred:\n{result}"[:-1] + ".")    
 
     def calculate(self):
         self.dispensers.sort(key=lambda d: d[2])
         dispenser_coordinates = [(d[0], d[1], d[3]) for d in self.dispensers]
         fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
-        total_plants, total_fungi, bm_for_prod, bm_for_grow, bm_total, *_ = \
-            calculate_fungus_distribution(
-                self.col_slider.get(), 
-                self.row_slider.get(),
-                len(dispenser_coordinates),
-                dispenser_coordinates,
-                fungi_type,
-                self.cycles_slider.get(),
-                self.blocked_blocks
-            )
+        # Calculate fungus distribution
+        dist_data = calculate_fungus_distribution(
+            self.col_slider.get(), 
+            self.row_slider.get(),
+            len(dispenser_coordinates),
+            dispenser_coordinates,
+            fungi_type,
+            self.cycles_slider.get(),
+            self.blocked_blocks
+        )
+        
+        total_foliage = dist_data["total_foliage"]
+        total_des_fungi = dist_data["total_des_fungi"]
+        bm_for_prod = dist_data["bm_for_prod"]
+        bm_for_grow = dist_data["bm_for_grow"]
+        bm_total = dist_data["bm_total"]
         
         output_labels = [
             f"Total {'Warped' if fungi_type == WARPED else 'Crimson'} Fungi",
@@ -561,12 +570,12 @@ class App:
         ]
         
         output_values = [
-            round(total_fungi, DP),
-            round(bm_for_prod / total_fungi, DP) if total_fungi != 0 else 0.0,
+            round(total_des_fungi, DP),
+            round(bm_for_prod / total_des_fungi, DP) if total_des_fungi != 0 else 0.0,
             round(bm_for_prod, DP),
             round(bm_for_grow, DP),
             round(bm_total, DP),
-            round(total_plants, DP)
+            round(total_foliage, DP)
         ]
         label_font = font.Font(family='Segoe UI', size=int((RSF**NLS)*9))
         output_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
@@ -641,16 +650,17 @@ class App:
         fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
         dispensers = len(dispenser_coordinates)
         cycles = self.cycles_slider.get()
-        *_, disp_foliage_grids, disp_des_fungi_grids = \
-            calculate_fungus_distribution(
-                self.col_slider.get(), 
-                self.row_slider.get(),
-                dispensers,
-                dispenser_coordinates,
-                fungi_type,
-                cycles,
-                self.blocked_blocks
-            )
+        dist_data = calculate_fungus_distribution(
+            self.col_slider.get(), 
+            self.row_slider.get(),
+            dispensers,
+            dispenser_coordinates,
+            fungi_type,
+            cycles,
+            self.blocked_blocks
+        )
+        disp_foliage_grids = dist_data["disp_foliage_grids"]
+        disp_des_fungi_grids = dist_data["disp_des_fungi_grids"]
         
         info_labels = [
             f"{'Warped' if fungi_type == WARPED else 'Crimson'} Fungi at {(x,y)}",
