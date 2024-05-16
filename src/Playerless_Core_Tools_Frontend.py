@@ -107,6 +107,8 @@ class App:
         self.clearing_image = tk.PhotoImage(file=clearing_path)
         self.clearing_image = self.clearing_image.subsample(3, 3)
 
+        self.run_time = tk.StringVar(value="7")
+
         # Create menu
         toolbar = tk.Menu(master)
         master.config(menu=toolbar)
@@ -114,18 +116,19 @@ class App:
         file_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         toolbar.add_cascade(label="File", menu=file_menu)
         file_menu.add_command(label="Exit", command=master.destroy)
+        file_menu.add_command(label="Export Custom Heatmaps", command=self.export_heatmaps)
 
         help_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         toolbar.add_cascade(label="Help", menu=help_menu)
-        help_menu.add_command(label="What's this Tool for?", command=self.show_info_message)
+        help_menu.add_command(label="What's this Tool For?", command=self.show_info_message)
+        help_menu.add_command(label="How to Use this Tool", command=self.show_use_message)
+        help_menu.add_command(label="Advanced Features", command=self.show_advanced_features)
 
         run_time_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         toolbar.add_cascade(label="Run Time", menu=run_time_menu)
-
-        time_init = tk.StringVar(value="7")
-        for time in [1, 4, 7, 10, 15, 30, 60]:
-            run_time_menu.add_radiobutton(label=time, variable=time_init, value=time,
-                                        command=lambda time=time: self.set_rt(time))
+        for time in [1, 4, 7, 10, 15, 30, 60, 1000]:
+            run_time_menu.add_radiobutton(label=str(time).rjust(5), variable=self.run_time, value=time,
+                                        command=lambda time1=time: self.set_rt(time1))
 
     def show_info_message(self):
         """Provide some information to the user about what this tool is used for"""
@@ -135,6 +138,38 @@ class App:
             "such that their position and ordering maximises fungus production, whilst not exceeding "
             "a given bone meal efficiency requirement.",
             icon='question'
+        )
+
+    def show_use_message(self):
+        """Provide some information to the user about how to use this tool"""
+        messagebox.showinfo(
+            "Information",
+            "Each playerless nether tree farm core uses a platform of nylium with 1 or more " 
+            "dispensers directly bone-mealing it to produce fungi.\n\n"
+            "To begin, set the length and width of your nylium platform using the sliders.\n\n"
+            "Then, set the amount of cycles the disepnsers are triggered for before the core "
+            "resets, using the cycles slider.\n\n"
+            "Finally, place in your dispensers by left clicking on the nylium blocks, and view "
+            "fungus and foliage distribution metrics in the outputs section at the bottom.",
+            icon='info'
+        )
+
+    def show_advanced_features(self):
+        """Provide some information to the user about how to use this tool"""
+        messagebox.showinfo(
+            "Information",
+            "Change nylium types using the slide switch.\n\n"
+            "To find the optimal dispenser placement for the provided wart block efficiency, "
+            "click the optimise button.\n\n"
+            "To export custom huge fungus heatmaps based off the fungus distribution of the nylium "
+            "grid, click the export button.\n\n"
+            "To place a cleared dispenser, or mark a nylium block for non-growth, middle-click or "
+            "ctrl+left click on a dispenser or nylium block respectively.\n\n"
+            "To view growth statistics of a specific block and/or dispenser, right-click on the "
+            "block.\n\n"
+            "To reset the grid, click the reset button, and to reset the sliders, double-click on "
+            "them.",
+            icon='info'
         )
 
     def create_widgets(self):
@@ -763,7 +798,7 @@ class App:
         return "break"
 
     def set_rt(self, time):
-        self.run_time = time
+        self.run_time.set(time)
 
 def start(root):
     child = tk.Toplevel(root)
