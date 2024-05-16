@@ -19,7 +19,7 @@ def start_optimisation(num_dispensers, length, width, wb_per_fungi, f_type,
         return [], 0
     initial_solution = [[-1,-1] for _ in range(num_dispensers)]
     start_temp, end_temp, *_ = calculate_temp_bounds(num_dispensers, length, width, f_type)
-    cooling_rate = (end_temp / start_temp) ** (CPU / run_time)
+    cooling_rate = (end_temp / start_temp) ** (CPU / int(run_time.get()))
     max_iterations = 100000
 
     start_time = time.time()
