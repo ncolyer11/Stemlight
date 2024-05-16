@@ -149,7 +149,7 @@ class App:
             "To begin, set the length and width of your nylium platform using the sliders.\n\n"
             "Then, set the amount of cycles the disepnsers are triggered for before the core "
             "resets, using the cycles slider.\n\n"
-            "Finally, place in your dispensers by left clicking on the nylium blocks, and view "
+            "Finally, place down your dispensers by left clicking on the nylium blocks, and view "
             "fungus and foliage distribution metrics in the outputs section at the bottom.",
             icon='info'
         )
