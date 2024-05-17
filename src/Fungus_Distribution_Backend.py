@@ -1,5 +1,6 @@
 """A program that helps calculate the optimal position to place n dispensers on a custom size grid of nylium"""
 
+import itertools
 import numpy as np
 
 from src.Assets import constants as const
@@ -36,7 +37,7 @@ def selection_chance(x1, y1):
     return np.where((x1 > 2) | (y1 > 2), 0, selection_cache[np.minimum(x1, 2), np.minimum(y1, 2)])
 
 def calculate_distribution(length, width, dispensers, disp_coords, fungi_weight,
-                           fungi, sprouts_total, cycles=1, blocked_blocks=[]):
+                           fungi, sprouts_total=0, cycles=1, blocked_blocks=[]):
     """Calculates the distribution of foliage and fungi on a custom size grid of nylium"""
     # 4D array for storing distribution of foliage for all dispensers and cycles
     disp_foliage_grids = np.zeros((dispensers, cycles, width, length))
@@ -130,3 +131,46 @@ def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungi_
         "disp_foliage_grids": disp_foliage_grids,
         "disp_des_fungi_grids": disp_des_fungi_grids
     }
+
+def reflect(coord, length, width):
+    x, y = coord
+    return [[x, width - y], [length - x, y]]
+
+def rotate(coord, length, width):
+    x, y = coord
+    return [[y, x], [width - y, length - x], [width - y, x], [y, length - x]]
+
+def generate_transformations(coords, length, width):
+    # Generate all permutations
+    for perm in itertools.permutations(coords):
+        # Generate all reflections and rotations
+        for coord in perm:
+            yield reflect(coord, length, width)
+            yield rotate(coord, length, width)
+
+def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fungi, fungi_type):
+    """Run through all reflections, rotations, and permutations of the optimal coordinates
+    and record all solution within 0.1% of the best solution to a file."""
+    try:
+        f = open("viable_coords.txt", "w")
+        f.write(f"Coords | Fungi\n")
+        for coords in generate_transformations(optimal_coords, length, width):
+            print(coords)
+            dist_data = calculate_fungus_distribution(
+                length,
+                width,
+                len(coords),
+                [[coord[0], coord[1], 0] for coord in coords],
+                fungi_type
+            )
+            total_des_fungi = dist_data["total_des_fungi"]
+            bm_for_prod = dist_data["bm_for_prod"]
+
+            bm_req = bm_for_prod < wb_per_fungi / const.WARTS_PER_BM - const.AVG_BM_TO_GROW_FUNG
+            if abs(total_des_fungi - optimal_value) / optimal_value <= 0.001 and bm_req:
+                    f.write(f"{str(coords)} | {str(total_des_fungi)}\n")
+
+        return 0
+    except Exception as e:
+        print("An error has occured whilst finding viable coordinates:", e)
+        return e

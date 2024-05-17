@@ -1,4 +1,3 @@
-import math
 import time
 import numpy as np
 import pandas as pd
@@ -26,12 +25,12 @@ def start_optimisation(num_dispensers, length, width, wb_per_fungi, f_type,
     # iterations = math.floor(math.log(end_temp / start_temp) / math.log(cooling_rate)) + 1
     # print(f"S: {start_temp} E: {end_temp} I: {iterations} C: {cooling_rate}")
 
-    best_solution = simulated_annealing(initial_solution, start_temp, cooling_rate, end_temp,
+    optimal_solution, optimal_value = simulated_annealing(initial_solution, start_temp, cooling_rate, end_temp,
                                         max_iterations, length, width, f_type, wb_per_fungi)
     
     print("Time taken:", time.time() - start_time)
 
-    return best_solution
+    return optimal_solution, optimal_value
 
 def simulated_annealing(initial_sol, temperature, cooling_rate, min_temperature, max_iterations,
                         length, width, f_type, wb_per_fungi, blocked_coords=[[]]):
@@ -53,7 +52,7 @@ def simulated_annealing(initial_sol, temperature, cooling_rate, min_temperature,
                 best_sol = neighbour_sol
 
         temperature *= cooling_rate
-    return best_sol
+    return best_sol, fast_calculate_dist(length, width, f_type, best_sol)[0]
 
 def acceptance_probability(current_energy, neighbour_energy, temperature):
     """Calculate the probability of accepting a worse solution."""
@@ -162,11 +161,11 @@ def plot_cooling_rate_data():
             print("\nDispenser", disp, "'s cooling rate:", rate)
             results = []
             for _ in range((100*disp)//3):
-                result = start_optimisation(disp, rate)
+                result, _ = start_optimisation(disp, rate)
                 results.append(result)
             mean_value = np.mean(results)
             mogged_rate = 0.999995 if disp >= 5 else 0.9995
-            actual_value = start_optimisation(disp, mogged_rate)
+            actual_value, _ = start_optimisation(disp, mogged_rate)
             print("Mean value:", mean_value)
             print("Actual value:", actual_value)
             print("Accuracy:", mean_value / actual_value)

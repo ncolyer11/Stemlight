@@ -14,7 +14,7 @@ from src.Assets.constants import RSF
 from src.Assets.helpers import set_title_and_icon
 from src.Assets.helpers import resource_path
 from src.Custom_Nylium_Grid_Heatmap_Calculator import export_custom_heatmaps
-from src.Fungus_Distribution_Backend import calculate_fungus_distribution
+from src.Fungus_Distribution_Backend import calculate_fungus_distribution, output_viable_coords
 from src.Stochastic_Optimisation import start_optimisation
 
 # after calculating the most optimal positions to put the dispensers for crimson
@@ -524,7 +524,7 @@ class App:
         if len(disp_coords) == 0:
             return
 
-        optimal_coords = start_optimisation(
+        optimal_coords, optimal_value = start_optimisation(
             len(disp_coords),
             self.col_slider.get(), 
             self.row_slider.get(),
@@ -546,7 +546,25 @@ class App:
         self.reset_grid(remove_blocked=False)
         for i, disp_coord in enumerate(optimal_coords):
             self.add_dispenser(disp_coord[0], disp_coord[1], cleared_array[i])
-            
+        # Generate a list of other viable coords that are as optimal or within 0.1% of the most
+        # optimal found solution, storing them in an external file
+        result = output_viable_coords(
+            optimal_coords, 
+            optimal_value, 
+            self.col_slider.get(),
+            self.row_slider.get(),
+            self.wb_effic_slider.get(),
+            fungi_type
+        )
+
+        if result == 0:
+            messagebox.showinfo("Success", 
+                                "Successfully exported alternate coordinates to viable_coords.txt.")
+        else:
+            error_message = f"An error has occurred:\n{result}"
+            if not error_message.endswith(('.', '!', '?')):
+                error_message += '.'
+            messagebox.showwarning("Export Error", error_message)            
     def export_heatmaps(self):
         self.dispensers.sort(key=lambda d: d[2])
         dispenser_coordinates = [(d[0], d[1], d[3]) for d in self.dispensers]
@@ -572,8 +590,10 @@ class App:
         if result == 0:
             messagebox.showinfo("Success", "Heatmaps successfully exported to weighted_fungi_heatmap.xlsx")
         else:
-            messagebox.showwarning("Export Error", f"An error has occurred:\n{result}"[:-1] + ".")    
-
+            error_message = f"An error has occurred:\n{result}"
+            if not error_message.endswith(('.', '?', '!')):
+                error_message += '.'
+            messagebox.showwarning("Export Error", error_message)
     def calculate(self):
         self.dispensers.sort(key=lambda d: d[2])
         dispenser_coordinates = [(d[0], d[1], d[3]) for d in self.dispensers]
