@@ -140,29 +140,46 @@ def rotate(coord, length, width):
     x, y = coord
     return [[y, x], [width - y, length - x], [width - y, x], [y, length - x]]
 
-def generate_transformations(coords, length, width):
-    all_alternate_coords = []
+def generate_transformations(coords, l, w):
+    alt_coords = []
     # Generate all permutations
     # for perm in itertools.permutations(coords):
         # Generate all reflections and rotations
     for coord in coords:
         transformed_coords = [coord]
-        # Shifting coords to be relative around the centre of the nylium grid/platform
-        c = coord[0] - width // 2
-        d = coord[1] - length // 2
-        # 3 consecutive 90deg rotations around the centre counter-clockwise
-        transformed_coords.append([d, -c])
-        transformed_coords.append([-c, -d])
-        transformed_coords.append([-d, c])
-        for sub_coord in transformed_coords:
+        x, y = coord[0:2]
+        # 180deg rotation
+        transformed_coords.append([w-1-x,l-1-y])
+        # 90deg ccw and cw rotations are only equivalent for square grids
+        if l == w:
+            transformed_coords.append([y,w-1-x])
+            transformed_coords.append([l-1-y, x])
+        for i, sub_coord in enumerate(transformed_coords):
+            if i > 3:
+                break
             x1 = sub_coord[0]
             y1 = sub_coord[1]
-            w1 = width - 1
-            l1 = length - 1
+            w1 = w - 1
+            l1 = l - 1
             # Up/down reflection
             transformed_coords.append([x1, l1 - y1])
             # Right/left reflection
-            transformed_coords.append([w1 - x1, l1 - y1])
+            transformed_coords.append([w1 - x1, y1])
+        alt_coords.append(transformed_coords)
+    alt_placements = []
+    # Grab equally transformed sets of coords to group into consecutive sets of alternate optimal coords
+    for i in range(len(alt_coords[0])):
+        alt_placements.append([coords[i] for coords in alt_coords])
+
+    perms = []
+    for placement in alt_placements:
+        sub_perms = list(itertools.permutations(placement))
+        sub_perms_list = [list(perm) for perm in sub_perms]
+        perms.extend(sub_perms_list)
+    # Remove duplicate permutations to lower computation time
+    trimmed_perms = []
+    trimmed_perms = [perm for perm in perms if perm not in trimmed_perms]
+    return trimmed_perms
 
 def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fungi, fungi_type):
     """Run through all reflections, rotations, and permutations of the optimal coordinates
