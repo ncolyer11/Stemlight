@@ -141,12 +141,28 @@ def rotate(coord, length, width):
     return [[y, x], [width - y, length - x], [width - y, x], [y, length - x]]
 
 def generate_transformations(coords, length, width):
+    all_alternate_coords = []
     # Generate all permutations
-    for perm in itertools.permutations(coords):
+    # for perm in itertools.permutations(coords):
         # Generate all reflections and rotations
-        for coord in perm:
-            yield reflect(coord, length, width)
-            yield rotate(coord, length, width)
+    for coord in coords:
+        transformed_coords = [coord]
+        # Shifting coords to be relative around the centre of the nylium grid/platform
+        c = coord[0] - width // 2
+        d = coord[1] - length // 2
+        # 3 consecutive 90deg rotations around the centre counter-clockwise
+        transformed_coords.append([d, -c])
+        transformed_coords.append([-c, -d])
+        transformed_coords.append([-d, c])
+        for sub_coord in transformed_coords:
+            x1 = sub_coord[0]
+            y1 = sub_coord[1]
+            w1 = width - 1
+            l1 = length - 1
+            # Up/down reflection
+            transformed_coords.append([x1, l1 - y1])
+            # Right/left reflection
+            transformed_coords.append([w1 - x1, l1 - y1])
 
 def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fungi, fungi_type):
     """Run through all reflections, rotations, and permutations of the optimal coordinates
