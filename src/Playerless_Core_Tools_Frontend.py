@@ -573,7 +573,7 @@ class App:
             )            
             messagebox.showinfo(f"Success", 
                                 f"Successfully exported {result} alternate "
-                                f"coordinate{'s' if result != 1 else ''} to viable_coords.txt."
+                                f"placement{'s' if result != 1 else ''} to viable_coords.txt."
                                 f"{trimmed_string if n > 8 else ''}")
         else:
             error_message = f"An error has occurred:\n{result}"
