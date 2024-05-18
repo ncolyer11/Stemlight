@@ -564,8 +564,10 @@ class App:
         )
         if isinstance(result, (int, float)) and not isinstance(result, BaseException):
             n = len(disp_coords)
+            # 8 transformations for a square grid, 4 for a rectangular grid
+            transforms = 8 if self.col_slider.get() == self.row_slider.get() else 4
             trimmed_string = (
-                f"\n\nNote {8 * math.factorial(n) - 8:,} possible alternate "
+                f"\n\nNote {transforms * math.factorial(n) - 8:,} possible alternate "
                 "placements (permutations of firing order) were trimmed "
                 "for computational reasons."
             )            
