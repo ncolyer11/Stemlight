@@ -1,5 +1,6 @@
 """Calculates distribution of fungus, and bone meal usage, \nfor a given grid of nylium, and placement and fire order of dispensers"""
 
+import math
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
@@ -126,7 +127,7 @@ class App:
 
         run_time_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         toolbar.add_cascade(label="Run Time", menu=run_time_menu)
-        for time in [1, 4, 7, 10, 15, 30, 60, 1000]:
+        for time in [1, 4, 7, 10, 15, 30, 60, 300, 1000]:
             run_time_menu.add_radiobutton(label=str(time).rjust(5), variable=self.run_time, value=time,
                                         command=lambda time1=time: self.set_rt(time1))
 
@@ -368,6 +369,7 @@ class App:
         self.display_block_info()
 
     def create_ordered_dispenser_array(self, rows, cols):
+        """Create a 2D array of dispensers ordered by the time they were placed on the grid"""
         # Sort the dispensers list by the time data
         sorted_dispensers = sorted(self.dispensers, key=lambda dispenser: dispenser[2])
         # Filter out only valid dispensers
@@ -387,6 +389,7 @@ class App:
         return dispenser_array
     
     def update_grid(self, _):
+        """Update the grid based on the slider values"""
         label_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*5))
 
         # Save the states of the checkboxes
@@ -455,6 +458,7 @@ class App:
         self.display_block_info()
 
     def add_dispenser(self, x, y, cleared=False):
+        """Add a dispenser to the nylium grid at the given coordinates"""
         label_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*5))
         border_path = resource_path("src/Images/selected_block.png")
         self.border_image = tk.PhotoImage(file=border_path)
@@ -499,6 +503,7 @@ class App:
         self.display_block_info()
 
     def reset_grid(self, remove_blocked=True):
+        """Reset the nyliium grid to its initial state"""
         for i, row in enumerate(self.grid):
             for j, tile in enumerate(row):
                 self.vars[i][j].set(0)
@@ -518,6 +523,7 @@ class App:
         self.display_block_info()
 
     def optimise(self):
+        """Optimise the placement of dispensers on the nylium grid"""
         fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
         disp_coords = [(d[0], d[1], d[3]) for d in self.dispensers]
         cleared_array = [d[3] for d in self.dispensers]
@@ -556,16 +562,25 @@ class App:
             self.wb_effic_slider.get(),
             fungi_type
         )
-
-        if result == 0:
-            messagebox.showinfo("Success", 
-                                "Successfully exported alternate coordinates to viable_coords.txt.")
+        if isinstance(result, (int, float)) and not isinstance(result, BaseException):
+            n = len(disp_coords)
+            trimmed_string = (
+                f"\n\nNote {8 * math.factorial(n) - 8:,} possible alternate "
+                "placements (permutations of firing order) were trimmed "
+                "for computational reasons."
+            )            
+            messagebox.showinfo(f"Success", 
+                                f"Successfully exported {result} alternate "
+                                f"coordinate{'s' if result != 1 else ''} to viable_coords.txt."
+                                f"{trimmed_string if n > 8 else ''}")
         else:
             error_message = f"An error has occurred:\n{result}"
             if not error_message.endswith(('.', '!', '?')):
                 error_message += '.'
-            messagebox.showwarning("Export Error", error_message)            
+            messagebox.showwarning("Export Error", error_message)      
+      
     def export_heatmaps(self):
+        """Export custom heatmaps based on the fungus distribution of the nylium grid"""
         self.dispensers.sort(key=lambda d: d[2])
         dispenser_coordinates = [(d[0], d[1], d[3]) for d in self.dispensers]
         fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED   
@@ -594,7 +609,9 @@ class App:
             if not error_message.endswith(('.', '?', '!')):
                 error_message += '.'
             messagebox.showwarning("Export Error", error_message)
+
     def calculate(self):
+        """Calculate the fungus distribution and bone meal usage for the nylium grid"""
         self.dispensers.sort(key=lambda d: d[2])
         dispenser_coordinates = [(d[0], d[1], d[3]) for d in self.dispensers]
         fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
@@ -679,6 +696,7 @@ class App:
             self.output_text_value[i] = value_label
     
     def display_block_info(self, x=None, y=None):
+        """Display the growth statistics of a specific block and/or dispenser"""
         # Return if no block is selected
         if not self.selected_block and x == None:
             return
@@ -818,9 +836,11 @@ class App:
         return "break"
 
     def set_rt(self, time):
+        """Set the run time of the optimisation algorithm."""
         self.run_time.set(time)
 
 def start(root):
+    """Start the Playerless Core Tools program."""
     child = tk.Toplevel(root)
     set_title_and_icon(child, "Playerless Core Tools")
 

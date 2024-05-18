@@ -28,7 +28,7 @@ def start_optimisation(num_dispensers, length, width, wb_per_fungi, f_type,
     optimal_solution, optimal_value = simulated_annealing(initial_solution, start_temp, cooling_rate, end_temp,
                                         max_iterations, length, width, f_type, wb_per_fungi)
     
-    print("Time taken:", time.time() - start_time)
+    print("Time taken to optimise:", time.time() - start_time)
 
     return optimal_solution, optimal_value
 

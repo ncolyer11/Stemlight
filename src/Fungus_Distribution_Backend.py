@@ -1,6 +1,7 @@
 """A program that helps calculate the optimal position to place n dispensers on a custom size grid of nylium"""
 
 import itertools
+import time
 import numpy as np
 
 from src.Assets import constants as const
@@ -132,19 +133,17 @@ def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungi_
         "disp_des_fungi_grids": disp_des_fungi_grids
     }
 
-def reflect(coord, length, width):
-    x, y = coord
-    return [[x, width - y], [length - x, y]]
-
-def rotate(coord, length, width):
-    x, y = coord
-    return [[y, x], [width - y, length - x], [width - y, x], [y, length - x]]
+def remove_duplicates(nested_list):
+    """Remove duplicate sublists from a list of sublists of coordinates"""
+    # Convert each sublist of coordinates to a tuple of tuples
+    unique_set = {tuple(map(tuple, sublist)) for sublist in nested_list}
+    # Convert back to a list of lists
+    unique_list = [list(map(list, sublist)) for sublist in unique_set]
+    return unique_list
 
 def generate_transformations(coords, l, w):
+    """Generate all reflections, rotations, and permutations of the optimal coordinates"""
     alt_coords = []
-    # Generate all permutations
-    # for perm in itertools.permutations(coords):
-        # Generate all reflections and rotations
     for coord in coords:
         transformed_coords = [coord]
         x, y = coord[0:2]
@@ -159,36 +158,37 @@ def generate_transformations(coords, l, w):
                 break
             x1 = sub_coord[0]
             y1 = sub_coord[1]
-            w1 = w - 1
-            l1 = l - 1
             # Up/down reflection
-            transformed_coords.append([x1, l1 - y1])
+            transformed_coords.append([x1, l - 1 - y1])
             # Right/left reflection
-            transformed_coords.append([w1 - x1, y1])
+            transformed_coords.append([w - 1 - x1, y1])
         alt_coords.append(transformed_coords)
     alt_placements = []
     # Grab equally transformed sets of coords to group into consecutive sets of alternate optimal coords
     for i in range(len(alt_coords[0])):
         alt_placements.append([coords[i] for coords in alt_coords])
 
+    # Skip if there are more than 8 dispensers as the number of permutations is too high
+    if len(coords) > 8:
+        return remove_duplicates(alt_placements)
+    
+    # Generate all permutations of dispenser order including new reflections and rotations
     perms = []
     for placement in alt_placements:
         sub_perms = list(itertools.permutations(placement))
         sub_perms_list = [list(perm) for perm in sub_perms]
         perms.extend(sub_perms_list)
     # Remove duplicate permutations to lower computation time
-    trimmed_perms = []
-    trimmed_perms = [perm for perm in perms if perm not in trimmed_perms]
-    return trimmed_perms
+    return remove_duplicates(perms)
 
 def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fungi, fungi_type):
     """Run through all reflections, rotations, and permutations of the optimal coordinates
     and record all solution within 0.1% of the best solution to a file."""
     try:
+        start_time = time.time()
         f = open("viable_coords.txt", "w")
-        f.write(f"Coords | Fungi\n")
+        coords_list_metrics = []
         for coords in generate_transformations(optimal_coords, length, width):
-            print(coords)
             dist_data = calculate_fungus_distribution(
                 length,
                 width,
@@ -200,10 +200,31 @@ def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fu
             bm_for_prod = dist_data["bm_for_prod"]
 
             bm_req = bm_for_prod < wb_per_fungi / const.WARTS_PER_BM - const.AVG_BM_TO_GROW_FUNG
-            if abs(total_des_fungi - optimal_value) / optimal_value <= 0.001 and bm_req:
-                    f.write(f"{str(coords)} | {str(total_des_fungi)}\n")
+            if abs(total_des_fungi - optimal_value) / optimal_value <= 0.0005 and bm_req:
+                coords_list_metrics.append((total_des_fungi, bm_for_prod, coords))
 
-        return 0
+        # Sort the list by the desired fungi value
+        coords_list_metrics.sort(key=lambda x: x[0], reverse=True)
+
+        # Write the sorted list to the file
+        alt_placements = len(coords_list_metrics)
+        f.write(f"Number of alternate placements: {alt_placements}\n")
+        for i, (total_des_fungi, bm_for_prod, coords) in enumerate(coords_list_metrics, start=1):
+            # Bandaid fix for current out of memory error
+            f.write(f"Desired Fungi: {round(total_des_fungi, 5)}\n"
+                    f"Bone Meal Used: {round(bm_for_prod, 5)}\n")
+            f.write(f"Coords: {coords}\n")
+            for y in range(width):
+                for x in range(length):
+                    if [x, y] in coords:
+                        f.write(f"[{coords.index([x, y])}]")
+                    else:
+                        f.write("[ ]")
+                f.write("\n")
+            f.write("\n")
+        f.close()
+        print("Alternate placements calculated in:", round(time.time() - start_time, 3), "seconds")
+        return alt_placements
     except Exception as e:
         print("An error has occured whilst finding viable coordinates:", e)
         return e
