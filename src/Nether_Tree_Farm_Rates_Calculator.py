@@ -156,7 +156,7 @@ def start(root):
     toolbar.add_cascade(label="Decimal Places", menu=dp_menu)
 
     for dp_row in range(1, 6):
-        dp_menu.add_radiobutton(label=dp_row, variable=dp, value=dp_row,
+        dp_menu.add_radiobutton(label=str(dp_row).rjust(5), variable=dp, value=dp_row,
                                 command=lambda row=dp_row: set_dp(row))
 
     # Create a string variable to display

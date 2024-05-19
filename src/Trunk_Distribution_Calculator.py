@@ -81,7 +81,7 @@ def start(root):
     dp = tk.StringVar(value="2")
 
     for dp_row in range(1, 6):
-        dp_menu.add_radiobutton(label=dp_row, variable=dp, value=dp_row,
+        dp_menu.add_radiobutton(label=str(dp_row).rjust(5), variable=dp, value=dp_row,
                                 command=lambda row=dp_row: set_dp(row))
 
     main_font = font.Font(family='Segoe UI', size=int((RSF**1.765)*11))
