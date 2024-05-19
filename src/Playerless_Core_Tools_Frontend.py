@@ -218,8 +218,6 @@ class App:
         self.nylium_switch = SlideSwitch(self.button_slider_frame, callback=self.update_nylium_type)
         self.nylium_switch.pack(side=tk.LEFT, padx=5, pady=5)
 
-
-
         self.grid_frame = tk.Frame(self.master, bg=colours.bg)
         self.grid_frame.pack(pady=5)
 
@@ -362,7 +360,7 @@ class App:
         # Update the images of the checkboxes
         for i, row in enumerate(self.grid):
             for j, tile in enumerate(row):
-                if self.vars[i][j].get() == 0:
+                if self.vars[i][j].get() == 0 and (i, j) not in self.blocked_blocks:
                     tile[0].config(image=self.unchecked_image)
         self.calculate()
         self.display_block_info()
