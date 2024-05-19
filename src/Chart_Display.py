@@ -108,11 +108,11 @@ def start(root):
     # Calculate the desired thumbnail width and height
     S = 1.3
     thumbnail_width = round(320 * S)
-    thumbnail_height = round(180 * S)
+    thumbnail_height = round(240 * S)
 
     # Set the maximum thumbnail size
-    max_thumbnail_width = round(370 * S)
-    max_thumbnail_height = round(300 * S)
+    # max_thumbnail_width = round(370 * S)
+    # max_thumbnail_height = round(300 * S)
 
     # Calculate the aspect ratio of the thumbnails
     aspect_ratio = thumbnail_width / thumbnail_height
@@ -126,25 +126,14 @@ def start(root):
         col = i % MAX_COL
         image = Image.open(path)
 
-        # Calculate the thumbnail size while preserving the aspect ratio
-        image_width, image_height = image.size
-        image_aspect_ratio = image_width / image_height
+        # Resize and center the image within the 4:3 frame
+        image.thumbnail((thumbnail_width, thumbnail_height))
+        new_image = Image.new("RGB", (thumbnail_width, thumbnail_height), colours.bg)
+        paste_x = (thumbnail_width - image.width) // 2
+        paste_y = (thumbnail_height - image.height) // 2
+        new_image.paste(image, (paste_x, paste_y))
 
-        if image_aspect_ratio > aspect_ratio:
-            # Image is wider, adjust the width and calculate the proportional height
-            thumbnail_width = min(max_thumbnail_width, image_width)
-            thumbnail_height = int(thumbnail_width / image_aspect_ratio)
-            thumbnail_size = (thumbnail_width, thumbnail_height)
-        else:
-            # Image is taller or has the same aspect ratio, adjust the height and calculate the proportional width
-            thumbnail_height = min(max_thumbnail_height, image_height)
-            thumbnail_width = int(thumbnail_height * image_aspect_ratio)
-            thumbnail_size = (thumbnail_width, thumbnail_height)
-
-        thumbnail = image.resize(thumbnail_size)
-        bordered_thumbnail = Image.new("RGB", (thumbnail_width + 2, thumbnail_height + 2))
-        bordered_thumbnail.paste(thumbnail, (1, 1))
-        photo = ImageTk.PhotoImage(bordered_thumbnail)
+        photo = ImageTk.PhotoImage(new_image)
         photo_images.append(photo)  # Store the PhotoImage object in the list
 
         button = tk.Button(scrollable_frame, image=photo, command=lambda path=path,
