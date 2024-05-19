@@ -203,7 +203,7 @@ def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fu
             bm_req = bm_for_prod < wb_per_fungi / const.WARTS_PER_BM - const.AVG_BM_TO_GROW_FUNG
             if total_des_fungi < optimal_value:
                 worst_value = total_des_fungi
-            if abs(total_des_fungi - optimal_value) / optimal_value <= 0.0005 and bm_req:
+            if abs(total_des_fungi - optimal_value) / optimal_value <= 0.001 and bm_req:
                 coords_list_metrics.append((total_des_fungi, bm_for_prod, coords))
 
         # Sort the list by the desired fungi value
