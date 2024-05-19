@@ -12,7 +12,7 @@ from src.Assets.helpers import resource_path, set_title_and_icon
 
 def start(root):
     credits_text = (
-        "Created: 24-Mar-2023\n"
+        "Created: May 11, 2023\n"
         f"Version:{version}\n"
         "Made by: ncolyer"
     )
