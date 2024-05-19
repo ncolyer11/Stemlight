@@ -1,6 +1,5 @@
 import math
 import tkinter as tk
-from tkinter import ttk
 import tkinter.font as font
 from tkinter import messagebox
 
@@ -15,7 +14,7 @@ from src import (
 
 from src.Assets import colours
 from src.Assets.constants import RSF
-from src.Assets.helpers import set_title_and_icon
+from src.Assets.helpers import ToolTip, set_title_and_icon
 
 # Program class to cleanly store program data
 class Program:
@@ -25,32 +24,6 @@ class Program:
         self.program = program
         self.label = label
         self.description = program.__doc__
-
-# ToolTip class to display tooltips
-class ToolTip:
-    def __init__(self, widget):
-        self.widget = widget
-        self.tip_window = None
-
-    def show_tip(self, tip_text, x, y):
-        "Display text in a tooltip window"
-        if self.tip_window or not tip_text:
-            return
-        self.tip_window = tw = tk.Toplevel(self.widget)
-        tw.wm_overrideredirect(True)
-        tw.wm_geometry(f"+{x}+{y}")
-        main_font = font.Font(family='Segoe UI', size=int((RSF**1.765)*8))
-
-        label = tk.Label(tw, text=tip_text, justify=tk.CENTER,
-                    background="#ffffe0", relief=tk.SOLID, borderwidth=1,
-                    font=main_font)
-        label.pack(ipadx=1)
-
-    def hide_tip(self):
-        tw = self.tip_window
-        self.tip_window = None
-        if tw:
-            tw.destroy()
 
 def run_python_code(root, python_file):
     python_file.start(root)

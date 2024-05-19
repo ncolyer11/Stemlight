@@ -9,10 +9,9 @@ import time
 from PIL import Image, ImageDraw, ImageTk
 import numpy as np
 
-from Main_Menu import ToolTip
 from src.Assets import colours
 from src.Assets.constants import RSF
-from src.Assets.helpers import set_title_and_icon
+from src.Assets.helpers import ToolTip, set_title_and_icon
 from src.Assets.helpers import resource_path
 from src.Custom_Nylium_Grid_Heatmap_Calculator import export_custom_heatmaps
 from src.Fungus_Distribution_Backend import calculate_fungus_distribution, output_viable_coords

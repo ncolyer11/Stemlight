@@ -1,16 +1,39 @@
 import os
 import sys
-import tkinter as tk
-import os
-import sys
-from litemapy import Schematic
 import time
-
 import numpy as np
+import tkinter as tk
+from tkinter import font
+from litemapy import Schematic
 
 from src.Assets import heatmap_data, constants as const
-
 from src.Assets.version import version
+
+class ToolTip:
+    def __init__(self, widget):
+        self.widget = widget
+        self.tip_window = None
+
+    def show_tip(self, tip_text, x, y):
+        "Display text in a tooltip window"
+        if self.tip_window or not tip_text:
+            return
+        x -= self.widget.winfo_width() // 2
+        self.tip_window = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        main_font = font.Font(family='Segoe UI', size=int((const.RSF**1.765)*8))
+
+        label = tk.Label(tw, text=tip_text, justify=tk.CENTER,
+                    background="#ffffe0", relief=tk.SOLID, borderwidth=1,
+                    font=main_font)
+        label.pack(ipadx=1)
+
+    def hide_tip(self):
+        tw = self.tip_window
+        self.tip_window = None
+        if tw:
+            tw.destroy()
 
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller"""
