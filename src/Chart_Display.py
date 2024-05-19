@@ -8,7 +8,9 @@ import os
 from src.Assets import colours
 from src.Assets.constants import RSF
 from src.Assets.version import version
-from src.Assets.helpers import resource_path
+from src.Assets.helpers import resource_path, set_title_and_icon
+
+MAX_COL = 4
 
 def start(root):
     # Function to open the selected image in a new window
@@ -29,19 +31,8 @@ def start(root):
 
         # Create a new window
         new_window = tk.Toplevel(child)
-        new_window.title(os.path.basename(image_file_path))
-        try:
-            # Try to use the .ico file
-            icon_path = resource_path('src/Assets/icon.ico')
-            new_window.iconbitmap(icon_path)
-        except:
-            # If that fails, try to use the .xbm file
-            try:
-                icon_path = resource_path('src/Assets/icon.xbm')
-                new_window.iconbitmap('@' + icon_path)
-            except:
-                pass  # If that also fails, do nothing
-        new_window.resizable(0,0)
+        set_title_and_icon(new_window, os.path.basename(image_file_path))
+        new_window.resizable(0, 0)
 
         img = ImageTk.PhotoImage(resized_image)
         label = tk.Label(new_window, image=img)
@@ -50,23 +41,9 @@ def start(root):
 
     # Create the child Tkinter window
     child = tk.Toplevel(root)
-    child.title(f"Stemlight{version}: Chart Viewer")
-    try:
-        # Try to use the .ico file
-        icon_path = resource_path('src/Assets/icon.ico')
-        child.iconbitmap(icon_path)
-    except:
-        # If that fails, try to use the .xbm file
-        try:
-            icon_path = resource_path('src/Assets/icon.xbm')
-            child.iconbitmap('@' + icon_path)
-        except:
-            pass  # If that also fails, do nothing
-    child.resizable(0,0)
+    set_title_and_icon(child, "Chart Viewer")
     child.configure(bg=colours.bg)
-    child.geometry("+0+0")
-    child.minsize(1400, 700)
-
+    child.state('zoomed') # Works for Windows and Linux
 
     main_font = font.Font(family='Segoe UI Semibold', size=int((RSF**1.765)*12))
 
@@ -76,27 +53,66 @@ def start(root):
     toolbar.add_cascade(label="File", menu=file_menu)
     file_menu.add_command(label="Exit", command=child.destroy)
 
-    # List of image file names
-    image_files = [
-        "7 different regions.png",
-        "Shroomlight Heatmap v2 3D.jpg",
-        "shrooms per layer v2.jpg",
-        "vrm optimal placements heatmap.png",
-        "Shroomlight Distribution.png",
-        "Wart Block Heatmap v2 3D.jpg",
-        "warts per layer v2.jpg",
-        "vrm raw placements heatmap.png"
-    ]
+    # Create a Canvas and Scrollbar for scrolling
+    canvas = tk.Canvas(child, bg=colours.bg)
+    scrollbar = tk.Scrollbar(child, orient="vertical", command=canvas.yview)
+    scrollable_frame = tk.Frame(canvas, bg=colours.bg)
 
-    image_paths = [resource_path(f"src/Images/{image}") for image in image_files]
+    scrollable_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(
+            scrollregion=canvas.bbox("all")
+        )
+    )
+
+    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+
+    def _on_mouse_wheel(event):
+        canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+
+    # Bind mouse wheel events to the canvas
+    canvas.bind_all("<MouseWheel>", _on_mouse_wheel)  # Windows and macOS
+    canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))  # Some Linux systems
+    canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))   # Some Linux systems
+
+    # List of image file names
+    image_files = {
+        "7 different regions.png": "\nDifferent Regions",
+        "Shroomlight Heatmap v2 3D.jpg": "\nShroomlight Heatmap",
+        "shrooms per layer v2.jpg": "\nShroomlights per Layer",
+        "vrm optimal placements heatmap.png": "\nWart Blocks per VRM",
+        "Shroomlight Distribution.png": "\nShroomlight Distribution",
+        "Wart Block Heatmap v2 3D.jpg": "\nWart Block Heatmap",
+        "warts per layer v2.jpg": "\nWart Blocks per Layer",
+        "vrm raw placements heatmap.png": "\nRaw Wart Blocks per VRM",
+        "internal_region_heatmap.png": "\nInternal Region Heatmap",
+        "external_region_heatmap.png": "\nExternal Region Heatmap",
+        "corners_region_heatmap.png": "\nCorners Region Heatmap",
+        "vines_region_heatmap.png": "\nVines Region Heatmap",
+        "trunk_height_probability_distribution.png": "\nTrunk Height Chances",
+        "trunk_layers_vs_efficiency.png": "\nTrunk Efficiency",
+        "fungus_growth_chance.png": "\nFungus Growth Chance",
+        "hat_height_probability_distribution.png": "\nHat Height Chances",
+        "trunk_and_hat_height_pair_probabilities.png": "\nTrunk-Hat Height Chances",
+        "crimson_fungus_distribution_5x5_dispenser.png": "\nCrimson Fungus Spread",
+        "warped_fungus_distribution_5x5_dispenser.png": "\nWarped Fungus Spread",
+        "warped_vs_crimson_distribution_repeated_bone_meals.png": "\nFungi after X Bone Meals"
+    }
+
+    image_paths = [resource_path(f"src/Images/{image}") for image in image_files.keys()]
 
     # Calculate the desired thumbnail width and height
-    thumbnail_width = 320
-    thumbnail_height = 180
+    S = 1.3
+    thumbnail_width = round(320 * S)
+    thumbnail_height = round(180 * S)
 
     # Set the maximum thumbnail size
-    max_thumbnail_width = 370
-    max_thumbnail_height = 300
+    max_thumbnail_width = round(370 * S)
+    max_thumbnail_height = round(300 * S)
 
     # Calculate the aspect ratio of the thumbnails
     aspect_ratio = thumbnail_width / thumbnail_height
@@ -104,12 +120,9 @@ def start(root):
     # Create a list to store the PhotoImage objects
     photo_images = []
 
-    # Create a 2x4 button grid
-    MAX_ROW = 2
-    MAX_COL = 4
-
-    for i, path in enumerate(image_paths):
-        row = MAX_ROW * (i // MAX_COL)
+    # Create the thumbnail button grid
+    for i, (path, caption_text) in enumerate(zip(image_paths, image_files.values())):
+        row = 2 * (i // MAX_COL)
         col = i % MAX_COL
         image = Image.open(path)
 
@@ -134,7 +147,7 @@ def start(root):
         photo = ImageTk.PhotoImage(bordered_thumbnail)
         photo_images.append(photo)  # Store the PhotoImage object in the list
 
-        button = tk.Button(child, image=photo, command=lambda path=path,
+        button = tk.Button(scrollable_frame, image=photo, command=lambda path=path,
                            photo=photo: open_image(path, photo))
         button.grid(row=row + 1, column=col, padx=10, pady=10)
 
@@ -142,18 +155,7 @@ def start(root):
         button.image = photo
 
         # Add captions below each image
-        captions = [
-            "\nDifferent Regions",
-            "\nShroomlight Heatmap",
-            "\nShroomlights per Layer",
-            "\nWart Blocks per VRM",
-            "\nShroomlight Distribution",
-            "\nWart Block Heatmap",
-            "\nWart Blocks per Layer",
-            "\nRaw Wart Blocks per VRM"
-        ]
-
-        caption = tk.Label(child, text=captions[i], bg=colours.bg, fg=colours.fg, font=main_font)
+        caption = tk.Label(scrollable_frame, text=caption_text, bg=colours.bg, fg=colours.fg, font=main_font)
         caption.grid(row=row, column=col, padx=10, pady=3)
 
     try:
