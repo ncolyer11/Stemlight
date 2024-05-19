@@ -187,6 +187,7 @@ def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fu
     try:
         start_time = time.time()
         f = open("viable_coords.txt", "w")
+        worst_value = optimal_value
         coords_list_metrics = []
         for coords in generate_transformations(optimal_coords, length, width):
             dist_data = calculate_fungus_distribution(
@@ -200,6 +201,8 @@ def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fu
             bm_for_prod = dist_data["bm_for_prod"]
 
             bm_req = bm_for_prod < wb_per_fungi / const.WARTS_PER_BM - const.AVG_BM_TO_GROW_FUNG
+            if total_des_fungi < optimal_value:
+                worst_value = total_des_fungi
             if abs(total_des_fungi - optimal_value) / optimal_value <= 0.0005 and bm_req:
                 coords_list_metrics.append((total_des_fungi, bm_for_prod, coords))
 
@@ -209,6 +212,9 @@ def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fu
         # Write the sorted list to the file
         alt_placements = len(coords_list_metrics)
         f.write(f"Number of alternate placements: {alt_placements}\n")
+        worst_loss = round((optimal_value - worst_value) / optimal_value * 100, 5)
+        lost_f = round(optimal_value - worst_value, 5)
+        f.write(f"Max efficiency loss without caring about order: {worst_loss}% ({lost_f} fungi)\n\n")
         for i, (total_des_fungi, bm_for_prod, coords) in enumerate(coords_list_metrics, start=1):
             # Bandaid fix for current out of memory error
             f.write(f"Desired Fungi: {round(total_des_fungi, 5)}\n"
