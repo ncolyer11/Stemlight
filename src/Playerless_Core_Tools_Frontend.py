@@ -1,11 +1,10 @@
 """Calculates distribution of fungus, and bone meal usage, \nfor a given grid of nylium, and placement and fire order of dispensers"""
 
 import math
-import tkinter as tk
-from tkinter import ttk
-from tkinter import messagebox
-import tkinter.font as font
 import time
+import tkinter as tk
+from tkinter import ttk, messagebox
+import tkinter.font as font
 from PIL import Image, ImageDraw, ImageTk
 import numpy as np
 

@@ -60,7 +60,7 @@ def set_title_and_icon(root, program_name):
             icon_path = resource_path('src/Assets/icon.xbm')
             root.iconbitmap('@' + icon_path)
         except:
-            pass  # If that also fails, do nothing
+            pass  # If that also fails, don't bother setting an icon
 
 def get_cell_value(sheet_name, row_number, column_number):
     """Return the value of the cell at the given row and column in the given sheet."""
@@ -82,6 +82,7 @@ def export_custom_heatmaps(length, width, nyliumGrid):
             heatmap_width,
             const.NT_MAX_HT
         ))
+    
         for b, block_type in enumerate(const.BLOCK_TYPES):  # 0 = stems, 1 = shrooms, 2 = vrm0/warts
             outSheet.append(outWorkbook.add_worksheet(block_type))
             # Iterate through each x,z coord in the nylium grid/platform 
@@ -93,7 +94,8 @@ def export_custom_heatmaps(length, width, nyliumGrid):
                     col = x + (const.NT_MAX_WD * z)
                     row = const.NT_MAX_HT - 1 - y
                     weighted_chance = heatmap_weighting * get_cell_value(b, row, col)
-                    custom_heatmap_array[b][nylium_z + z][nylium_x + x][y] += weighted_chance
+                    curr = custom_heatmap_array[b][nylium_z + z][nylium_x + x][y]
+                    custom_heatmap_array[b][nylium_z + z][nylium_x + x][y] += (1 - curr) * weighted_chance
 
             # Write data to Excel file for each block type
             y_range, z_range, x_range = range(const.NT_MAX_HT), range(heatmap_width), range(heatmap_length)

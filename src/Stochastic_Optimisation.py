@@ -2,7 +2,7 @@ import time
 import numpy as np
 import pandas as pd
 
-from src.Fast_Dispenser_Distribution import fast_calculate_dist
+from src.Fast_Dispenser_Distribution import fast_calc_fung_dist, fast_calc_hf_dist
 import src.Assets.constants as const
 
 ACCEPTANCE_RATE = 0.995
@@ -25,15 +25,18 @@ def start_optimisation(num_dispensers, length, width, wb_per_fungi, f_type,
     # iterations = math.floor(math.log(end_temp / start_temp) / math.log(cooling_rate)) + 1
     # print(f"S: {start_temp} E: {end_temp} I: {iterations} C: {cooling_rate}")
 
-    optimal_solution, optimal_value = simulated_annealing(initial_solution, start_temp, cooling_rate, end_temp,
-                                        max_iterations, length, width, f_type, wb_per_fungi)
+    optimal_solution, optimal_value = simulated_annealing(
+                                        initial_solution, start_temp, cooling_rate, end_temp,
+                                        max_iterations, length, width, f_type, wb_per_fungi,
+                                        func=fast_calc_fung_dist)
     
     print("Time taken to optimise:", time.time() - start_time)
 
     return optimal_solution, optimal_value
 
 def simulated_annealing(initial_sol, temperature, cooling_rate, min_temperature, max_iterations,
-                        length, width, f_type, wb_per_fungi, blocked_coords=[[]]):
+                        length, width, f_type, wb_per_fungi,
+                        blocked_coords=[[]], func=fast_calc_fung_dist):
     """Simulated annealing algorithm for discrete optimisation of fungus distribution."""
     current_sol = initial_sol
     best_sol = initial_sol
@@ -41,18 +44,19 @@ def simulated_annealing(initial_sol, temperature, cooling_rate, min_temperature,
         if temperature < min_temperature:
             break
         neighbour_sol = generate_neighbour(current_sol, length, width)
-        current_energy = fast_calculate_dist(length, width, f_type, current_sol)[0]
-        neighbour_energy, bm_for_prod = fast_calculate_dist(length, width, f_type, neighbour_sol)
+        # Either desired fungi produced, or potential wart blocks generated
+        current_energy = func(length, width, f_type, current_sol)[0]
+        neighbour_energy, bm_for_prod = func(length, width, f_type, neighbour_sol)
 
         bm_req = bm_for_prod < wb_per_fungi / const.WARTS_PER_BM - const.AVG_BM_TO_GROW_FUNG
         if neighbour_energy > current_energy and bm_req or \
            np.random.rand() < acceptance_probability(current_energy, neighbour_energy, temperature):
             current_sol = neighbour_sol
-            if neighbour_energy > fast_calculate_dist(length, width, f_type, best_sol)[0] and bm_req:
+            if neighbour_energy > func(length, width, f_type, best_sol)[0] and bm_req:
                 best_sol = neighbour_sol
 
         temperature *= cooling_rate
-    return best_sol, fast_calculate_dist(length, width, f_type, best_sol)[0]
+    return best_sol, func(length, width, f_type, best_sol)[0]
 
 def acceptance_probability(current_energy, neighbour_energy, temperature):
     """Calculate the probability of accepting a worse solution."""
@@ -92,9 +96,8 @@ def generate_neighbour(solution, length, width, blocked_coords=[[]]):
 
     return neighbour_solution
 
-def calculate_temp_bounds(N, length, width, f_type, blocked_coords=[[]]):
+def calculate_temp_bounds(N, length, width, f_type, blocked_coords=[[]], func=fast_calc_fung_dist):
     """Calculate the starting temperature for the simulated annealing algorithm."""
-    func = fast_calculate_dist
     # Find the lowest energy point
     rand_s = np.random.randint
     lowest_energy = func(length, width, f_type, [[0, 0] for _ in range(N)])[0]
