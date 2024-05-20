@@ -186,7 +186,6 @@ def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fu
     and record all solution within 0.1% of the best solution to a file."""
     try:
         start_time = time.time()
-        f = open("viable_coords.txt", "w")
         worst_value = optimal_value
         coords_list_metrics = []
         for coords in generate_transformations(optimal_coords, length, width):
@@ -208,29 +207,28 @@ def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fu
 
         # Sort the list by the desired fungi value
         coords_list_metrics.sort(key=lambda x: x[0], reverse=True)
-
-        # Write the sorted list to the file
-        alt_placements = len(coords_list_metrics)
-        f.write(f"Number of alternate placements: {alt_placements}\n")
-        worst_loss = round((optimal_value - worst_value) / optimal_value * 100, 5)
-        lost_f = round(optimal_value - worst_value, 5)
-        f.write(f"Max efficiency loss without caring about order: {worst_loss}% ({lost_f} fungi)\n\n")
-        for i, (total_des_fungi, bm_for_prod, coords) in enumerate(coords_list_metrics, start=1):
-            # Bandaid fix for current out of memory error
-            f.write(f"Desired Fungi: {round(total_des_fungi, 5)}\n"
-                    f"Bone Meal Used: {round(bm_for_prod, 5)}\n")
-            f.write(f"Coords: {coords}\n")
-            for y in range(width):
-                for x in range(length):
-                    if [x, y] in coords:
-                        f.write(f"[{coords.index([x, y])}]")
-                    else:
-                        f.write("[ ]")
-                f.write("\n")
-            f.write("\n")
-        f.close()
-        print("Alternate placements calculated in:", round(time.time() - start_time, 3), "seconds")
-        return alt_placements
+        return export_alt_placements(length, width, coords_list_metrics, optimal_value, worst_value, start_time)
     except Exception as e:
         print("An error has occured whilst finding viable coordinates:", e)
         return e
+
+def export_alt_placements(length, width, metrics, optimal_value, worst_value, start_time):
+    """Write the sorted list to a file"""
+    alt_placements = len(metrics)
+    f = open("viable_coords.txt", "w")
+    f.write(f"Number of alternate placements: {alt_placements}\n")
+    worst_loss = round((optimal_value - worst_value) / optimal_value * 100, 5)
+    lost_f = round(optimal_value - worst_value, 5)
+    f.write(f"Max efficiency loss without caring about order: {worst_loss}% ({lost_f} fungi)\n\n")
+    for i, (total_des_fungi, bm_for_prod, coords) in enumerate(metrics, start=1):
+        f.write(f"Desired Fungi: {round(total_des_fungi, 5)}\n"
+                f"Bone Meal Used: {round(bm_for_prod, 5)}\n")
+        f.write(f"Coords: {coords}\n")
+        for y in range(width):
+            for x in range(length):
+                f.write(f"[{coords.index([x, y])}]") if [x, y] in coords else f.write("[ ]")
+            f.write("\n")
+        f.write("\n")
+    f.close()
+    print("Alternate placements calculated in:", round(time.time() - start_time, 3), "seconds")
+    return alt_placements
