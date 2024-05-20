@@ -11,9 +11,7 @@ import numpy as np
 
 from src.Assets import colours
 from src.Assets.constants import RSF
-from src.Assets.helpers import ToolTip, set_title_and_icon
-from src.Assets.helpers import resource_path
-from src.Custom_Nylium_Grid_Heatmap_Calculator import export_custom_heatmaps
+from src.Assets.helpers import ToolTip, set_title_and_icon, export_custom_heatmaps, resource_path
 from src.Fungus_Distribution_Backend import calculate_fungus_distribution, output_viable_coords
 from src.Stochastic_Optimisation import start_optimisation
 
