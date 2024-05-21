@@ -4,7 +4,7 @@ n dispensers on a custom size grid of nylium as fast as possible"""
 import itertools
 import numpy as np
 import src.Assets.constants as const
-from src.Assets.heatmap_data import compressed_heatmap_array
+from src.Assets.heatmap_data import heatmap_array_xyz
 
 WARPED = 0
 CRIMSON = 1
@@ -106,25 +106,24 @@ def fast_calc_hf_dist(p_length, p_width, fungus_type, disp_coords, blast_chamber
     width = const.NT_MAX_RAD + p_width + const.NT_MAX_RAD
     length = const.NT_MAX_RAD + p_length + const.NT_MAX_RAD
     hf_grid = np.zeros(
-        (len(const.BLOCK_TYPES), width, length)
+        (len(const.BLOCK_TYPES), const.NT_MAX_HT, width, length)
     )
 
     for b, _ in enumerate(const.BLOCK_TYPES):  # 0 = stems, 1 = shrooms, 2 = vrm0/warts
         # Iterate through each x,z coord in the nylium grid/platform 
         for nylium_x, nylium_z in itertools.product(range(p_width), range(p_length)):
-            heatmap_weighting = foliage_grid[nylium_x][nylium_z] / 9
+            heatmap_weighting = foliage_grid[nylium_x, nylium_z] / 9
             # Iterate through each x,y,z coord relative to the fungi
-            # ahh not too sure about this (1-curr shit) might have to do comp prob per layer
-            for z, x in itertools.product(range(const.NT_MAX_WD), range(const.NT_MAX_WD)):
-                weighted_chance = heatmap_weighting * compressed_heatmap_array[b,z,x]
-                curr = hf_grid[b][nylium_z + z][nylium_x + x]
-                hf_grid[b][nylium_z + z][nylium_x + x] += (1 - curr) * weighted_chance
+            # will have to do comp prob per layer
+            for y, z, x in itertools.product(range(const.NT_MAX_HT), range(const.NT_MAX_WD), range(const.NT_MAX_WD)):
+                weighted_chance = heatmap_weighting * heatmap_array_xyz[b, y, z, x]
+                curr = hf_grid[b, y ,nylium_z + z, nylium_x + x]
+                hf_grid[b, y, nylium_z + z, nylium_x + x] += (1 - curr) * weighted_chance
 
-    total_wb = np.sum(hf_grid[0], axis=(0,1)) * blast_chamber_effic
+    total_wb = np.sum(hf_grid[0], axis=(0,1,2)) * blast_chamber_effic
     bm_for_prod -= total_wb / const.WARTS_PER_BM
-    print(total_wb, '\n', hf_grid[0])
+    print(total_wb, '\n', np.sum(hf_grid[0], axis=(0)))
     return total_wb, bm_for_growth + bm_for_prod
-
 
 def warped_calc_hf_dist(length, width, disp_coords):
     return 1, 1
