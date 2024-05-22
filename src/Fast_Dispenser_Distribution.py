@@ -19,7 +19,7 @@ selection_cache = np.array([
 # The following functions are designed to have little to no looped function calls,
 # resulting in some repetitive code
 
-def fast_calc_fung_dist(length, width, fungus_type, disp_coords):
+def fast_calc_fung_dist(length, width, fungus_type, disp_coords, *args):
     """Calculate the distribution of foliage for a given set of dispenser offsets fast"""
     if fungus_type == WARPED:
         return warped_calc_fung_dist(length, width, disp_coords)
@@ -79,8 +79,8 @@ def warped_calc_fung_dist(length, width, disp_coords):
     return total_des_fungi, bm_for_prod - compost
 
 def fast_calc_hf_dist(p_length, p_width, fungus_type, disp_coords, blast_chamber_effic=1):
-    if fungus_type == WARPED:
-        return warped_calc_hf_dist(p_length, p_width, disp_coords)
+    # if fungus_type == WARPED:
+        # return warped_calc_hf_dist(p_length, p_width, disp_coords, blast_chamber_effic)
     
     # 2D array for storing distribution of all the foliage
     foliage_grid = np.zeros((p_width, p_length))
@@ -101,7 +101,6 @@ def fast_calc_hf_dist(p_length, p_width, fungus_type, disp_coords, blast_chamber
     compost_from_foliage = (8 / 9 * np.sum(foliage_grid)) / const.FOLIAGE_PER_BM
     bm_for_prod -= compost_from_foliage
     crimson_fungi_prod = total_folige / 9
-    bm_for_growth = 2.5 * crimson_fungi_prod
 
     width = const.NT_MAX_RAD + p_width + const.NT_MAX_RAD
     length = const.NT_MAX_RAD + p_length + const.NT_MAX_RAD
@@ -114,18 +113,18 @@ def fast_calc_hf_dist(p_length, p_width, fungus_type, disp_coords, blast_chamber
         for nylium_x, nylium_z in itertools.product(range(p_width), range(p_length)):
             heatmap_weighting = foliage_grid[nylium_x, nylium_z] / 9
             # Iterate through each x,y,z coord relative to the fungi
-            # will have to do comp prob per layer
             for y, z, x in itertools.product(range(const.NT_MAX_HT), range(const.NT_MAX_WD), range(const.NT_MAX_WD)):
                 weighted_chance = heatmap_weighting * heatmap_array_xyz[b, y, z, x]
                 curr = hf_grid[b, y ,nylium_z + z, nylium_x + x]
                 hf_grid[b, y, nylium_z + z, nylium_x + x] += (1 - curr) * weighted_chance
 
+    bm_for_growth = 2.5 * crimson_fungi_prod
     total_wb = np.sum(hf_grid[0], axis=(0,1,2)) * blast_chamber_effic
-    bm_for_prod -= total_wb / const.WARTS_PER_BM
+    compost_from_warts = total_wb / const.WARTS_PER_BM
     print(total_wb, '\n', np.sum(hf_grid[0], axis=(0)))
-    return total_wb, bm_for_growth + bm_for_prod
+    return total_wb, bm_for_prod
 
-def warped_calc_hf_dist(length, width, disp_coords):
+def warped_calc_hf_dist(length, width, disp_coords, blast_chamber_effic):
     return 1, 1
 
 if __name__ == "__main__":

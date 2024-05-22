@@ -1,3 +1,4 @@
+import math
 import time
 import numpy as np
 import pandas as pd
@@ -12,31 +13,35 @@ REJECTION_POINT = 0.1
 CPU = 5.5e-4
 
 def start_optimisation(num_dispensers, length, width, wb_per_fungi, f_type,
-                       run_time, blocked_coords=[[]]):
+                       run_time, optimise_func, blocked_coords=[[]]):
     """Start optimising the function using the simulated annealing algorithm."""
     if num_dispensers == 0:
         return [], 0
     initial_solution = [[-1,-1] for _ in range(num_dispensers)]
-    start_temp, end_temp, *_ = calculate_temp_bounds(num_dispensers, length, width, f_type)
-    cooling_rate = (end_temp / start_temp) ** (CPU / int(run_time.get()))
+    start_temp, end_temp, *_ = calculate_temp_bounds(num_dispensers, length, width, f_type,
+                                                     optimise_func)
+    print(int(run_time))
+
+    cooling_rate = (end_temp / start_temp) ** (CPU / int(run_time))
     max_iterations = 100000
 
     start_time = time.time()
-    # iterations = math.floor(math.log(end_temp / start_temp) / math.log(cooling_rate)) + 1
-    # print(f"S: {start_temp} E: {end_temp} I: {iterations} C: {cooling_rate}")
+    
+    print(f"S: {start_temp} E: {end_temp} I: C: {cooling_rate}")
+    iterations = math.floor(math.log(end_temp / start_temp) / math.log(cooling_rate)) + 1
 
     optimal_solution, optimal_value = simulated_annealing(
                                         initial_solution, start_temp, cooling_rate, end_temp,
                                         max_iterations, length, width, f_type, wb_per_fungi,
-                                        func=fast_calc_fung_dist)
+                                        fast_calc_fung_dist)
     
     print("Time taken to optimise:", time.time() - start_time)
 
     return optimal_solution, optimal_value
 
 def simulated_annealing(initial_sol, temperature, cooling_rate, min_temperature, max_iterations,
-                        length, width, f_type, wb_per_fungi,
-                        blocked_coords=[[]], func=fast_calc_fung_dist):
+                        length, width, f_type, wb_per_fungi, optimise_func,
+                        blocked_coords=[[]]):
     """Simulated annealing algorithm for discrete optimisation of fungus distribution."""
     current_sol = initial_sol
     best_sol = initial_sol
@@ -45,18 +50,18 @@ def simulated_annealing(initial_sol, temperature, cooling_rate, min_temperature,
             break
         neighbour_sol = generate_neighbour(current_sol, length, width)
         # Either desired fungi produced, or potential wart blocks generated
-        current_energy = func(length, width, f_type, current_sol)[0]
-        neighbour_energy, bm_for_prod = func(length, width, f_type, neighbour_sol)
+        current_energy = optimise_func(length, width, f_type, current_sol)[0]
+        neighbour_energy, bm_for_prod = optimise_func(length, width, f_type, neighbour_sol)
 
         bm_req = bm_for_prod < wb_per_fungi / const.WARTS_PER_BM - const.AVG_BM_TO_GROW_FUNG
         if neighbour_energy > current_energy and bm_req or \
            np.random.rand() < acceptance_probability(current_energy, neighbour_energy, temperature):
             current_sol = neighbour_sol
-            if neighbour_energy > func(length, width, f_type, best_sol)[0] and bm_req:
+            if neighbour_energy > optimise_func(length, width, f_type, best_sol)[0] and bm_req:
                 best_sol = neighbour_sol
 
         temperature *= cooling_rate
-    return best_sol, func(length, width, f_type, best_sol)[0]
+    return best_sol, optimise_func(length, width, f_type, best_sol)[0]
 
 def acceptance_probability(current_energy, neighbour_energy, temperature):
     """Calculate the probability of accepting a worse solution."""
@@ -96,11 +101,11 @@ def generate_neighbour(solution, length, width, blocked_coords=[[]]):
 
     return neighbour_solution
 
-def calculate_temp_bounds(N, length, width, f_type, blocked_coords=[[]], func=fast_calc_fung_dist):
+def calculate_temp_bounds(N, length, width, f_type, optimise_func, blocked_coords=[[]]):
     """Calculate the starting temperature for the simulated annealing algorithm."""
     # Find the lowest energy point
     rand_s = np.random.randint
-    lowest_energy = func(length, width, f_type, [[0, 0] for _ in range(N)])[0]
+    lowest_energy = optimise_func(length, width, f_type, [[0, 0] for _ in range(N)])[0]
     # Create a valid set of coords by passing it through generate_neighbour
     average_solutions = []
     for _ in range(300*N):
@@ -109,8 +114,10 @@ def calculate_temp_bounds(N, length, width, f_type, blocked_coords=[[]], func=fa
     
     # Calculate the average energy of the initial solution
     avg_energy = np.mean(
-        [func(length, width, f_type, average_solutions[i])[0] for i in range(300*N)]
+        [optimise_func(length, width, f_type, average_solutions[i])[0] for i in range(300*N)]
     )
+    print(avg_energy)
+    print(lowest_energy)
     high_energy_change = avg_energy - lowest_energy
     start_temperature = -high_energy_change / np.log(ACCEPTANCE_RATE)
     end_temperature = -high_energy_change / np.log(REJECTION_POINT)

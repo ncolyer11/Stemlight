@@ -13,6 +13,7 @@ from src.Assets.constants import RSF
 from src.Assets.helpers import ToolTip, set_title_and_icon, export_custom_heatmaps, resource_path
 from src.Fungus_Distribution_Backend import calculate_fungus_distribution, output_viable_coords
 from src.Stochastic_Optimisation import start_optimisation
+from src.Fast_Dispenser_Distribution import fast_calc_fung_dist, fast_calc_hf_dist
 
 # after calculating the most optimal positions to put the dispensers for crimson
 # it should generate a list of all permutations of the order, 4 rotations, and 2 mirrors and then calculate which set of new orientations is best out of those for warped
@@ -92,6 +93,7 @@ class App:
         self.blocked_blocks = []
         self.nylium_type = tk.StringVar(value="warped")
         self.run_time = 7
+        self.optimise_func = fast_calc_fung_dist
         self.vars = []
         self.create_widgets()
         self.output_text_label = {}
@@ -126,6 +128,17 @@ class App:
         for time in [1, 4, 7, 10, 15, 30, 60, 300, 1000]:
             run_time_menu.add_radiobutton(label=str(time).rjust(5), variable=self.run_time, value=time,
                                         command=lambda time1=time: self.set_rt(time1))
+
+        optimise_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
+        toolbar.add_cascade(label="Optimise For", menu=optimise_menu)
+        optimise_menu.add_command(label="Desired Fungi", 
+                                  command=lambda: self.set_optimise_func(fast_calc_fung_dist))
+        optimise_menu.add_command(label="Wart Blocks",
+                                  command=lambda: self.set_optimise_func(fast_calc_hf_dist))
+    
+    def set_optimise_func(self, optimise_func):
+        """Change what function is optimise via the simulated annealing algorithm"""
+        self.optimise_func = optimise_func
 
     def show_info_message(self):
         """Provide some information to the user about what this tool is used for"""
@@ -454,12 +467,11 @@ class App:
     def add_dispenser(self, x, y, cleared=False):
         """Add a dispenser to the nylium grid at the given coordinates"""
         label_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*5))
-        border_path = resource_path("src/Images/selected_block.png")
-        self.border_image = tk.PhotoImage(file=border_path)
-        self.border_image = self.border_image.subsample(3, 3)
 
         # Toggle the state of the checkbox
         self.vars[x][y].set(not self.vars[x][y].get())
+        if (x, y) in self.blocked_blocks:
+            self.blocked_blocks.remove((x, y))
 
         # Update the image based on the state of the checkbox
         if self.vars[x][y].get() == 0:
@@ -477,7 +489,6 @@ class App:
                 self.grid[d_x][d_y][1].destroy()
                 # Update the grid with the label
                 self.grid[d_x][d_y] = (self.grid[d_x][d_y][0], label) 
-            
 
             self.dispensers = [d for d in self.dispensers if d[:2] != (x, y)]
             self.grid[x][y][1].destroy()
@@ -530,7 +541,8 @@ class App:
             self.row_slider.get(),
             self.wb_effic_slider.get(),
             fungi_type,
-            self.run_time
+            self.run_time.get(),
+            self.optimise_func
         )
 
         if optimal_coords == -1:
