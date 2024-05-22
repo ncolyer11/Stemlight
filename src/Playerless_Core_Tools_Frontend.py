@@ -40,7 +40,7 @@ class SlideSwitch(tk.Canvas):
         self.configure(width=WDTH, height=HGHT)
         self.configure(highlightthickness=0)
         self.configure(bg=colours.bg)
-        self.fungi_type = tk.StringVar(value="warped")
+        self.fungus_type = tk.StringVar(value="warped")
 
         # Create an image of a rounded rectangle
         self.rect_image = self.create_squircle(WDTH, HGHT, RAD, colours.warped)
@@ -63,12 +63,12 @@ class SlideSwitch(tk.Canvas):
             self.new_image = self.create_squircle(WDTH, HGHT, RAD, colours.warped)
             self.itemconfig(self.rect, image=self.new_image)
             self.coords(self.oval, WDTH//4, HGHT//2)
-            self.fungi_type.set("warped")
+            self.fungus_type.set("warped")
         else:
             self.new_image = self.create_squircle(WDTH, HGHT, RAD, colours.crimson)
             self.itemconfig(self.rect, image=self.new_image)
             self.coords(self.oval, 3 * WDTH//4, HGHT//2)
-            self.fungi_type.set("crimson")
+            self.fungus_type.set("crimson")
 
         self.state = not self.state
         if self.callback:
@@ -92,8 +92,14 @@ class App:
         self.dispensers = []
         self.blocked_blocks = []
         self.nylium_type = tk.StringVar(value="warped")
-        self.run_time = 7
-        self.optimise_func = fast_calc_fung_dist
+        self.run_time = tk.StringVar(value="1")
+        self.blast_chamber_effic = 1
+        self.optimise_func_str = tk.StringVar(value='fast_calc_hf_dist')
+        self.func_dict = {
+            'fast_calc_fung_dist': fast_calc_fung_dist,
+            'fast_calc_hf_dist': fast_calc_hf_dist
+        }
+        self.optimise_func = self.func_dict[self.optimise_func_str.get()]
         self.vars = []
         self.create_widgets()
         self.output_text_label = {}
@@ -106,7 +112,6 @@ class App:
         self.clearing_image = tk.PhotoImage(file=clearing_path)
         self.clearing_image = self.clearing_image.subsample(3, 3)
 
-        self.run_time = tk.StringVar(value="7")
 
         # Create menu
         toolbar = tk.Menu(master)
@@ -126,19 +131,32 @@ class App:
         run_time_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         toolbar.add_cascade(label="Run Time", menu=run_time_menu)
         for time in [1, 4, 7, 10, 15, 30, 60, 300, 1000]:
-            run_time_menu.add_radiobutton(label=str(time).rjust(5), variable=self.run_time, value=time,
-                                        command=lambda time1=time: self.set_rt(time1))
+            run_time_menu.add_radiobutton(
+                label=str(time).rjust(5), 
+                variable=self.run_time, 
+                value=time,
+                command=lambda time1=time: self.set_rt(time1)
+            )
 
         optimise_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         toolbar.add_cascade(label="Optimise For", menu=optimise_menu)
-        optimise_menu.add_command(label="Desired Fungi", 
-                                  command=lambda: self.set_optimise_func(fast_calc_fung_dist))
-        optimise_menu.add_command(label="Wart Blocks",
-                                  command=lambda: self.set_optimise_func(fast_calc_hf_dist))
+        optimise_menu.add_radiobutton(
+            label="  Desired Fungi",
+            variable=self.optimise_func_str,
+            value='fast_calc_fung_dist',
+            command=lambda: self.set_optimise_func('fast_calc_fung_dist')
+        )
+        optimise_menu.add_radiobutton(
+            label="  Wart Blocks", 
+            variable=self.optimise_func_str, 
+            value='fast_calc_hf_dist',
+            command=lambda: self.set_optimise_func('fast_calc_hf_dist')
+        )
     
     def set_optimise_func(self, optimise_func):
         """Change what function is optimise via the simulated annealing algorithm"""
-        self.optimise_func = optimise_func
+        self.optimise_func = self.func_dict[optimise_func]
+        self.optimise_func_str.set(optimise_func)
 
     def show_info_message(self):
         """Provide some information to the user about what this tool is used for"""
@@ -529,7 +547,7 @@ class App:
 
     def optimise(self):
         """Optimise the placement of dispensers on the nylium grid"""
-        fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
+        fungus_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
         disp_coords = [(d[0], d[1], d[3]) for d in self.dispensers]
         cleared_array = [d[3] for d in self.dispensers]
         if len(disp_coords) == 0:
@@ -540,7 +558,7 @@ class App:
             self.col_slider.get(), 
             self.row_slider.get(),
             self.wb_effic_slider.get(),
-            fungi_type,
+            fungus_type,
             self.run_time.get(),
             self.optimise_func
         )
@@ -566,7 +584,8 @@ class App:
             self.col_slider.get(),
             self.row_slider.get(),
             self.wb_effic_slider.get(),
-            fungi_type
+            fungus_type,
+            self.optimise_func
         )
         if isinstance(result, (int, float)) and not isinstance(result, BaseException):
             n = len(disp_coords)
@@ -591,7 +610,7 @@ class App:
         """Export custom heatmaps based on the fungus distribution of the nylium grid"""
         self.dispensers.sort(key=lambda d: d[2])
         dispenser_coordinates = [(d[0], d[1], d[3]) for d in self.dispensers]
-        fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED   
+        fungus_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED   
         # Calculate fungus distribution     
         disp_des_fungi_grids = \
             calculate_fungus_distribution(
@@ -599,7 +618,7 @@ class App:
                 self.row_slider.get(),
                 len(dispenser_coordinates),
                 dispenser_coordinates,
-                fungi_type,
+                fungus_type,
                 self.cycles_slider.get(),
                 self.blocked_blocks
             )["disp_des_fungi_grids"]
@@ -622,14 +641,14 @@ class App:
         """Calculate the fungus distribution and bone meal usage for the nylium grid"""
         self.dispensers.sort(key=lambda d: d[2])
         dispenser_coordinates = [(d[0], d[1], d[3]) for d in self.dispensers]
-        fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
+        fungus_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
         # Calculate fungus distribution
         dist_data = calculate_fungus_distribution(
             self.col_slider.get(), 
             self.row_slider.get(),
             len(dispenser_coordinates),
             dispenser_coordinates,
-            fungi_type,
+            fungus_type,
             self.cycles_slider.get(),
             self.blocked_blocks
         )
@@ -639,14 +658,22 @@ class App:
         bm_for_prod = dist_data["bm_for_prod"]
         bm_for_grow = dist_data["bm_for_grow"]
         bm_total = dist_data["bm_total"]
+        total_wart_blocks, *_ = fast_calc_hf_dist(
+            self.col_slider.get(),
+            self.row_slider.get(),
+            fungus_type,
+            [[dispenser_coordinates[i][0], dispenser_coordinates[i][1]] for i in range(len(dispenser_coordinates))],
+            self.blast_chamber_effic
+        )
         
         output_labels = [
-            f"Total {'Warped' if fungi_type == WARPED else 'Crimson'} Fungi",
+            f"Total {'Warped' if fungus_type == WARPED else 'Crimson'} Fungi",
             "Bone Meal to Produce a Fungus",
             "Bone Meal for Production",
             "Bone Meal for Growth",
             "Total Bone Meal Used",
-            "Total Foliage"
+            "Total Foliage",
+            "Total Wart Blocks"
         ]
         
         output_values = [
@@ -655,7 +682,8 @@ class App:
             round(bm_for_prod, DP),
             round(bm_for_grow, DP),
             round(bm_total, DP),
-            round(total_foliage, DP)
+            round(total_foliage, DP),
+            round(total_wart_blocks, DP)
         ]
         label_font = font.Font(family='Segoe UI', size=int((RSF**NLS)*9))
         output_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
@@ -728,7 +756,7 @@ class App:
     
         self.dispensers.sort(key=lambda d: d[2])
         dispenser_coordinates = [(d[0], d[1], d[3]) for d in self.dispensers]
-        fungi_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
+        fungus_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
         dispensers = len(dispenser_coordinates)
         cycles = self.cycles_slider.get()
         dist_data = calculate_fungus_distribution(
@@ -736,7 +764,7 @@ class App:
             self.row_slider.get(),
             dispensers,
             dispenser_coordinates,
-            fungi_type,
+            fungus_type,
             cycles,
             self.blocked_blocks
         )
@@ -744,7 +772,7 @@ class App:
         disp_des_fungi_grids = dist_data["disp_des_fungi_grids"]
         
         info_labels = [
-            f"{'Warped' if fungi_type == WARPED else 'Crimson'} Fungi at {(x,y)}",
+            f"{'Warped' if fungus_type == WARPED else 'Crimson'} Fungi at {(x,y)}",
             f"Foliage at {(x,y)}",
         ]
         sel_fungi_amount = np.sum(disp_des_fungi_grids, axis=(0,1))[x, y]
@@ -771,7 +799,7 @@ class App:
                 bone_meal_used += 1 - cycle_sum[x, y]
 
 
-            info_labels.append(f"{'Warped' if fungi_type == WARPED else 'Crimson'} Fungi Produced")
+            info_labels.append(f"{'Warped' if fungus_type == WARPED else 'Crimson'} Fungi Produced")
             info_labels.append("Bone Meal Used")
             info_labels.append("Bone Meal per Fungi")
             info_labels.append("Position | Cleared")

@@ -5,6 +5,7 @@ import time
 import numpy as np
 
 from src.Assets import constants as const
+from src.Fast_Dispenser_Distribution import fast_calc_fung_dist, fast_calc_hf_dist
 
 DP_VAL = 5
 WARPED = 0
@@ -107,16 +108,16 @@ def get_totals(des_fungi_grid, foliage_grid, bm_for_prod):
 
     return total_fungi, total_foliage, bm_for_grow, bm_total
 
-def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungi_type,
+def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungus_type,
                                   cycles=1, blocked_blocks=[]):
     """Calculates the distribution of foliage and fungi on a custom size grid of nylium"""
-    fungi_weight = const.WARP_FUNG_CHANCE if fungi_type == WARPED else const.CRMS_FUNG_CHANCE
+    fungi_weight = const.WARP_FUNG_CHANCE if fungus_type == WARPED else const.CRMS_FUNG_CHANCE
     # Keep track of total sprouts to subtract from compost bm as they aren't collected
     sprouts_total = 0
     foliage_grid, des_fungi_grid, bm_for_prod, disp_foliage_grids, \
     disp_des_fungi_grids, sprouts_total = \
         calculate_distribution(length, width, dispensers, disp_coords, fungi_weight,
-                               fungi_type, sprouts_total, cycles, blocked_blocks)
+                               fungus_type, sprouts_total, cycles, blocked_blocks)
 
     total_des_fungi, total_foliage, bm_for_grow, bm_total = \
         get_totals(des_fungi_grid, foliage_grid, bm_for_prod)
@@ -181,36 +182,46 @@ def generate_transformations(coords, l, w):
     # Remove duplicate permutations to lower computation time
     return remove_duplicates(perms)
 
-def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fungi, fungi_type):
+def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fungi, fungus_type,
+                         optimal_func):
     """Run through all reflections, rotations, and permutations of the optimal coordinates
     and record all solution within 0.1% of the best solution to a file."""
-    try:
-        start_time = time.time()
-        worst_value = optimal_value
-        coords_list_metrics = []
-        for coords in generate_transformations(optimal_coords, length, width):
+    # try:
+    start_time = time.time()
+    worst_value = optimal_value
+    coords_list_metrics = []
+    for coords in generate_transformations(optimal_coords, length, width):
+        if optimal_func == fast_calc_fung_dist:
             dist_data = calculate_fungus_distribution(
                 length,
                 width,
                 len(coords),
                 [[coord[0], coord[1], 0] for coord in coords],
-                fungi_type
+                fungus_type
             )
             total_des_fungi = dist_data["total_des_fungi"]
             bm_for_prod = dist_data["bm_for_prod"]
+        else:
+            total_des_fungi, bm_for_prod = \
+            fast_calc_hf_dist(
+                length,
+                width,
+                fungus_type,
+                coords
+            )
 
-            bm_req = bm_for_prod < wb_per_fungi / const.WARTS_PER_BM - const.AVG_BM_TO_GROW_FUNG
-            if total_des_fungi < optimal_value and bm_req:
-                worst_value = total_des_fungi
-            if abs(total_des_fungi - optimal_value) / optimal_value <= 0.001 and bm_req:
-                coords_list_metrics.append((total_des_fungi, bm_for_prod, coords))
+        bm_req = bm_for_prod < wb_per_fungi / const.WARTS_PER_BM - const.AVG_BM_TO_GROW_FUNG
+        if total_des_fungi < optimal_value and bm_req:
+            worst_value = total_des_fungi
+        if abs(total_des_fungi - optimal_value) / optimal_value <= 0.001 and bm_req:
+            coords_list_metrics.append((total_des_fungi, bm_for_prod, coords))
 
-        # Sort the list by the desired fungi value
-        coords_list_metrics.sort(key=lambda x: x[0], reverse=True)
-        return export_alt_placements(length, width, coords_list_metrics, optimal_value, worst_value, start_time)
-    except Exception as e:
-        print("An error has occured whilst finding viable coordinates:", e)
-        return e
+    # Sort the list by the desired fungi value
+    coords_list_metrics.sort(key=lambda x: x[0], reverse=True)
+    return export_alt_placements(length, width, coords_list_metrics, optimal_value, worst_value, start_time)
+    # except Exception as e:
+    #     print("An error has occured whilst finding viable coordinates:", e)
+    #     return e
 
 def export_alt_placements(length, width, metrics, optimal_value, worst_value, start_time):
     """Write the sorted list to a file"""

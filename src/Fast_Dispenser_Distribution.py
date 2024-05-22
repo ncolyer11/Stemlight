@@ -104,24 +104,31 @@ def fast_calc_hf_dist(p_length, p_width, fungus_type, disp_coords, blast_chamber
 
     width = const.NT_MAX_RAD + p_width + const.NT_MAX_RAD
     length = const.NT_MAX_RAD + p_length + const.NT_MAX_RAD
-    hf_grid = np.zeros(
-        (len(const.BLOCK_TYPES), const.NT_MAX_HT, width, length)
-    )
+    hf_grid = np.zeros((const.NT_MAX_HT, width, length))
 
-    for b, _ in enumerate(const.BLOCK_TYPES):  # 0 = stems, 1 = shrooms, 2 = vrm0/warts
-        # Iterate through each x,z coord in the nylium grid/platform 
-        for nylium_x, nylium_z in itertools.product(range(p_width), range(p_length)):
-            heatmap_weighting = foliage_grid[nylium_x, nylium_z] / 9
-            # Iterate through each x,y,z coord relative to the fungi
-            for y, z, x in itertools.product(range(const.NT_MAX_HT), range(const.NT_MAX_WD), range(const.NT_MAX_WD)):
-                weighted_chance = heatmap_weighting * heatmap_array_xyz[b, y, z, x]
-                curr = hf_grid[b, y ,nylium_z + z, nylium_x + x]
-                hf_grid[b, y, nylium_z + z, nylium_x + x] += (1 - curr) * weighted_chance
+    # Create coordinate grids
+    nylium_x, nylium_z = np.meshgrid(np.arange(p_width), np.arange(p_length))
+    y, z, x = np.meshgrid(np.arange(const.NT_MAX_HT), np.arange(const.NT_MAX_WD), np.arange(const.NT_MAX_WD))
 
+    # Calculate heatmap weighting
+    heatmap_weighting = foliage_grid / 9
+
+    # Iterate through each x,z coord in the nylium grid/platform 
+    for nylium_x_idx, nylium_z_idx in np.ndindex(nylium_x.shape):
+        nylium_x_curr = nylium_x[nylium_x_idx, nylium_z_idx]
+        nylium_z_curr = nylium_z[nylium_x_idx, nylium_z_idx]
+        heatmap_weighting_curr = heatmap_weighting[nylium_x_idx, nylium_z_idx]
+
+        # Calculate weighted chance for all y,z,x coordinates
+        weighted_chance = heatmap_weighting_curr * heatmap_array_xyz[2, y, z, x]
+
+        # Update hf_grid for all y,z,x coordinates
+        curr = hf_grid[y, nylium_z_curr + z, nylium_x_curr + x]
+        hf_grid[y, nylium_z_curr + z, nylium_x_curr + x] += (1 - curr) * weighted_chance
     bm_for_growth = 2.5 * crimson_fungi_prod
-    total_wb = np.sum(hf_grid[0], axis=(0,1,2)) * blast_chamber_effic
+    total_wb = np.sum(hf_grid) * blast_chamber_effic
     compost_from_warts = total_wb / const.WARTS_PER_BM
-    print(total_wb, '\n', np.sum(hf_grid[0], axis=(0)))
+    # print(total_wb, '\n', np.sum(hf_grid[2]))
     return total_wb, bm_for_prod
 
 def warped_calc_hf_dist(length, width, disp_coords, blast_chamber_effic):

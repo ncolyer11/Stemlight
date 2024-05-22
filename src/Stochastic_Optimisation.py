@@ -8,32 +8,29 @@ import src.Assets.constants as const
 
 ACCEPTANCE_RATE = 0.995
 REJECTION_POINT = 0.1
-# Time taken for the CPU to compute ~one iteration of the simulated annealing algorithm
-# Dependant on hardware as well as number of permutations (grid size and num_dispensers)
-CPU = 5.5e-4
 
 def start_optimisation(num_dispensers, length, width, wb_per_fungi, f_type,
                        run_time, optimise_func, blocked_coords=[[]]):
     """Start optimising the function using the simulated annealing algorithm."""
     if num_dispensers == 0:
         return [], 0
+    start_time = time.time()
     initial_solution = [[-1,-1] for _ in range(num_dispensers)]
     start_temp, end_temp, *_ = calculate_temp_bounds(num_dispensers, length, width, f_type,
                                                      optimise_func)
-    print(int(run_time))
-
-    cooling_rate = (end_temp / start_temp) ** (CPU / int(run_time))
+    # Time taken for the CPU to compute ~one iteration of the simulated annealing algorithm
+    # Dependant on hardware, optimise_func, as well as number of permutations
+    cpu = 5.5e-4 if optimise_func == fast_calc_fung_dist else 1.0e-3
+    cooling_rate = (end_temp / start_temp) ** (cpu / int(run_time))
     max_iterations = 100000
-
-    start_time = time.time()
     
-    print(f"S: {start_temp} E: {end_temp} I: C: {cooling_rate}")
     iterations = math.floor(math.log(end_temp / start_temp) / math.log(cooling_rate)) + 1
+    print(f"S: {start_temp} E: {end_temp} I: {iterations} C: {cooling_rate}")
 
     optimal_solution, optimal_value = simulated_annealing(
                                         initial_solution, start_temp, cooling_rate, end_temp,
                                         max_iterations, length, width, f_type, wb_per_fungi,
-                                        fast_calc_fung_dist)
+                                        optimise_func)
     
     print("Time taken to optimise:", time.time() - start_time)
 
@@ -108,16 +105,16 @@ def calculate_temp_bounds(N, length, width, f_type, optimise_func, blocked_coord
     lowest_energy = optimise_func(length, width, f_type, [[0, 0] for _ in range(N)])[0]
     # Create a valid set of coords by passing it through generate_neighbour
     average_solutions = []
-    for _ in range(300*N):
+    trials = 300*N if optimise_func == fast_calc_fung_dist else 150*N
+    for _ in range(trials):
         coords = [[rand_s(0, width), rand_s(0, length)] for _ in range(N)]
         average_solutions.append(generate_neighbour(coords, length, width))
     
     # Calculate the average energy of the initial solution
     avg_energy = np.mean(
-        [optimise_func(length, width, f_type, average_solutions[i])[0] for i in range(300*N)]
+        [optimise_func(length, width, f_type, average_solutions[i])[0] for i in range(trials)]
     )
-    print(avg_energy)
-    print(lowest_energy)
+
     high_energy_change = avg_energy - lowest_energy
     start_temperature = -high_energy_change / np.log(ACCEPTANCE_RATE)
     end_temperature = -high_energy_change / np.log(REJECTION_POINT)
