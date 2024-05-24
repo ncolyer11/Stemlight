@@ -20,7 +20,7 @@ def start_optimisation(num_dispensers, length, width, wb_per_fungi, f_type,
                                                      optimise_func)
     # Time taken for the CPU to compute ~one iteration of the simulated annealing algorithm
     # Dependant on hardware, optimise_func, as well as number of permutations
-    cpu = 5.5e-4 if optimise_func == fast_calc_fung_dist else 1.0e-3
+    cpu = 5.5e-4 if optimise_func == fast_calc_fung_dist else 9.5e-1
     cooling_rate = (end_temp / start_temp) ** (cpu / int(run_time))
     max_iterations = 100000
     

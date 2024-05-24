@@ -10,8 +10,9 @@ import numpy as np
 
 from src.Assets import colours
 from src.Assets.constants import RSF
+import src.Assets.constants as const
 from src.Assets.helpers import ToolTip, set_title_and_icon, export_custom_heatmaps, resource_path
-from src.Fungus_Distribution_Backend import calculate_fungus_distribution, output_viable_coords
+from src.Fungus_Distribution_Backend import calc_huge_fungus_distribution, calculate_fungus_distribution, output_viable_coords
 from src.Stochastic_Optimisation import start_optimisation
 from src.Fast_Dispenser_Distribution import fast_calc_fung_dist, fast_calc_hf_dist
 
@@ -92,9 +93,9 @@ class App:
         self.dispensers = []
         self.blocked_blocks = []
         self.nylium_type = tk.StringVar(value="warped")
-        self.run_time = tk.StringVar(value="1")
-        self.blast_chamber_effic = 1
-        self.optimise_func_str = tk.StringVar(value='fast_calc_hf_dist')
+        self.run_time = tk.StringVar(value="7")
+        self.blast_chamber_effic = 1.0
+        self.optimise_func_str = tk.StringVar(value='fast_calc_fung_dist')
         self.func_dict = {
             'fast_calc_fung_dist': fast_calc_fung_dist,
             'fast_calc_hf_dist': fast_calc_hf_dist
@@ -111,7 +112,6 @@ class App:
         clearing_path = resource_path("src/Images/cleared_dispenser.png")
         self.clearing_image = tk.PhotoImage(file=clearing_path)
         self.clearing_image = self.clearing_image.subsample(3, 3)
-
 
         # Create menu
         toolbar = tk.Menu(master)
@@ -138,6 +138,16 @@ class App:
                 command=lambda time1=time: self.set_rt(time1)
             )
 
+        bc_effic_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
+        toolbar.add_cascade(label="Blast Chamber Efficiency", menu=bc_effic_menu)
+        for effic in [0.0, 0.5, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]:
+            bc_effic_menu.add_radiobutton(
+                label=(str(int(100 * effic)) + "%").rjust(5), 
+                variable=self.blast_chamber_effic, 
+                value=effic,
+                command=lambda effic1=effic: self.set_bce(effic1)
+            )
+
         optimise_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         toolbar.add_cascade(label="Optimise For", menu=optimise_menu)
         optimise_menu.add_radiobutton(
@@ -146,6 +156,7 @@ class App:
             value='fast_calc_fung_dist',
             command=lambda: self.set_optimise_func('fast_calc_fung_dist')
         )
+    
         optimise_menu.add_radiobutton(
             label="  Wart Blocks", 
             variable=self.optimise_func_str, 
@@ -157,6 +168,12 @@ class App:
         """Change what function is optimise via the simulated annealing algorithm"""
         self.optimise_func = self.func_dict[optimise_func]
         self.optimise_func_str.set(optimise_func)
+
+    def set_bce(self, effic):
+        """Change the blast chamber efficiency (default is 100%)"""
+        self.blast_chamber_effic = effic
+        self.calculate()
+        self.display_block_info()
 
     def show_info_message(self):
         """Provide some information to the user about what this tool is used for"""
@@ -658,11 +675,13 @@ class App:
         bm_for_prod = dist_data["bm_for_prod"]
         bm_for_grow = dist_data["bm_for_grow"]
         bm_total = dist_data["bm_total"]
-        total_wart_blocks, *_ = fast_calc_hf_dist(
-            self.col_slider.get(),
+        total_wart_blocks, *_ = calc_huge_fungus_distribution(
             self.row_slider.get(),
+            self.col_slider.get(),
             fungus_type,
-            [[dispenser_coordinates[i][0], dispenser_coordinates[i][1]] for i in range(len(dispenser_coordinates))],
+            dispenser_coordinates,
+            self.cycles_slider.get(),
+            self.blocked_blocks,
             self.blast_chamber_effic
         )
         
@@ -671,20 +690,21 @@ class App:
             "Bone Meal to Produce a Fungus",
             "Bone Meal for Production",
             "Bone Meal for Growth",
-            "Total Bone Meal Used",
             "Total Foliage",
-            "Total Wart Blocks"
+            "Total Wart Blocks",
+            "Net Bone Meal"
         ]
-        
+
         output_values = [
             round(total_des_fungi, DP),
             round(bm_for_prod / total_des_fungi, DP) if total_des_fungi != 0 else 0.0,
             round(bm_for_prod, DP),
             round(bm_for_grow, DP),
-            round(bm_total, DP),
             round(total_foliage, DP),
-            round(total_wart_blocks, DP)
+            round(total_wart_blocks, DP),
+            round(total_wart_blocks / const.WARTS_PER_BM - bm_total, DP),
         ]
+
         label_font = font.Font(family='Segoe UI', size=int((RSF**NLS)*9))
         output_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
 
