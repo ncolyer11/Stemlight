@@ -33,6 +33,7 @@ DP = 5
 MAX_SIDE_LEN = 9
 WARPED = 0
 CRIMSON = 1
+UNCLEARED = 0
 
 class SlideSwitch(tk.Canvas):
     def __init__(self, parent, callback=None, *args, **kwargs):
@@ -379,15 +380,15 @@ class App:
         self.wb_effic_slider = tk.Scale(
             self.slider_frame, 
             from_=20, 
-            to=60, 
+            to=120, 
             orient=tk.HORIZONTAL, 
             bg=colours.bg, 
             fg=colours.fg, 
             length=250,
             resolution=0.1
         )
-        self.wb_effic_slider.set(60)
-        self.wb_effic_slider.bind("<Double-Button-1>", lambda event: self.reset_slider(event, 60))
+        self.wb_effic_slider.set(120)
+        self.wb_effic_slider.bind("<Double-Button-1>", lambda event: self.reset_slider(event, 120))
         self.wb_effic_slider.grid(row=3, column=1, padx=5, pady=5, sticky="nsew")      
 
     def reset_slider(self, event, default=5):
@@ -571,19 +572,21 @@ class App:
             return
 
         optimal_coords, optimal_value = start_optimisation(
-            len(disp_coords),
+            disp_coords,
             self.col_slider.get(), 
             self.row_slider.get(),
             self.wb_effic_slider.get(),
             fungus_type,
             self.run_time.get(),
-            self.optimise_func
+            self.optimise_func,
+            self.cycles_slider.get(),
+            self.blocked_blocks
         )
 
         if optimal_coords == -1:
             messagebox.showwarning("Error", "Maximum runtime exceeded.")
             return
-        elif ([-1, -1] in optimal_coords or len(optimal_coords) == 0):
+        elif ([-1, -1, UNCLEARED] in optimal_coords or len(optimal_coords) == 0):
             messagebox.showinfo(
                 "Optimisation Notice",
                 "No optimal solution found for\n"
@@ -591,6 +594,7 @@ class App:
             )
             return
         self.reset_grid(remove_blocked=False)
+        print("optimall: ", optimal_coords, "back")
         for i, disp_coord in enumerate(optimal_coords):
             self.add_dispenser(disp_coord[0], disp_coord[1], cleared_array[i])
         # Generate a list of other viable coords that are as optimal or within 0.1% of the most
@@ -602,7 +606,9 @@ class App:
             self.row_slider.get(),
             self.wb_effic_slider.get(),
             fungus_type,
-            self.optimise_func
+            self.optimise_func,
+            self.cycles_slider.get(),
+            self.blocked_blocks
         )
         if isinstance(result, (int, float)) and not isinstance(result, BaseException):
             n = len(disp_coords)
@@ -822,13 +828,15 @@ class App:
             info_labels.append(f"{'Warped' if fungus_type == WARPED else 'Crimson'} Fungi Produced")
             info_labels.append("Bone Meal Used")
             info_labels.append("Bone Meal per Fungi")
-            info_labels.append("Position | Cleared")
+            info_labels.append("Position")
+            info_labels.append("Cleared")
 
             fungi_produced = np.sum(disp_des_fungi_grids[index])
             info_values.append(round(fungi_produced, DP))
             info_values.append(round(bone_meal_used, DP))
             info_values.append(round(bone_meal_used / fungi_produced, DP))
-            info_values.append(f'{index + 1} | {"Yes" if self.dispensers[index][3] == 1 else "No"}')
+            info_values.append(f'{index + 1}')
+            info_values.append(f'{"Yes" if self.dispensers[index][3] == 1 else "No"}')
 
         label_font = font.Font(family='Segoe UI', size=int((RSF**NLS)*9))
         output_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))

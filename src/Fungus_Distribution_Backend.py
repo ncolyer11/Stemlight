@@ -11,6 +11,8 @@ from src.Assets.heatmap_data import heatmap_array_xyz
 DP_VAL = 5
 WARPED = 0
 CRIMSON = 1
+UNCLEARED = 0
+CLEARED = 1
 
 def selection_chance(x1, y1):
     """Calculates the probability of a block being selected for 
@@ -51,10 +53,10 @@ def calculate_distribution(length, width, dispensers, disp_coords, fungi_weight,
     disp_des_fungi_grids = np.zeros((dispensers, cycles, width, length))
     # 2D array for storing distribution of desired fungus
     total_des_fungi_grid = np.zeros((width, length))
+    x, y = np.ogrid[:width, :length]
+
     # 'bm_for_prod': bone meal used during 1 cycle of firing all the given dispensers
     bm_for_prod = 0.0
-
-    x, y = np.ogrid[:width, :length]
     for i in range(cycles):
         for j in range(dispensers):
             foliage_chance, bm_for_prod = generate_foliage(disp_coords, total_foliage_grid,
@@ -78,14 +80,16 @@ def calculate_distribution(length, width, dispensers, disp_coords, fungi_weight,
         
         # Replicate triggering pistons to clear foliage on top of selected dispensers
         for k in range(dispensers):
-            # Clear foliage only on top of cleared dispensers except for on the last cycle
-            if disp_coords[k][2] == 0 or i == cycles - 1:
+            # Clear foliage only on top of cleared dispensers
+            if disp_coords[k][2] == 0:
                 continue
             disp_x, disp_y, _ = disp_coords[k]
             total_foliage_grid[disp_x, disp_y] = 0
             total_des_fungi_grid[disp_x, disp_y] = 0
             disp_foliage_grids[:, :, disp_x, disp_y] = 0
             disp_des_fungi_grids[:, :, disp_x, disp_y] = 0
+            if fungi == WARPED:
+                sprouts_total[disp_x, disp_y] = 0
 
     return total_foliage_grid, total_des_fungi_grid, bm_for_prod, \
         disp_foliage_grids, disp_des_fungi_grids, sprouts_total
@@ -138,6 +142,7 @@ def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungus
 def calc_huge_fungus_distribution(p_length, p_width, fungus_type, disp_coords,
                  cycles, blocked_blocks, blast_chamber_effic=1):
     """Calculates huge fungi generation based off desired fungus distribution"""
+    # Growing after all produced, makes the same output as growing after each cycle
     dist_data = calculate_fungus_distribution(p_width, p_length, len(disp_coords), disp_coords,
                                                 fungus_type, cycles, blocked_blocks)
     
@@ -184,22 +189,23 @@ def generate_transformations(coords, l, w):
     alt_coords = []
     for coord in coords:
         transformed_coords = [coord]
-        x, y = coord[0:2]
+        # cs: cleared status
+        x, y, cs = coord
         # 180deg rotation
-        transformed_coords.append([w-1-x,l-1-y])
+        transformed_coords.append([w-1-x, l-1-y, cs])
         # 90deg ccw and cw rotations are only equivalent for square grids
         if l == w:
-            transformed_coords.append([y,w-1-x])
-            transformed_coords.append([l-1-y, x])
+            transformed_coords.append([y, w-1-x, cs])
+            transformed_coords.append([l-1-y, x, cs])
         for i, sub_coord in enumerate(transformed_coords):
             if i > 3:
                 break
             x1 = sub_coord[0]
             y1 = sub_coord[1]
             # Up/down reflection
-            transformed_coords.append([x1, l - 1 - y1])
+            transformed_coords.append([x1, l-1-y1, cs])
             # Right/left reflection
-            transformed_coords.append([w - 1 - x1, y1])
+            transformed_coords.append([w-1-x1, y1, cs])
         alt_coords.append(transformed_coords)
     alt_placements = []
     # Grab equally transformed sets of coords to group into consecutive sets of alternate optimal coords
@@ -220,61 +226,75 @@ def generate_transformations(coords, l, w):
     return remove_duplicates(perms)
 
 def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fungi, fungus_type,
-                         optimal_func):
+                         optimal_func, cycles, blocked_blocks):
     """Run through all reflections, rotations, and permutations of the optimal coordinates
     and record all solution within 0.1% of the best solution to a file."""
-    # try:
-    start_time = time.time()
-    worst_value = optimal_value
-    coords_list_metrics = []
-    for coords in generate_transformations(optimal_coords, length, width):
-        if optimal_func == fast_calc_fung_dist:
-            dist_data = calculate_fungus_distribution(
-                length,
-                width,
-                len(coords),
-                [[coord[0], coord[1], 0] for coord in coords],
-                fungus_type
-            )
-            total_des_fungi = dist_data["total_des_fungi"]
-            bm_for_prod = dist_data["bm_for_prod"]
-        else:
-            total_des_fungi, bm_for_prod = \
-            fast_calc_hf_dist(
-                length,
-                width,
-                fungus_type,
-                coords
-            )
+    try:
+        start_time = time.time()
+        worst_value = optimal_value
+        coords_list_metrics = []
+        for coords in generate_transformations(optimal_coords, length, width):
+            if optimal_func == fast_calc_fung_dist:
+                dist_data = calculate_fungus_distribution(
+                    length,
+                    width,
+                    len(coords),
+                    coords,
+                    fungus_type,
+                    cycles,
+                    blocked_blocks
+                )
+                total_des_fungi = dist_data["total_des_fungi"]
+                bm_for_prod = dist_data["bm_for_prod"]
+            else:
+                total_wart_blocks, bm_for_prod = \
+                fast_calc_hf_dist(
+                    length,
+                    width,
+                    fungus_type,
+                    coords,
+                    cycles,
+                    blocked_blocks,
+                )
+                # Got a headache atm
+                total_des_fungi = 0
 
-        bm_req = bm_for_prod < wb_per_fungi / const.WARTS_PER_BM - const.AVG_BM_TO_GROW_FUNG
-        if total_des_fungi < optimal_value and bm_req:
-            worst_value = total_des_fungi
-        if abs(total_des_fungi - optimal_value) / optimal_value <= 0.001 and bm_req:
-            coords_list_metrics.append((total_des_fungi, bm_for_prod, coords))
+            bm_req = bm_for_prod < wb_per_fungi / const.WARTS_PER_BM - const.AVG_BM_TO_GROW_FUNG
+            if total_des_fungi < worst_value and bm_req:
+                worst_value = total_des_fungi
+            if abs(total_des_fungi - optimal_value) / optimal_value <= 0.001 and bm_req:
+                coords_list_metrics.append((total_des_fungi, bm_for_prod, coords))
 
-    # Sort the list by the desired fungi value
-    coords_list_metrics.sort(key=lambda x: x[0], reverse=True)
-    return export_alt_placements(length, width, coords_list_metrics, optimal_value, worst_value, start_time)
-    # except Exception as e:
-    #     print("An error has occured whilst finding viable coordinates:", e)
-    #     return e
+        # Sort the list by the desired fungi value
+        coords_list_metrics.sort(key=lambda x: x[0], reverse=True)
+        return export_alt_placements(length, width, coords_list_metrics, optimal_value, worst_value, start_time)
+    except Exception as e:
+        print("An error has occured whilst finding viable coordinates:", e)
+        return e
 
 def export_alt_placements(length, width, metrics, optimal_value, worst_value, start_time):
     """Write the sorted list to a file"""
     alt_placements = len(metrics)
     f = open("viable_coords.txt", "w")
     f.write(f"Number of alternate placements: {alt_placements}\n")
-    worst_loss = round((optimal_value - worst_value) / optimal_value * 100, 5)
-    lost_f = round(optimal_value - worst_value, 5)
+    lost_f = optimal_value - worst_value
+    worst_loss = round(lost_f / optimal_value * 100, 5)
+    lost_f = round(lost_f, 5)
     f.write(f"Max efficiency loss without caring about order: {worst_loss}% ({lost_f} fungi)\n\n")
-    for i, (total_des_fungi, bm_for_prod, coords) in enumerate(metrics, start=1):
+    for i, (total_des_fungi, bm_for_prod, placements) in enumerate(metrics, start=1):
+        coords = [[pos[0], pos[1]] for pos in placements]
+        f.write(f"#{i}:\n")
         f.write(f"Desired Fungi: {round(total_des_fungi, 5)}\n"
                 f"Bone Meal Used: {round(bm_for_prod, 5)}\n")
         f.write(f"Coords: {coords}\n")
         for y in range(width):
             for x in range(length):
-                f.write(f"[{coords.index([x, y])}]") if [x, y] in coords else f.write("[ ]")
+                if [x, y, UNCLEARED] in placements:
+                    f.write(f"[{coords.index([x, y]) + 1}]")
+                elif [x, y, CLEARED] in placements:
+                    f.write("{" + str(coords.index([x, y]) + 1) + "}")
+                else:
+                    f.write("[ ]")
             f.write("\n")
         f.write("\n")
     f.close()
