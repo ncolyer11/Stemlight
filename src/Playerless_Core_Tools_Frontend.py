@@ -95,7 +95,8 @@ class App:
         self.blocked_blocks = []
         self.nylium_type = tk.StringVar(value="warped")
         self.run_time = tk.StringVar(value="7")
-        self.blast_chamber_effic = 1.0
+        self.blast_chamber_effic = tk.StringVar(value="1")
+        self.optimise_with_cleared = tk.IntVar(value=0)
         self.optimise_func_str = tk.StringVar(value='fast_calc_fung_dist')
         self.func_dict = {
             'fast_calc_fung_dist': fast_calc_fung_dist,
@@ -129,6 +130,15 @@ class App:
         help_menu.add_command(label="How to Use this Tool", command=self.show_use_message)
         help_menu.add_command(label="Advanced Features", command=self.show_advanced_features)
 
+        config_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
+        config_menu.add_command(label="Calibrate Run Time", command=self.calibrate_run_time)
+        toolbar.add_cascade(label="Config", menu=config_menu)
+        config_menu.add_radiobutton(
+            label="Optimise With Cleared Dispensers".rjust(33), 
+            value=self.optimise_with_cleared.get(),
+            command=lambda: self.toggle_w_cd()
+        )
+
         run_time_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         toolbar.add_cascade(label="Run Time", menu=run_time_menu)
         for time in [1, 4, 7, 10, 15, 30, 60, 300, 1000]:
@@ -141,9 +151,9 @@ class App:
 
         bc_effic_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         toolbar.add_cascade(label="Blast Chamber Efficiency", menu=bc_effic_menu)
-        for effic in [0.0, 0.5, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]:
+        for effic in [0.0, 0.5, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1]:
             bc_effic_menu.add_radiobutton(
-                label=(str(int(100 * effic)) + "%").rjust(5), 
+                label=(str(round(100 * effic)) + "%").rjust(5), 
                 variable=self.blast_chamber_effic, 
                 value=effic,
                 command=lambda effic1=effic: self.set_bce(effic1)
@@ -164,7 +174,17 @@ class App:
             value='fast_calc_hf_dist',
             command=lambda: self.set_optimise_func('fast_calc_hf_dist')
         )
-    
+
+    def toggle_w_cd(self):
+        # Toggle value
+        state = self.optimise_with_cleared.get()
+        print(state)
+        self.optimise_with_cleared.set(abs(1 - state))
+        print("we in here", self.optimise_with_cleared.get())
+
+    def calibrate_run_time(self):
+        print("we out here")
+
     def set_optimise_func(self, optimise_func):
         """Change what function is optimise via the simulated annealing algorithm"""
         self.optimise_func = self.func_dict[optimise_func]
@@ -172,7 +192,7 @@ class App:
 
     def set_bce(self, effic):
         """Change the blast chamber efficiency (default is 100%)"""
-        self.blast_chamber_effic = effic
+        self.blast_chamber_effic.set(effic)
         self.calculate()
         self.display_block_info()
 
@@ -688,7 +708,7 @@ class App:
             dispenser_coordinates,
             self.cycles_slider.get(),
             self.blocked_blocks,
-            self.blast_chamber_effic
+            self.blast_chamber_effic.get()
         )
         
         output_labels = [

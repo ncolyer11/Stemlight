@@ -172,7 +172,7 @@ def calc_huge_fungus_distribution(p_length, p_width, fungus_type, disp_coords,
             hf_grids[b, *pos] += (1 - curr) * weighted_chance
             hf_grids[3, *pos] += hf_grids[b, *pos]
 
-    total_wb = np.sum(hf_grids[2]) * blast_chamber_effic
+    total_wb = np.sum(hf_grids[2]) * int(blast_chamber_effic)
     return total_wb, bm_for_prod
 
 
@@ -267,12 +267,13 @@ def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fu
 
         # Sort the list by the desired fungi value
         coords_list_metrics.sort(key=lambda x: x[0], reverse=True)
-        return export_alt_placements(length, width, coords_list_metrics, optimal_value, worst_value, start_time)
+        return export_alt_placements(length, width, coords_list_metrics, optimal_value,
+                                     worst_value, start_time, blocked_blocks)
     except Exception as e:
         print("An error has occured whilst finding viable coordinates:", e)
         return e
 
-def export_alt_placements(length, width, metrics, optimal_value, worst_value, start_time):
+def export_alt_placements(length, width, metrics, optimal_value, worst_value, start_time, blockde_blocks):
     """Write the sorted list to a file"""
     alt_placements = len(metrics)
     f = open("viable_coords.txt", "w")
@@ -293,6 +294,8 @@ def export_alt_placements(length, width, metrics, optimal_value, worst_value, st
                     f.write(f"[{coords.index([x, y]) + 1}]")
                 elif [x, y, CLEARED] in placements:
                     f.write("{" + str(coords.index([x, y]) + 1) + "}")
+                elif [x, y] in blockde_blocks:
+                    f.write("[\]")
                 else:
                     f.write("[ ]")
             f.write("\n")
