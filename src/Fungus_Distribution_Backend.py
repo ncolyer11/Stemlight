@@ -155,22 +155,22 @@ def calc_huge_fungus_distribution(p_length, p_width, fungus_type, disp_coords,
     length = const.NT_MAX_RAD + p_length + const.NT_MAX_RAD
     hf_grids = np.zeros((len(const.BLOCK_TYPES) + 1, const.NT_MAX_HT, width, length))
 
-    # Create coordinate grids
-    nylium_x, nylium_z = np.meshgrid(np.arange(p_width), np.arange(p_length))
-    y, z, x = np.meshgrid(np.arange(const.NT_MAX_HT), np.arange(const.NT_MAX_WD), np.arange(const.NT_MAX_WD))
-
     # Iterate through each x,z coord in the nylium grid/platform
-    for nylium_x, nylium_z in np.ndindex(nylium_x.shape):
+    for nylium_x, nylium_z in itertools.product(range(p_length), range(p_width)):
+        # Generation order is Stems -> Shrooms -> Warts
         for b in range(len(const.BLOCK_TYPES)):
-            fungus_chance = des_fungi_grid[nylium_x, nylium_z]
             # Calculate weighted chance for all y,z,x coordinates
-            pos = (y, nylium_z + z, nylium_x + x)
-            weighted_chance = fungus_chance * heatmap_array_xyz[b, y, z, x]
+            fungus_chance = des_fungi_grid[nylium_x, nylium_z]
+            y_range, z_range, x_range = range(const.NT_MAX_HT), range(const.NT_MAX_WD), range(const.NT_MAX_WD)
+            for y, z, x in itertools.product(y_range, z_range, x_range):
+                pos = (y, nylium_z + z, nylium_x + x)
+                weighted_chance = fungus_chance * heatmap_array_xyz[b, y, z, x]
 
-            # Update hf_grid for all y,z,x coordinates
-            curr = hf_grids[3, *pos]
-            hf_grids[b, *pos] += (1 - curr) * weighted_chance
-            hf_grids[3, *pos] += hf_grids[b, *pos]
+                # Update hf_grid for all y,z,x coordinates
+                curr = hf_grids[3, *pos]
+                gen_chance = (1 - curr) * weighted_chance
+                hf_grids[b, *pos] += gen_chance
+                hf_grids[3, *pos] += gen_chance
 
     total_wb = np.sum(hf_grids[2]) * float(blast_chamber_effic)
     return total_wb, bm_for_prod
