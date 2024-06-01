@@ -111,6 +111,7 @@ def warped_calc_fung_dist(length, width, disp_coords, cycles, blocked_blocks):
     return total_des_fungi, bm_for_prod - compost
 
 def fast_calc_hf_dist(p_length, p_width, fungus_type, disp_coords, cycles, blocked_blocks):
+    """Doesn't take into account stem occlusion (for speed), but should still optimise fine"""
     if fungus_type == WARPED:
         return warped_calc_hf_dist(p_length, p_width, disp_coords, cycles, blocked_blocks)
     

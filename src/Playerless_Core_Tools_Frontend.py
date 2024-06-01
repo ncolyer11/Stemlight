@@ -803,12 +803,11 @@ class App:
         self.dispensers.sort(key=lambda d: d[2])
         dispenser_coordinates = [(d[0], d[1], d[3]) for d in self.dispensers]
         fungus_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
-        dispensers = len(dispenser_coordinates)
         cycles = self.cycles_slider.get()
         dist_data = calculate_fungus_distribution(
             self.col_slider.get(), 
             self.row_slider.get(),
-            dispensers,
+            len(dispenser_coordinates),
             dispenser_coordinates,
             fungus_type,
             cycles,
@@ -835,10 +834,10 @@ class App:
             for c in range(cycles):
                 # First sum only earlierly ordered dispensers affect the current one
                 if c == 0:
-                    if index != 0:
-                        cycle_sum = np.sum(disp_foliage_grids[:index, c, :, :], axis=0)
-                    else:
+                    if index == 0:
                         cycle_sum = np.zeros((self.row_slider.get(), self.col_slider.get()))
+                    else:
+                        cycle_sum = np.sum(disp_foliage_grids[:index, c, :, :], axis=0)
                 else:
                     cycle_sum = np.sum(disp_foliage_grids[:, :c, :, :], axis=(0, 1))
                     cycle_sum += np.sum(disp_foliage_grids[:index, c, :, :], axis=0)

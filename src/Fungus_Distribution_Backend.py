@@ -149,8 +149,8 @@ def calc_huge_fungus_distribution(p_length, p_width, fungus_type, disp_coords,
     des_fungi_grid = np.sum(dist_data["disp_des_fungi_grids"], axis=(0, 1))
     bm_for_prod = dist_data["bm_for_prod"]
 
-    width = const.NT_MAX_RAD + p_length + const.NT_MAX_RAD
-    length = const.NT_MAX_RAD + p_width + const.NT_MAX_RAD
+    width = const.NT_MAX_RAD + p_width + const.NT_MAX_RAD
+    length = const.NT_MAX_RAD + p_length + const.NT_MAX_RAD
     hf_grids = np.zeros((len(const.BLOCK_TYPES) + 1, const.NT_MAX_HT, width, length))
 
     # Create coordinate grids
@@ -158,13 +158,11 @@ def calc_huge_fungus_distribution(p_length, p_width, fungus_type, disp_coords,
     y, z, x = np.meshgrid(np.arange(const.NT_MAX_HT), np.arange(const.NT_MAX_WD), np.arange(const.NT_MAX_WD))
 
     # Iterate through each x,z coord in the nylium grid/platform
-    for nylium_x_idx, nylium_z_idx in np.ndindex(nylium_x.shape):
+    for nylium_x, nylium_z in np.ndindex(nylium_x.shape):
         for b in range(len(const.BLOCK_TYPES)):
-            nylium_x_curr = nylium_x[nylium_x_idx, nylium_z_idx]
-            nylium_z_curr = nylium_z[nylium_x_idx, nylium_z_idx]
-            fungus_chance = des_fungi_grid[nylium_x_idx, nylium_z_idx]
+            fungus_chance = des_fungi_grid[nylium_x, nylium_z]
             # Calculate weighted chance for all y,z,x coordinates
-            pos = (y, nylium_z_curr + z, nylium_x_curr + x)
+            pos = (y, nylium_z + z, nylium_x + x)
             weighted_chance = fungus_chance * heatmap_array_xyz[b, y, z, x]
 
             # Update hf_grid for all y,z,x coordinates
@@ -172,7 +170,7 @@ def calc_huge_fungus_distribution(p_length, p_width, fungus_type, disp_coords,
             hf_grids[b, *pos] += (1 - curr) * weighted_chance
             hf_grids[3, *pos] += hf_grids[b, *pos]
 
-    total_wb = np.sum(hf_grids[2]) * int(blast_chamber_effic)
+    total_wb = np.sum(hf_grids[2]) * float(blast_chamber_effic)
     return total_wb, bm_for_prod
 
 
@@ -273,7 +271,7 @@ def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fu
         print("An error has occured whilst finding viable coordinates:", e)
         return e
 
-def export_alt_placements(length, width, metrics, optimal_value, worst_value, start_time, blockde_blocks):
+def export_alt_placements(length, width, metrics, optimal_value, worst_value, start_time, blocked_blocks):
     """Write the sorted list to a file"""
     alt_placements = len(metrics)
     f = open("viable_coords.txt", "w")
@@ -294,8 +292,8 @@ def export_alt_placements(length, width, metrics, optimal_value, worst_value, st
                     f.write(f"[{coords.index([x, y]) + 1}]")
                 elif [x, y, CLEARED] in placements:
                     f.write("{" + str(coords.index([x, y]) + 1) + "}")
-                elif [x, y] in blockde_blocks:
-                    f.write("[\]")
+                elif [x, y] in blocked_blocks:
+                    f.write("[/]")
                 else:
                     f.write("[ ]")
             f.write("\n")
