@@ -30,7 +30,7 @@ HGHT = 46
 PAD = 5
 RAD = 26
 DP = 5
-MAX_SIDE_LEN = 9
+MAX_SIDE_LEN = 15
 WARPED = 0
 CRIMSON = 1
 UNCLEARED = 0
@@ -710,7 +710,10 @@ class App:
             self.blocked_blocks,
             self.blast_chamber_effic.get()
         )
+        print("total2:", bm_total)
+        print("wb:", total_wart_blocks / const.WARTS_PER_BM)
         
+
         output_labels = [
             f"Total {'Warped' if fungus_type == WARPED else 'Crimson'} Fungi",
             "Bone Meal to Produce a Fungus",
@@ -756,16 +759,24 @@ class App:
         self.output_text_label[2].bind("<Enter>", lambda event: 
                     bm_for_prod_tooltip.show_tip((
                         "Bone meal spent by the nylium dispensers that creates the fungi.\n"
-                        "Factors in bone meal retrieved from composting excess foliage."),
+                        "Factors in 75% of bone meal retrieved from composting excess foliage."),
                         event.x_root, event.y_root))
         self.output_text_label[2].bind("<Leave>", lambda event: bm_for_prod_tooltip.hide_tip())
         
-        bm_for_growth_tooltip = ToolTip(self.output_text_label[2])
+        bm_for_growth_tooltip = ToolTip(self.output_text_label[3])
         self.output_text_label[3].bind("<Enter>", lambda event: 
                     bm_for_growth_tooltip.show_tip((
                         "Bone meal spent on growing already produced fungi."),
                         event.x_root, event.y_root))
         self.output_text_label[3].bind("<Leave>", lambda event: bm_for_growth_tooltip.hide_tip())
+        
+        net_bm_tooltip = ToolTip(self.output_text_label[6])
+        self.output_text_label[6].bind("<Enter>", lambda event: 
+                    net_bm_tooltip.show_tip((
+                        "Surplus bone meal after 1 global cycle of the core and subsequent harvest.\n"
+                        "Takes bone meal from composted wart blocks minus production and growth bm."),
+                        event.x_root, event.y_root))
+        self.output_text_label[6].bind("<Leave>", lambda event: net_bm_tooltip.hide_tip())
         
         # Create the labels for output values
         for i, output_value in enumerate(output_values):

@@ -13,6 +13,7 @@ WARPED = 0
 CRIMSON = 1
 UNCLEARED = 0
 CLEARED = 1
+FOLIAGE_COLLECTION_EFFIC = 0.825 # Takes into account avg effic and des fungi aren't accounted for
 
 def selection_chance(x1, y1):
     """Calculates the probability of a block being selected for 
@@ -104,14 +105,13 @@ def generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y):
     foliage_chance = disp_bm_chance * selection_chance(x - disp_x, y - disp_y)
     return foliage_chance, bm_for_prod
 
-def get_totals(des_fungi_grid, foliage_grid, bm_for_prod):
+def get_totals(des_fungi_grid, foliage_grid):
     """Calculates the total amount of foliage, fungi and bone meal required to grow the fungi"""
     total_fungi = np.sum(des_fungi_grid)
     total_foliage = np.sum(foliage_grid)
     bm_for_grow = const.AVG_BM_TO_GROW_FUNG * total_fungi
-    bm_total = bm_for_prod + bm_for_grow
 
-    return total_fungi, total_foliage, bm_for_grow, bm_total
+    return total_fungi, total_foliage, bm_for_grow
 
 def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungus_type,
                                   cycles=1, blocked_blocks=[]):
@@ -124,15 +124,18 @@ def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungus
         calculate_distribution(length, width, dispensers, disp_coords, fungi_weight,
                                fungus_type, sprouts_total, cycles, blocked_blocks)
 
-    total_des_fungi, total_foliage, bm_for_grow, bm_total = \
-        get_totals(des_fungi_grid, foliage_grid, bm_for_prod)
+    total_des_fungi, total_foliage, bm_for_grow = get_totals(des_fungi_grid, foliage_grid)
 
     # Subtract the amount of bone meal retrieved from composting the excess foliage losslessly
-    bm_from_compost = (total_foliage - np.sum(sprouts_total) - total_des_fungi ) / const.FOLIAGE_PER_BM
+    composted_foliage = total_foliage - np.sum(sprouts_total) - total_des_fungi
+    bm_from_compost = (FOLIAGE_COLLECTION_EFFIC * composted_foliage) / const.FOLIAGE_PER_BM
+    bm_for_prod -= bm_from_compost
+    bm_total = bm_for_prod + bm_for_grow
+    print("total:", bm_total)
     return {
         "total_foliage": total_foliage,
         "total_des_fungi": total_des_fungi,
-        "bm_for_prod": bm_for_prod - bm_from_compost,
+        "bm_for_prod": bm_for_prod,
         "bm_for_grow": bm_for_grow,
         "bm_total": bm_total,
         "disp_foliage_grids": disp_foliage_grids,

@@ -106,7 +106,6 @@ def export_custom_heatmaps(length, width, nyliumGrid):
             for y, z, x in itertools.product(y_range, z_range, x_range):
                 col = z + (heatmap_width * x)
                 row = const.NT_MAX_HT - 1 - y
-                print(row, col)
                 heatmap_data_point = hf_grids[b][x][z][y]
                 outSheet[b].write(row, col, heatmap_data_point)
                         
