@@ -131,7 +131,6 @@ def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungus
     bm_from_compost = (FOLIAGE_COLLECTION_EFFIC * composted_foliage) / const.FOLIAGE_PER_BM
     bm_for_prod -= bm_from_compost
     bm_total = bm_for_prod + bm_for_grow
-    print("total:", bm_total)
     return {
         "total_foliage": total_foliage,
         "total_des_fungi": total_des_fungi,
