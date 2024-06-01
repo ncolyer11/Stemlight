@@ -710,9 +710,6 @@ class App:
             self.blocked_blocks,
             self.blast_chamber_effic.get()
         )
-        print("total2:", bm_total)
-        print("wb:", total_wart_blocks / const.WARTS_PER_BM)
-        
 
         output_labels = [
             f"Total {'Warped' if fungus_type == WARPED else 'Crimson'} Fungi",
