@@ -172,7 +172,7 @@ def calc_huge_fungus_distribution(p_length, p_width, fungus_type, disp_coords,
             hf_grids[b, *pos] += (1 - curr) * weighted_chance
             hf_grids[3, *pos] += hf_grids[b, *pos]
 
-    total_wb = np.sum(hf_grids[2]) * int(blast_chamber_effic)
+    total_wb = np.sum(hf_grids[2]) * float(blast_chamber_effic)
     return total_wb, bm_for_prod
 
 

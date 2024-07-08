@@ -159,21 +159,21 @@ class App:
                 command=lambda effic1=effic: self.set_bce(effic1)
             )
 
-        optimise_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
-        toolbar.add_cascade(label="Optimise For", menu=optimise_menu)
-        optimise_menu.add_radiobutton(
-            label="  Desired Fungi",
-            variable=self.optimise_func_str,
-            value='fast_calc_fung_dist',
-            command=lambda: self.set_optimise_func('fast_calc_fung_dist')
-        )
+        # optimise_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
+        # toolbar.add_cascade(label="Optimise For", menu=optimise_menu)
+        # optimise_menu.add_radiobutton(
+        #     label="  Desired Fungi",
+        #     variable=self.optimise_func_str,
+        #     value='fast_calc_fung_dist',
+        #     command=lambda: self.set_optimise_func('fast_calc_fung_dist')
+        # )
     
-        optimise_menu.add_radiobutton(
-            label="  Wart Blocks", 
-            variable=self.optimise_func_str, 
-            value='fast_calc_hf_dist',
-            command=lambda: self.set_optimise_func('fast_calc_hf_dist')
-        )
+        # optimise_menu.add_radiobutton(
+        #     label="  Wart Blocks", 
+        #     variable=self.optimise_func_str, 
+        #     value='fast_calc_hf_dist',
+        #     command=lambda: self.set_optimise_func('fast_calc_hf_dist')
+        # )
 
     def toggle_w_cd(self):
         # Toggle value
