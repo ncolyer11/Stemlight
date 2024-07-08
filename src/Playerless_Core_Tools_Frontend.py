@@ -16,12 +16,9 @@ from src.Fungus_Distribution_Backend import calc_huge_fungus_distribution, calcu
 from src.Stochastic_Optimisation import start_optimisation
 from src.Fast_Dispenser_Distribution import fast_calc_fung_dist, fast_calc_hf_dist
 
-# after calculating the most optimal positions to put the dispensers for crimson
-# it should generate a list of all permutations of the order, 4 rotations, and 2 mirrors and then calculate which set of new orientations is best out of those for warped
-# further, out of the entire set, it should compare the difference between the worst possible ordering of those dispensers and the
-# best to see if it's worth worrying about activation order
-
-# Option to middle/ctrl click on nylium blocks to exclude them from generation
+# @TODO FIX 2 BUGS WITH OPTIMISER:
+# - WART BLOCKS AND BM CALCS INACCURATE AFTER OPTIMISING A BUNCH
+# - INCREASING WIDTH LOWERS WB OUTPUT SOMEHOW??
 
 # Non-linear scaling 
 NLS = 1.765
@@ -30,7 +27,7 @@ HGHT = 46
 PAD = 5
 RAD = 26
 DP = 5
-MAX_SIDE_LEN = 9
+MAX_SIDE_LEN = 20
 WARPED = 0
 CRIMSON = 1
 UNCLEARED = 0
@@ -345,7 +342,7 @@ class App:
             fg=colours.fg, 
             length=250
         )
-        self.row_slider.set(5)
+        self.row_slider.set(4)
         self.row_slider.bind("<Double-Button-1>", self.reset_slider)
         self.row_slider.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
 
@@ -614,7 +611,7 @@ class App:
             )
             return
         self.reset_grid(remove_blocked=False)
-        print("optimall: ", optimal_coords, "back")
+        # print("optimall: ", optimal_coords, "back")
         for i, disp_coord in enumerate(optimal_coords):
             self.add_dispenser(disp_coord[0], disp_coord[1], cleared_array[i])
         # Generate a list of other viable coords that are as optimal or within 0.1% of the most
@@ -710,7 +707,7 @@ class App:
             self.blocked_blocks,
             self.blast_chamber_effic.get()
         )
-        
+
         output_labels = [
             f"Total {'Warped' if fungus_type == WARPED else 'Crimson'} Fungi",
             "Bone Meal to Produce a Fungus",
@@ -756,16 +753,24 @@ class App:
         self.output_text_label[2].bind("<Enter>", lambda event: 
                     bm_for_prod_tooltip.show_tip((
                         "Bone meal spent by the nylium dispensers that creates the fungi.\n"
-                        "Factors in bone meal retrieved from composting excess foliage."),
+                        "Factors in 75% of bone meal retrieved from composting excess foliage."),
                         event.x_root, event.y_root))
         self.output_text_label[2].bind("<Leave>", lambda event: bm_for_prod_tooltip.hide_tip())
         
-        bm_for_growth_tooltip = ToolTip(self.output_text_label[2])
+        bm_for_growth_tooltip = ToolTip(self.output_text_label[3])
         self.output_text_label[3].bind("<Enter>", lambda event: 
                     bm_for_growth_tooltip.show_tip((
                         "Bone meal spent on growing already produced fungi."),
                         event.x_root, event.y_root))
         self.output_text_label[3].bind("<Leave>", lambda event: bm_for_growth_tooltip.hide_tip())
+        
+        net_bm_tooltip = ToolTip(self.output_text_label[6])
+        self.output_text_label[6].bind("<Enter>", lambda event: 
+                    net_bm_tooltip.show_tip((
+                        "Surplus bone meal after 1 global cycle of the core and subsequent harvest.\n"
+                        "Takes bone meal from composted wart blocks minus production and growth bm."),
+                        event.x_root, event.y_root))
+        self.output_text_label[6].bind("<Leave>", lambda event: net_bm_tooltip.hide_tip())
         
         # Create the labels for output values
         for i, output_value in enumerate(output_values):
@@ -803,12 +808,11 @@ class App:
         self.dispensers.sort(key=lambda d: d[2])
         dispenser_coordinates = [(d[0], d[1], d[3]) for d in self.dispensers]
         fungus_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
-        dispensers = len(dispenser_coordinates)
         cycles = self.cycles_slider.get()
         dist_data = calculate_fungus_distribution(
             self.col_slider.get(), 
             self.row_slider.get(),
-            dispensers,
+            len(dispenser_coordinates),
             dispenser_coordinates,
             fungus_type,
             cycles,
@@ -835,10 +839,10 @@ class App:
             for c in range(cycles):
                 # First sum only earlierly ordered dispensers affect the current one
                 if c == 0:
-                    if index != 0:
-                        cycle_sum = np.sum(disp_foliage_grids[:index, c, :, :], axis=0)
-                    else:
+                    if index == 0:
                         cycle_sum = np.zeros((self.row_slider.get(), self.col_slider.get()))
+                    else:
+                        cycle_sum = np.sum(disp_foliage_grids[:index, c, :, :], axis=0)
                 else:
                     cycle_sum = np.sum(disp_foliage_grids[:, :c, :, :], axis=(0, 1))
                     cycle_sum += np.sum(disp_foliage_grids[:index, c, :, :], axis=0)

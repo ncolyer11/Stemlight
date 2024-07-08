@@ -13,6 +13,7 @@ WARPED = 0
 CRIMSON = 1
 UNCLEARED = 0
 CLEARED = 1
+FOLIAGE_COLLECTION_EFFIC = 0.825 # Takes into account avg effic and des fungi aren't accounted for
 
 def selection_chance(x1, y1):
     """Calculates the probability of a block being selected for 
@@ -104,14 +105,13 @@ def generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y):
     foliage_chance = disp_bm_chance * selection_chance(x - disp_x, y - disp_y)
     return foliage_chance, bm_for_prod
 
-def get_totals(des_fungi_grid, foliage_grid, bm_for_prod):
+def get_totals(des_fungi_grid, foliage_grid):
     """Calculates the total amount of foliage, fungi and bone meal required to grow the fungi"""
     total_fungi = np.sum(des_fungi_grid)
     total_foliage = np.sum(foliage_grid)
     bm_for_grow = const.AVG_BM_TO_GROW_FUNG * total_fungi
-    bm_total = bm_for_prod + bm_for_grow
 
-    return total_fungi, total_foliage, bm_for_grow, bm_total
+    return total_fungi, total_foliage, bm_for_grow
 
 def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungus_type,
                                   cycles=1, blocked_blocks=[]):
@@ -124,15 +124,17 @@ def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungus
         calculate_distribution(length, width, dispensers, disp_coords, fungi_weight,
                                fungus_type, sprouts_total, cycles, blocked_blocks)
 
-    total_des_fungi, total_foliage, bm_for_grow, bm_total = \
-        get_totals(des_fungi_grid, foliage_grid, bm_for_prod)
+    total_des_fungi, total_foliage, bm_for_grow = get_totals(des_fungi_grid, foliage_grid)
 
     # Subtract the amount of bone meal retrieved from composting the excess foliage losslessly
-    bm_from_compost = (total_foliage - np.sum(sprouts_total) - total_des_fungi ) / const.FOLIAGE_PER_BM
+    composted_foliage = total_foliage - np.sum(sprouts_total) - total_des_fungi
+    bm_from_compost = (FOLIAGE_COLLECTION_EFFIC * composted_foliage) / const.FOLIAGE_PER_BM
+    bm_for_prod -= bm_from_compost
+    bm_total = bm_for_prod + bm_for_grow
     return {
         "total_foliage": total_foliage,
         "total_des_fungi": total_des_fungi,
-        "bm_for_prod": bm_for_prod - bm_from_compost,
+        "bm_for_prod": bm_for_prod,
         "bm_for_grow": bm_for_grow,
         "bm_total": bm_total,
         "disp_foliage_grids": disp_foliage_grids,
@@ -149,28 +151,26 @@ def calc_huge_fungus_distribution(p_length, p_width, fungus_type, disp_coords,
     des_fungi_grid = np.sum(dist_data["disp_des_fungi_grids"], axis=(0, 1))
     bm_for_prod = dist_data["bm_for_prod"]
 
-    width = const.NT_MAX_RAD + p_length + const.NT_MAX_RAD
-    length = const.NT_MAX_RAD + p_width + const.NT_MAX_RAD
+    width = const.NT_MAX_RAD + p_width + const.NT_MAX_RAD
+    length = const.NT_MAX_RAD + p_length + const.NT_MAX_RAD
     hf_grids = np.zeros((len(const.BLOCK_TYPES) + 1, const.NT_MAX_HT, width, length))
 
-    # Create coordinate grids
-    nylium_x, nylium_z = np.meshgrid(np.arange(p_width), np.arange(p_length))
-    y, z, x = np.meshgrid(np.arange(const.NT_MAX_HT), np.arange(const.NT_MAX_WD), np.arange(const.NT_MAX_WD))
-
     # Iterate through each x,z coord in the nylium grid/platform
-    for nylium_x_idx, nylium_z_idx in np.ndindex(nylium_x.shape):
+    for nylium_x, nylium_z in itertools.product(range(p_length), range(p_width)):
+        # Generation order is Stems -> Shrooms -> Warts
         for b in range(len(const.BLOCK_TYPES)):
-            nylium_x_curr = nylium_x[nylium_x_idx, nylium_z_idx]
-            nylium_z_curr = nylium_z[nylium_x_idx, nylium_z_idx]
-            fungus_chance = des_fungi_grid[nylium_x_idx, nylium_z_idx]
             # Calculate weighted chance for all y,z,x coordinates
-            pos = (y, nylium_z_curr + z, nylium_x_curr + x)
-            weighted_chance = fungus_chance * heatmap_array_xyz[b, y, z, x]
+            fungus_chance = des_fungi_grid[nylium_x, nylium_z]
+            y_range, z_range, x_range = range(const.NT_MAX_HT), range(const.NT_MAX_WD), range(const.NT_MAX_WD)
+            for y, z, x in itertools.product(y_range, z_range, x_range):
+                pos = (y, nylium_z + z, nylium_x + x)
+                weighted_chance = fungus_chance * heatmap_array_xyz[b, y, z, x]
 
-            # Update hf_grid for all y,z,x coordinates
-            curr = hf_grids[3, *pos]
-            hf_grids[b, *pos] += (1 - curr) * weighted_chance
-            hf_grids[3, *pos] += hf_grids[b, *pos]
+                # Update hf_grid for all y,z,x coordinates
+                curr = hf_grids[3, *pos]
+                gen_chance = (1 - curr) * weighted_chance
+                hf_grids[b, *pos] += gen_chance
+                hf_grids[3, *pos] += gen_chance
 
     total_wb = np.sum(hf_grids[2]) * float(blast_chamber_effic)
     return total_wb, bm_for_prod
@@ -273,7 +273,7 @@ def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fu
         print("An error has occured whilst finding viable coordinates:", e)
         return e
 
-def export_alt_placements(length, width, metrics, optimal_value, worst_value, start_time, blockde_blocks):
+def export_alt_placements(length, width, metrics, optimal_value, worst_value, start_time, blocked_blocks):
     """Write the sorted list to a file"""
     alt_placements = len(metrics)
     f = open("viable_coords.txt", "w")
@@ -294,8 +294,8 @@ def export_alt_placements(length, width, metrics, optimal_value, worst_value, st
                     f.write(f"[{coords.index([x, y]) + 1}]")
                 elif [x, y, CLEARED] in placements:
                     f.write("{" + str(coords.index([x, y]) + 1) + "}")
-                elif [x, y] in blockde_blocks:
-                    f.write("[\]")
+                elif [x, y] in blocked_blocks:
+                    f.write("[/]")
                 else:
                     f.write("[ ]")
             f.write("\n")

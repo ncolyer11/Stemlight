@@ -66,7 +66,7 @@ def get_cell_value(sheet_name, row_number, column_number):
     """Return the value of the cell at the given row and column in the given sheet."""
     return heatmap_data.heatmap_array[sheet_name][row_number][column_number]
 
-def export_custom_heatmaps(length, width, nyliumGrid):
+def export_custom_heatmaps(length, width, des_fungi_grid):
     """Export the custom nether tree heatmap data, generated\n 
     from the dispenser placements, to an Excel file."""
     try:
@@ -76,33 +76,38 @@ def export_custom_heatmaps(length, width, nyliumGrid):
         
         heatmap_length = const.NT_MAX_RAD + length + const.NT_MAX_RAD
         heatmap_width = const.NT_MAX_RAD + width + const.NT_MAX_RAD
-        custom_heatmap_array = np.zeros((
-            len(const.BLOCK_TYPES), 
+        hf_grids = np.zeros((
+            len(const.BLOCK_TYPES) + 1, 
             heatmap_length,
             heatmap_width,
             const.NT_MAX_HT
         ))
     
-        for b, block_type in enumerate(const.BLOCK_TYPES):  # 0 = stems, 1 = shrooms, 2 = vrm0/warts
-            outSheet.append(outWorkbook.add_worksheet(block_type))
-            # Iterate through each x,z coord in the nylium grid/platform 
-            for nylium_x, nylium_z in itertools.product(range(width), range(length)):
-                heatmap_weighting = nyliumGrid[nylium_x][nylium_z]
-                y_range, z_range, x_range = range(const.NT_MAX_HT), range(const.NT_MAX_WD), range(const.NT_MAX_WD)
+        # Iterate through each x,z coord in the nylium grid/platform 
+        for nylium_x, nylium_z in itertools.product(range(width), range(length)):
+            # Generation order is Stems -> Shrooms -> Warts
+            for b in range(len((const.BLOCK_TYPES))):
+                fungus_chance = des_fungi_grid[nylium_x][nylium_z]
                 # Iterate through each x,y,z coord relative to the fungi
+                y_range, z_range, x_range = range(const.NT_MAX_HT), range(const.NT_MAX_WD), range(const.NT_MAX_WD)
                 for y, z, x in itertools.product(y_range, z_range, x_range):
                     col = x + (const.NT_MAX_WD * z)
                     row = const.NT_MAX_HT - 1 - y
-                    weighted_chance = heatmap_weighting * get_cell_value(b, row, col)
-                    curr = custom_heatmap_array[b][nylium_z + z][nylium_x + x][y]
-                    custom_heatmap_array[b][nylium_z + z][nylium_x + x][y] += (1 - curr) * weighted_chance
+                    weighted_chance = fungus_chance * get_cell_value(b, row, col)
 
-            # Write data to Excel file for each block type
-            y_range, z_range, x_range = range(const.NT_MAX_HT), range(heatmap_width), range(heatmap_length)
+                    curr = hf_grids[3][nylium_z + z][nylium_x + x][y]
+                    gen_chance = (1 - curr) * weighted_chance
+                    hf_grids[b][nylium_z + z][nylium_x + x][y] += gen_chance
+                    hf_grids[3][nylium_z + z][nylium_x + x][y] += gen_chance
+
+        # Write data to Excel file for each block type
+        y_range, z_range, x_range = range(const.NT_MAX_HT), range(heatmap_width), range(heatmap_length)
+        for b, block_type in enumerate(const.BLOCK_TYPES):   # 0 = stems, 1 = shrooms, 2 = vrm0/warts
+            outSheet.append(outWorkbook.add_worksheet(block_type))
             for y, z, x in itertools.product(y_range, z_range, x_range):
-                col = x + (heatmap_width * z)
+                col = z + (heatmap_width * x)
                 row = const.NT_MAX_HT - 1 - y
-                heatmap_data_point = custom_heatmap_array[b][x][z][y]
+                heatmap_data_point = hf_grids[b][x][z][y]
                 outSheet[b].write(row, col, heatmap_data_point)
                         
         end_time = time.time()
