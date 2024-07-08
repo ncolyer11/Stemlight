@@ -276,7 +276,7 @@ def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fu
 def export_alt_placements(length, width, metrics, optimal_value, worst_value, start_time, blocked_blocks):
     """Write the sorted list to a file"""
     alt_placements = len(metrics)
-    f = open("viable_coords.txt", "w")
+    f = open("Alternate Dispenser Placements.txt", "w")
     f.write(f"Number of alternate placements: {alt_placements}\n")
     lost_f = optimal_value - worst_value
     worst_loss = round(lost_f / optimal_value * 100, 5)
