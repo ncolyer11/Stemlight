@@ -226,9 +226,11 @@ def generate_transformations(coords, l, w):
     return remove_duplicates(perms)
 
 def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fungi, fungus_type,
-                         optimal_func, cycles, blocked_blocks):
+                         cycles, blocked_blocks):
     """Run through all reflections, rotations, and permutations of the optimal coordinates
     and record all solution within 0.1% of the best solution to a file."""
+    optimal_func = fast_calc_fung_dist  # Keeping possible future functionality
+                                        # for other functions to optimise
     try:
         start_time = time.time()
         worst_value = optimal_value

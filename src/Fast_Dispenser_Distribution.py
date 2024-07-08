@@ -18,6 +18,8 @@ selection_cache = np.array([
 # The following functions are designed to have little to no looped function calls,
 # resulting in some repetitive code
 
+# If you've ever done assembly coding, you'd know how expensive function calls are
+
 def fast_calc_fung_dist(length, width, fungus_type, disp_coords, cycles, blocked_blocks):
     """Calculate the distribution of foliage for a given set of dispenser offsets fast"""
     if fungus_type == WARPED:

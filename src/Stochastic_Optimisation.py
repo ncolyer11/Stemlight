@@ -12,9 +12,10 @@ UNCLEARED = 0
 CLEARED = 1
 
 def start_optimisation(disp_coords, length, width, wb_per_fungi, f_type,
-                       run_time, optimise_func, cycles, blocked_coords):
+                       run_time, cycles, blocked_coords):
     """Start optimising the function using the simulated annealing algorithm."""
     cleared_array = [d[2] for d in disp_coords]
+    optimise_func = fast_calc_fung_dist
     print(cleared_array)
     num_dispensers = len(disp_coords)
     if num_dispensers == 0:
@@ -143,13 +144,12 @@ def get_lowest_energy(N, length, width, f_type, optimise_func, cycles, blocked_c
         blocked_coords
     )[0]
 
-
-def output_results(length, width, function, solution, start_time):
+def output_results(length, width, optimal_func, solution, start_time):
     """Output the results of the optimisation."""
     print("Time taken:", time.time() - start_time)
     best_coords = np.array(solution)
     print("Optimal coords: \n", best_coords)
-    print("Optimal value: ", function(solution))
+    print("Optimal value: ", optimal_func(solution))
         # Print the location of max_rates_coords in a grid on terminal
     for row in range(length):
         for col in range(width):

@@ -20,6 +20,10 @@ from src.Fast_Dispenser_Distribution import fast_calc_fung_dist, fast_calc_hf_di
 # - WART BLOCKS AND BM CALCS INACCURATE AFTER OPTIMISING A BUNCH
 # - INCREASING WIDTH LOWERS WB OUTPUT SOMEHOW??
 
+# @TODO for beta v1.1.10:
+# - implement run time calibration
+# - implement toggle for optimising with cleared dispensers or not
+
 # Non-linear scaling 
 NLS = 1.765
 WDTH = 92
@@ -94,12 +98,12 @@ class App:
         self.run_time = tk.StringVar(value="7")
         self.blast_chamber_effic = tk.StringVar(value="1")
         self.optimise_with_cleared = tk.IntVar(value=0)
-        self.optimise_func_str = tk.StringVar(value='fast_calc_fung_dist')
-        self.func_dict = {
-            'fast_calc_fung_dist': fast_calc_fung_dist,
-            'fast_calc_hf_dist': fast_calc_hf_dist
-        }
-        self.optimise_func = self.func_dict[self.optimise_func_str.get()]
+        # self.optimise_func_str = tk.StringVar(value='fast_calc_fung_dist')
+        # self.func_dict = {
+        #     'fast_calc_fung_dist': fast_calc_fung_dist,
+        #     'fast_calc_hf_dist': fast_calc_hf_dist
+        # }
+        # self.optimise_func = self.func_dict[self.optimise_func_str.get()]
         self.vars = []
         self.create_widgets()
         self.output_text_label = {}
@@ -182,10 +186,10 @@ class App:
     def calibrate_run_time(self):
         print("we out here")
 
-    def set_optimise_func(self, optimise_func):
-        """Change what function is optimise via the simulated annealing algorithm"""
-        self.optimise_func = self.func_dict[optimise_func]
-        self.optimise_func_str.set(optimise_func)
+    # def set_optimise_func(self, optimise_func):
+    #     """Change what function is optimise via the simulated annealing algorithm"""
+    #     self.optimise_func = self.func_dict[optimise_func]
+    #     self.optimise_func_str.set(optimise_func)
 
     def set_bce(self, effic):
         """Change the blast chamber efficiency (default is 100%)"""
@@ -342,7 +346,7 @@ class App:
             fg=colours.fg, 
             length=250
         )
-        self.row_slider.set(4)
+        self.row_slider.set(5)
         self.row_slider.bind("<Double-Button-1>", self.reset_slider)
         self.row_slider.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
 
@@ -595,7 +599,6 @@ class App:
             self.wb_effic_slider.get(),
             fungus_type,
             self.run_time.get(),
-            self.optimise_func,
             self.cycles_slider.get(),
             self.blocked_blocks
         )
@@ -623,7 +626,6 @@ class App:
             self.row_slider.get(),
             self.wb_effic_slider.get(),
             fungus_type,
-            self.optimise_func,
             self.cycles_slider.get(),
             self.blocked_blocks
         )
