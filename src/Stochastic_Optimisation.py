@@ -5,6 +5,7 @@ import pandas as pd
 
 from src.Fast_Dispenser_Distribution import fast_calc_fung_dist, fast_calc_hf_dist
 import src.Assets.constants as const
+from src.Assets.helpers import resource_path
 
 ACCEPTANCE_RATE = 0.995
 REJECTION_POINT = 0.1
@@ -30,7 +31,7 @@ def start_optimisation(disp_coords, length, width, wb_per_fungi, f_type,
                                                      cleared_array)
     # Time taken for the CPU to compute ~one iteration of the simulated annealing algorithm
     # Dependant on hardware, optimise_func, as well as number of permutations
-    f = open("cpu_benchmark.txt", "r")
+    f = open(resource_path("cpu_benchmark.txt"), "r")
     iter_time = f.readline().strip()
     f.close()
     try:
@@ -38,7 +39,7 @@ def start_optimisation(disp_coords, length, width, wb_per_fungi, f_type,
         cooling_rate = (end_temp / start_temp) ** (float(iter_time) / int(run_time))
     except ValueError:
         # Handle the case where cpu benchmark time is corrupted/unreadable somehow
-        with open("cpu_benchmark.txt", "w") as f:
+        with open(resource_path("cpu_benchmark.txt"), "w") as f:
             f.write(str(const.BASE_CPU_ITER_TIME))
         
         # Re-run the calculation using the default BASE_CPU_ITER_TIME as iter_time

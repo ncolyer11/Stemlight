@@ -147,13 +147,15 @@ class App:
             )
 
         # Set default CPU iteration time for the simulated annealing algorithm
-        f = open("cpu_benchmark.txt", "r+")
-        # Only write default cpu time if user hasn't run the benchmark prior
-        data = f.readline().strip()
-        if not data:
+        file_path = resource_path("cpu_benchmark.txt")
+        with open(file_path, "a+") as f:
+            # Move the cursor to the start of the file
             f.seek(0)
-            f.write(f"{const.BASE_CPU_ITER_TIME}\n")
-        f.close()
+            data = f.readline().strip()
+            if not data:
+                f.seek(0)
+                f.write(f"{const.BASE_CPU_ITER_TIME}\n")
+        
 
         # optimise_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         # toolbar.add_cascade(label="Optimise For", menu=optimise_menu)
@@ -187,7 +189,7 @@ class App:
 
         for i in range(0, num_tests):
             start_time = time.time()
-            f = open("cpu_benchmark.txt", "r+")
+            f = open(resource_path("cpu_benchmark.txt"), "r+")
             _, _, iterations = start_optimisation(
                 disp_coords,
                 5, # Default 5x5 nylium platform
