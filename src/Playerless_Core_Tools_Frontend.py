@@ -12,17 +12,15 @@ from src.Assets import colours
 from src.Assets.constants import RSF
 import src.Assets.constants as const
 from src.Assets.helpers import ToolTip, set_title_and_icon, export_custom_heatmaps, resource_path
-from src.Fungus_Distribution_Backend import calc_huge_fungus_distribution, calculate_fungus_distribution, output_viable_coords
+from src.Fungus_Distribution_Backend import calc_huge_fungus_distribution, \
+    calculate_fungus_distribution, output_viable_coords
 from src.Stochastic_Optimisation import start_optimisation
-from src.Fast_Dispenser_Distribution import fast_calc_fung_dist, fast_calc_hf_dist
 
-# @TODO FIX 2 BUGS WITH OPTIMISER:
-# - WART BLOCKS AND BM CALCS INACCURATE AFTER OPTIMISING A BUNCH
-# - INCREASING WIDTH LOWERS WB OUTPUT SOMEHOW??
-
-# @TODO for beta v1.1.10:
-# - implement run time calibration
-# - implement toggle for optimising with cleared dispensers or not
+# Testing notes
+# - Run tests on 5x5 and 4x5 for num dispensers 1-5, cycles = 3 to see where the optimal solution
+#   does or does not include cleare dispensers
+# Keep an eye out during future patches for the wart block and bone meal calc values going
+# inaccurate after optimising a bunch
 
 # Non-linear scaling 
 NLS = 1.765
@@ -97,13 +95,6 @@ class App:
         self.nylium_type = tk.StringVar(value="warped")
         self.run_time = tk.StringVar(value="7")
         self.blast_chamber_effic = tk.StringVar(value="1")
-        self.optimise_with_cleared = tk.IntVar(value=0)
-        # self.optimise_func_str = tk.StringVar(value='fast_calc_fung_dist')
-        # self.func_dict = {
-        #     'fast_calc_fung_dist': fast_calc_fung_dist,
-        #     'fast_calc_hf_dist': fast_calc_hf_dist
-        # }
-        # self.optimise_func = self.func_dict[self.optimise_func_str.get()]
         self.vars = []
         self.create_widgets()
         self.output_text_label = {}
@@ -134,11 +125,6 @@ class App:
         config_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         config_menu.add_command(label="Calibrate Run Time", command=self.calibrate_run_time)
         toolbar.add_cascade(label="Config", menu=config_menu)
-        config_menu.add_radiobutton(
-            label="Optimise With Cleared Dispensers".rjust(33), 
-            value=self.optimise_with_cleared.get(),
-            command=lambda: self.toggle_w_cd()
-        )
 
         run_time_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         toolbar.add_cascade(label="Run Time", menu=run_time_menu)
@@ -160,6 +146,15 @@ class App:
                 command=lambda effic1=effic: self.set_bce(effic1)
             )
 
+        # Set default CPU iteration time for the simulated annealing algorithm
+        f = open("cpu_benchmark.txt", "r+")
+        # Only write default cpu time if user hasn't run the benchmark prior
+        data = f.readline().strip()
+        if not data:
+            f.seek(0)
+            f.write(f"{const.BASE_CPU_ITER_TIME}\n")
+        f.close()
+
         # optimise_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         # toolbar.add_cascade(label="Optimise For", menu=optimise_menu)
         # optimise_menu.add_radiobutton(
@@ -176,20 +171,44 @@ class App:
         #     command=lambda: self.set_optimise_func('fast_calc_hf_dist')
         # )
 
-    def toggle_w_cd(self):
-        # Toggle value
-        state = self.optimise_with_cleared.get()
-        print(state)
-        self.optimise_with_cleared.set(abs(1 - state))
-        print("we in here", self.optimise_with_cleared.get())
 
-    def calibrate_run_time(self):
-        print("we out here")
 
     # def set_optimise_func(self, optimise_func):
     #     """Change what function is optimise via the simulated annealing algorithm"""
     #     self.optimise_func = self.func_dict[optimise_func]
     #     self.optimise_func_str.set(optimise_func)
+
+    def calibrate_run_time(self):
+        """Runs a benchmark optimisation test to measure user's processing speed and modify cooling rate accordingly"""
+        # Run test with 4 uncleared dispensers, 3 times
+        disp_coords = [(0, 0, UNCLEARED) for _ in range(0, 4)]
+        num_tests = 3
+        des_run_time = 15
+
+        for i in range(0, num_tests):
+            start_time = time.time()
+            f = open("cpu_benchmark.txt", "r+")
+            _, _, iterations = start_optimisation(
+                disp_coords,
+                5, # Default 5x5 nylium platform
+                5,
+                120, # High val for wart block efficiency
+                WARPED,
+                des_run_time, # Desired run time of 15 secs
+                1, # 1 Cycle
+                [] # No blocked blocks
+            )
+
+            total_iter_time = (time.time() - start_time)
+            time_diff_percent = 100 * (total_iter_time - des_run_time) / des_run_time
+            time_per_iter = total_iter_time / iterations
+
+            f.write(str(time_per_iter))
+            f.close()
+
+            print(f"Calibration loop {i} run time misalignment: {time_diff_percent}%")
+            print(f"Iteration time: {time_per_iter}\n")
+
 
     def set_bce(self, effic):
         """Change the blast chamber efficiency (default is 100%)"""
@@ -227,7 +246,8 @@ class App:
             "Information",
             "Change nylium types using the slide switch.\n\n"
             "To find the optimal dispenser placement for the provided wart block efficiency, "
-            "click the optimise button.\n\n"
+            "click the optimise button. Note this will strictly optimise with cleared dispensers "
+            "if you have any.\n\n"
             "To export custom huge fungus heatmaps based off the fungus distribution of the nylium "
             "grid, click the export button.\n\n"
             "To place a cleared dispenser, or mark a nylium block for non-growth, middle-click or "
@@ -588,11 +608,10 @@ class App:
         """Optimise the placement of dispensers on the nylium grid"""
         fungus_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
         disp_coords = [(d[0], d[1], d[3]) for d in self.dispensers]
-        cleared_array = [d[3] for d in self.dispensers]
         if len(disp_coords) == 0:
             return
 
-        optimal_coords, optimal_value = start_optimisation(
+        optimal_coords, optimal_value, _ = start_optimisation(
             disp_coords,
             self.col_slider.get(), 
             self.row_slider.get(),
@@ -615,8 +634,8 @@ class App:
             return
         self.reset_grid(remove_blocked=False)
         # print("optimall: ", optimal_coords, "back")
-        for i, disp_coord in enumerate(optimal_coords):
-            self.add_dispenser(disp_coord[0], disp_coord[1], cleared_array[i])
+        for disp_coord in optimal_coords:
+            self.add_dispenser(disp_coord[0], disp_coord[1], disp_coord[2])
         # Generate a list of other viable coords that are as optimal or within 0.1% of the most
         # optimal found solution, storing them in an external file
         result = output_viable_coords(

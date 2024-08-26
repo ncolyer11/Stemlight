@@ -189,7 +189,7 @@ def initialise_optimisation(length, width, num_dispensers, f_type, wb_per_fungi)
     start_time = time.time()
 
     disp_perms = generate_permutations(length, width, num_dispensers)
-    max_coords, max_fungi = start_optimisation(num_dispensers, length, width, wb_per_fungi, MEDIAN_RUNTIME)
+    max_coords, max_fungi, _ = start_optimisation(num_dispensers, length, width, wb_per_fungi, MEDIAN_RUNTIME)
     # If the number of permutations is less than 350k, use brute force (TBD, new algo for all rn)
     # if permutations < 350e3:
     #     max_coords = brute_force_max_fungi(length, width, num_dispensers, disp_perms, 

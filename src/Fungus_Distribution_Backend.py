@@ -13,7 +13,6 @@ WARPED = 0
 CRIMSON = 1
 UNCLEARED = 0
 CLEARED = 1
-FOLIAGE_COLLECTION_EFFIC = 0.825 # Takes into account avg effic and des fungi aren't accounted for
 
 def selection_chance(x1, y1):
     """Calculates the probability of a block being selected for 
@@ -128,7 +127,7 @@ def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungus
 
     # Subtract the amount of bone meal retrieved from composting the excess foliage losslessly
     composted_foliage = total_foliage - np.sum(sprouts_total) - total_des_fungi
-    bm_from_compost = (FOLIAGE_COLLECTION_EFFIC * composted_foliage) / const.FOLIAGE_PER_BM
+    bm_from_compost = (const.FOLIAGE_COLLECTION_EFFIC * composted_foliage) / const.FOLIAGE_PER_BM
     bm_for_prod -= bm_from_compost
     bm_total = bm_for_prod + bm_for_grow
     return {
@@ -143,7 +142,15 @@ def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungus
 
 def calc_huge_fungus_distribution(p_length, p_width, fungus_type, disp_coords,
                  cycles, blocked_blocks, blast_chamber_effic=1):
-    """Calculates huge fungi generation based off desired fungus distribution"""
+    """Approximately calculates huge fungi generation based off desired fungus distribution"""
+    # Only approximately as calculating the expected wart block distribution given an expected 
+    # warped fungi distribution relies on a heap of interacting variables and also that's not even
+    # inclduing the fact wart blocks from some early-grown fungi can act as pre-placed wart blocks
+    # and can cause VRM in later grown fungi
+
+    # Return early if grid is empty
+    if len(disp_coords) == 0:
+        return 0.0, 0.0
     # Growing after all produced, makes the same output as growing after each cycle
     dist_data = calculate_fungus_distribution(p_width, p_length, len(disp_coords), disp_coords,
                                                 fungus_type, cycles, blocked_blocks)
@@ -153,7 +160,12 @@ def calc_huge_fungus_distribution(p_length, p_width, fungus_type, disp_coords,
 
     width = const.NT_MAX_RAD + p_width + const.NT_MAX_RAD
     length = const.NT_MAX_RAD + p_length + const.NT_MAX_RAD
-    hf_grids = np.zeros((len(const.BLOCK_TYPES) + 1, const.NT_MAX_HT, width, length))
+    hf_grids = np.zeros((
+        len(const.BLOCK_TYPES) + 1,
+        width,
+        length,
+        const.NT_MAX_HT
+    ))
 
     # Iterate through each x,z coord in the nylium grid/platform
     for nylium_x, nylium_z in itertools.product(range(p_length), range(p_width)):
@@ -163,14 +175,12 @@ def calc_huge_fungus_distribution(p_length, p_width, fungus_type, disp_coords,
             fungus_chance = des_fungi_grid[nylium_x, nylium_z]
             y_range, z_range, x_range = range(const.NT_MAX_HT), range(const.NT_MAX_WD), range(const.NT_MAX_WD)
             for y, z, x in itertools.product(y_range, z_range, x_range):
-                pos = (y, nylium_z + z, nylium_x + x)
-                weighted_chance = fungus_chance * heatmap_array_xyz[b, y, z, x]
+                weighted_chance = fungus_chance * heatmap_array_xyz[b, const.NT_MAX_HT - y - 1, z, x]
+                curr = hf_grids[3, nylium_z + z, nylium_x + x, y]
 
-                # Update hf_grid for all y,z,x coordinates
-                curr = hf_grids[3, *pos]
                 gen_chance = (1 - curr) * weighted_chance
-                hf_grids[b, *pos] += gen_chance
-                hf_grids[3, *pos] += gen_chance
+                hf_grids[b, nylium_z + z, nylium_x + x, y] += gen_chance
+                hf_grids[3, nylium_z + z, nylium_x + x, y] += gen_chance
 
     total_wb = np.sum(hf_grids[2]) * float(blast_chamber_effic)
     return total_wb, bm_for_prod
@@ -283,15 +293,15 @@ def export_alt_placements(length, width, metrics, optimal_value, worst_value, st
     lost_f = optimal_value - worst_value
     worst_loss = round(lost_f / optimal_value * 100, 5)
     lost_f = round(lost_f, 5)
-    f.write(f"Max efficiency loss without caring about order: {worst_loss}% ({lost_f} fungi)\n\n")
+    f.write(f"Max efficiency loss without caring about order: {worst_loss}% ({lost_f} fungi/cycle)\n\n")
     for i, (total_des_fungi, bm_for_prod, placements) in enumerate(metrics, start=1):
         coords = [[pos[0], pos[1]] for pos in placements]
         f.write(f"#{i}:\n")
         f.write(f"Desired Fungi: {round(total_des_fungi, 5)}\n"
                 f"Bone Meal Used: {round(bm_for_prod, 5)}\n")
         f.write(f"Coords: {coords}\n")
-        for y in range(width):
-            for x in range(length):
+        for x in range(width):
+            for y in range(length):
                 if [x, y, UNCLEARED] in placements:
                     f.write(f"[{coords.index([x, y]) + 1}]")
                 elif [x, y, CLEARED] in placements:

@@ -15,37 +15,55 @@ def start_optimisation(disp_coords, length, width, wb_per_fungi, f_type,
                        run_time, cycles, blocked_coords):
     """Start optimising the function using the simulated annealing algorithm."""
     cleared_array = [d[2] for d in disp_coords]
+    has_cleared = False
+    if CLEARED in cleared_array:
+        has_cleared = True
     optimise_func = fast_calc_fung_dist
-    print(cleared_array)
     num_dispensers = len(disp_coords)
     if num_dispensers == 0:
         return [], 0
     start_time = time.time()
-    initial_solution = [[-1, -1, cleared_array[i]] for i in range(num_dispensers)]
+    # Start with all worst case dispensers off the grid with no clearing
+    initial_solution = [[-1, -1, 0] for _ in range(num_dispensers)]
     start_temp, end_temp, *_ = calculate_temp_bounds(num_dispensers, length, width, f_type,
                                                      optimise_func, cycles, blocked_coords,
                                                      cleared_array)
     # Time taken for the CPU to compute ~one iteration of the simulated annealing algorithm
     # Dependant on hardware, optimise_func, as well as number of permutations
-    cpu = 5.5e-4 if optimise_func == fast_calc_fung_dist else 9.5e-1
-    cooling_rate = (end_temp / start_temp) ** (cpu / int(run_time))
+    f = open("cpu_benchmark.txt", "r")
+    iter_time = f.readline().strip()
+    f.close()
+    try:
+        # Attempt to convert the iter_time to a float
+        cooling_rate = (end_temp / start_temp) ** (float(iter_time) / int(run_time))
+    except ValueError:
+        # Handle the case where cpu benchmark time is corrupted/unreadable somehow
+        with open("cpu_benchmark.txt", "w") as f:
+            f.write(str(const.BASE_CPU_ITER_TIME))
+        
+        # Re-run the calculation using the default BASE_CPU_ITER_TIME as iter_time
+        cooling_rate = (end_temp / start_temp) ** (const.BASE_CPU_ITER_TIME / int(run_time))
     
     iterations = math.floor(math.log(end_temp / start_temp) / math.log(cooling_rate)) + 1
-    print(f"S: {start_temp} E: {end_temp} I: {iterations} C: {cooling_rate}")
+    print(f"\nStarting temp: {start_temp}",
+          f"\nEnding temp: {end_temp}", 
+          f"\nCooling rate: {cooling_rate}",
+          f"\nIterations: {iterations}")
 
     optimal_solution, optimal_value = simulated_annealing(
                                         initial_solution, start_temp, cooling_rate, end_temp,
                                         length, width, f_type, wb_per_fungi,
-                                        optimise_func, cycles, blocked_coords, cleared_array
+                                        optimise_func, cycles, blocked_coords, has_cleared
                                         )
     
-    print("Time taken to optimise:", time.time() - start_time)
+    print("Time taken to optimise:", time.time() - start_time, "seconds")
+    print("Optimal Solution:", optimal_solution)
 
-    return optimal_solution, optimal_value
+    return optimal_solution, optimal_value, iterations
 
 def simulated_annealing(initial_sol, temperature, cooling_rate, min_temperature,
                         length, width, f_type, wb_per_fungi,
-                        optimise_func, cycles, blocked_coords, cleared_array):
+                        optimise_func, cycles, blocked_coords, has_cleared):
     """Simulated annealing algorithm for discrete optimisation of fungus distribution."""
     current_sol = initial_sol
     best_sol = initial_sol
@@ -53,10 +71,11 @@ def simulated_annealing(initial_sol, temperature, cooling_rate, min_temperature,
     for _ in range(max_iterations):
         if temperature < min_temperature:
             break
-        neighbour_sol = generate_neighbour(current_sol, length, width, cleared_array)
+        neighbour_sol = generate_neighbour(current_sol, length, width, has_cleared)
         # Either desired fungi produced, or potential wart blocks generated
         current_energy = optimise_func(length, width, f_type, current_sol, cycles, blocked_coords)[0]
         neighbour_energy, bm_for_prod = optimise_func(length, width, f_type, neighbour_sol, cycles, blocked_coords)
+        # print("n sol: ", neighbour_sol)
 
         bm_req = bm_for_prod < wb_per_fungi / const.WARTS_PER_BM - const.AVG_BM_TO_GROW_FUNG
         if neighbour_energy > current_energy and bm_req or \
@@ -67,6 +86,7 @@ def simulated_annealing(initial_sol, temperature, cooling_rate, min_temperature,
                 best_sol = neighbour_sol
 
         temperature *= cooling_rate
+    # print("best sol: ", best_sol)
     return best_sol, optimise_func(length, width, f_type, best_sol, cycles, blocked_coords)[0]
 
 def acceptance_probability(current_energy, neighbour_energy, temperature):
@@ -76,37 +96,44 @@ def acceptance_probability(current_energy, neighbour_energy, temperature):
     else:
         return np.exp((neighbour_energy - current_energy) / temperature)
 
-def generate_neighbour(solution, length, width, cleared_array):
+def generate_neighbour(solution, length, width, has_cleared):
     """Generate a new dispenser permutation by altering 1 to all of their coords slightly"""
     step_h = 1 if width != 1 else 0
     step_v = 1 if length != 1 else 0
     rand_s = np.random.randint
+    cleared_state = 1
+    if has_cleared == True:
+        cleared_state = 2
 
     # Create a copy of the current solution
     neighbour_solution = solution.copy()
-    positions = [[pos[0], pos[1]] for pos in solution]
+    positions = [[pos[0], pos[1], UNCLEARED] for pos in solution]
     # Randomly select coords to change
     indexes_to_change = np.random.choice(len(solution), len(solution), replace=False)
     for i in indexes_to_change:
         # Randomly select a small change in horizontal and vertical coord (-1, 0, or 1)
-        sol_x, sol_y = positions[i]
+        sol_x, sol_y, _ = positions[i]
+        # Randomly chose between cleared and non-cleared dispenser if there's at least 1 cleared
+        # dispenser in the input field already
+        cleared_val = rand_s(0, cleared_state)
         new_coords = [max(0, min(width - 1, sol_x + rand_s(-step_h, step_h + 1))),
-                      max(0, min(length - 1, sol_y + rand_s(-step_v, step_v + 1)))]
+                      max(0, min(length - 1, sol_y + rand_s(-step_v, step_v + 1))),
+                      cleared_val]
 
         # Make sure no two coords can be the same
         else_array = positions[:i] + positions[i+1:]
         while new_coords in else_array:
             new_coords = [max(0, min(width - 1, new_coords[0] + rand_s(-step_h, step_h + 1))), 
-                          max(0, min(length - 1, new_coords[1] + rand_s(-step_v, step_v + 1)))]
+                          max(0, min(length - 1, new_coords[1] + rand_s(-step_v, step_v + 1))),
+                          cleared_val]
     
         # Update the solution with the new coord and its cleared status
         positions[i] = new_coords.copy()
-        new_coords.append(cleared_array[i])
         neighbour_solution[i] = new_coords
 
     return neighbour_solution
 
-def calculate_temp_bounds(N, length, width, f_type, optimise_func, cycles, blocked_coords, cleared_array):
+def calculate_temp_bounds(N, length, width, f_type, optimise_func, cycles, blocked_coords, has_cleared):
     """Calculate the starting temperature for the simulated annealing algorithm."""
     # Find the lowest energy point
     rand_s = np.random.randint
@@ -117,7 +144,7 @@ def calculate_temp_bounds(N, length, width, f_type, optimise_func, cycles, block
     trials = 300*N if optimise_func == fast_calc_fung_dist else 150*N
     for _ in range(trials):
         coords = [[rand_s(0, width), rand_s(0, length), UNCLEARED] for _ in range(N)]
-        average_solutions.append(generate_neighbour(coords, length, width, cleared_array))
+        average_solutions.append(generate_neighbour(coords, length, width, has_cleared))
     
     # Calculate the average energy of the initial solution
     avg_energy = np.mean([
@@ -191,11 +218,11 @@ def plot_cooling_rate_data():
             print("\nDispenser", disp, "'s cooling rate:", rate)
             results = []
             for _ in range((100*disp)//3):
-                result, _ = start_optimisation(disp, rate)
+                result, *_ = start_optimisation(disp, rate)
                 results.append(result)
             mean_value = np.mean(results)
             mogged_rate = 0.999995 if disp >= 5 else 0.9995
-            actual_value, _ = start_optimisation(disp, mogged_rate)
+            actual_value, *_ = start_optimisation(disp, mogged_rate)
             print("Mean value:", mean_value)
             print("Actual value:", actual_value)
             print("Accuracy:", mean_value / actual_value)

@@ -3,6 +3,7 @@ YES_OPTIONS = {"y", "yes", "on", "1", "yeah", "true", "sure", "yup",
                "ja", "si", "sí", "haan", "हाँ", "oui", "はい", "da"}
 WARP_OPTIONS = {"blue", "b", "warped", "w", "warp"}
 CRMS_OPTIONS = {"red", "r", "crimson", "c", "crim"}
+BASE_CPU_ITER_TIME = 5.5e-4
 # Resoloution Scale Factor
 RSF = 1.25 # Lower for Linux and MacOS, but changes to 1.5 on Windows to fix dpi scaling
 try:
@@ -34,6 +35,7 @@ AVG_SHROOMS = 2.03192455026454
 AVG_WARTS = 63.0252319962964
 AVG_TOP_WART = 0.97951
 BLOCK_TYPES = ["Stems", "Shroomlights", "Wart Blocks (VRM 0)"]
+FOLIAGE_COLLECTION_EFFIC = 0.825 # Takes into account avg effic and des fungi aren't accounted for
 
 ### Small Fungi
 FUNG_GROWTH_CHANCE = 0.4
