@@ -102,6 +102,7 @@ class App:
         self.info_text_label = {}
         self.info_text_value = {}
         self.selected_block = ()
+        self.just_all_optimised = False
 
         clearing_path = resource_path("src/Images/cleared_dispenser.png")
         self.clearing_image = tk.PhotoImage(file=clearing_path)
@@ -440,8 +441,14 @@ class App:
     def reset_slider(self, event, default=5):
         self.master.after(10, lambda: event.widget.set(default))
     
-    def update_nylium_type(self):
-        if self.nylium_type.get() == "warped":
+    def update_nylium_type(self, nylium_type=None):
+        if nylium_type == WARPED:
+            self.nylium_type.set("warped")
+            unchecked_path = resource_path("src/Images/warped_nylium.png")
+        elif nylium_type == CRIMSON:
+            self.nylium_type.set("crimson")
+            unchecked_path = resource_path("src/Images/crimson_nylium.png")
+        elif self.nylium_type.get() == "warped":
             self.nylium_type.set("crimson")
             unchecked_path = resource_path("src/Images/crimson_nylium.png")
         else:
@@ -611,6 +618,11 @@ class App:
 
     def optimise(self):
         """Optimise the placement of dispensers on the nylium grid"""
+        # Ignore button press if it was special clicked for optimising all parameters
+        if (self.just_all_optimised == True):
+            self.just_all_optimised = False
+            return
+
         fungus_type = CRIMSON if self.nylium_type.get() == "crimson" else WARPED
         disp_coords = [(d[0], d[1], d[3]) for d in self.dispensers]
         if len(disp_coords) == 0:
@@ -673,8 +685,21 @@ class App:
             messagebox.showwarning("Export Error", error_message)      
     
     def fe_optimise_all(self):
-        result = optimise_all()
-        print(result)
+        """Optimise all paramters relating to a playerless nether tree farm core using simulated annealing"""
+        self.just_all_optimised = True
+        result, optimal_value, iterations = optimise_all()
+        print("All optimised results:", result)
+        print("Optimal value:", optimal_value)
+        print("Iterations:", iterations)
+        self.cycles_slider.set(result['num_cycles'])
+        self.col_slider.set(result['width'])
+        self.row_slider.set(result['length'])
+        self.update_nylium_type(result['fungus_type'])
+        self.update_grid(iterations)
+        self.reset_grid(remove_blocked=True)
+        
+        for disp_coord in result['disp_layout']:
+            self.add_dispenser(disp_coord[1], disp_coord[0], disp_coord[2])
 
     def export_heatmaps(self):
         """Export custom heatmaps based on the fungus distribution of the nylium grid"""

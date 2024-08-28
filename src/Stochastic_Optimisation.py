@@ -12,10 +12,10 @@ ACCEPTANCE_RATE = 0.995
 REJECTION_POINT = 0.1
 UNCLEARED = 0
 CLEARED = 1
-MAX_ALL_WIDTH = 7
-MAX_ALL_LENGTH = 7
+MAX_ALL_WIDTH = 6
+MAX_ALL_LENGTH = 5
 MAX_ALL_CYCLES = 5
-ALL_RUN_TIME = 10
+ALL_RUN_TIME = 100
 MAX_ALL_AVG_NUM_DISPS = 10
 
 # Random int function shorthand
@@ -40,18 +40,15 @@ class LayoutParamters:
         num_disps = self.num_disps
         trials = 300 * num_disps
         # Randomly choose num_disps unique pairs
-        print("a")
         for _ in range(trials):
             average_solutions.append(self.generate_random_layout())
         
         # Calculate the average energy of the initial solution
-        print("d")
         avg_energy = np.mean([
             fast_calc_fung_dist(
                 **average_solutions[i], blocked_blocks=[]
             )[0] for i in range(trials)
         ])
-        print("e")
 
         high_energy_change = avg_energy - lowest_energy
         start_temperature = -high_energy_change / np.log(ACCEPTANCE_RATE)
@@ -85,57 +82,41 @@ class LayoutParamters:
     def generate_neighbour(self, current_sol):
         disp_layout = current_sol['disp_layout']
         # Change paramter vals by -1, 0, or 1, ensuring it still remains at a valid value
-        length = max(1, min(current_sol['length'] + rand_s(-1, 2), MAX_ALL_WIDTH))
-        width = max(1, min(current_sol['width'] + rand_s(-1, 2), MAX_ALL_LENGTH))
-        
-        num_disps = max(1, min(len(disp_layout) + rand_s(-1, 2), length * width))
-
+        length = max(1, min(current_sol['length'] + rand_s(-1, 2), MAX_ALL_LENGTH))
+        width = max(1, min(current_sol['width'] + rand_s(-1, 2), MAX_ALL_WIDTH))
         num_cycles = max(1, min(current_sol['num_cycles'] + rand_s(-1, 2), MAX_ALL_CYCLES))
-
         # Randomly chose between warped or crimson nylium
         fungus_type = const.WARPED if np.random.rand() < 0.5 else const.CRIMSON
 
+        # print("Initial num disps:", len(disp_layout))
+        num_disps = max(1, min(len(disp_layout) + rand_s(-1, 2), length * width))
+        # print("New num disps:", num_disps)
         # Create a copy of the current solution
         neighbour_disp_layout = disp_layout.copy()
         positions = [[pos[0], pos[1], UNCLEARED] for pos in disp_layout]
+        # print("Initial disp layout:", neighbour_disp_layout)
         if num_disps < len(disp_layout):
             # If there's one less dispenser, then randomly remove one from the layout
             neighbour_disp_layout.remove(random.choice(neighbour_disp_layout))
         elif num_disps > len(disp_layout):
             # If there's one more dispenser, then randomly place it at an empty spot on the platform
-            new_disp = [rand_s(length), rand_s(width), UNCLEARED]
+            new_disp = [rand_s(width), rand_s(length), UNCLEARED]
             while new_disp in positions:
-                new_disp = [rand_s(length), rand_s(width), UNCLEARED]
-            
+                new_disp = [rand_s(width), rand_s(length), UNCLEARED]
             neighbour_disp_layout.append(new_disp)
+
+        # print("Disp layout after +/- disp:", neighbour_disp_layout)
+
+        # Just straight up remove all excess dispensers
+        for i, coords in reversed(list(enumerate(neighbour_disp_layout))):
+            if coords[0] >= width or coords[1] >= length:
+                del neighbour_disp_layout[i]
+
         num_disps = len(neighbour_disp_layout)
-        if num_disps > length * width:
-            excess_disps = num_disps - length * width
-            # Remove outer dispensers until a valid amount remains
-            while excess_disps >= 0:
-                for i, coords in enumerate(neighbour_disp_layout):
-                    if coords[0] >= width or coords[1] >= length:
-                        del neighbour_disp_layout[i]
-                excess_disps -= 1
-
-        neighbour_disp_layout = [[min(x, width - 1), min(y, length - 1), cs] for [x, y, cs] in neighbour_disp_layout]
-
         # Allow dispenser placements to wander if axis isn't dimensionless
         step_h = 1 if width != 1 else 0
         step_v = 1 if length != 1 else 0
 
-        # Remove any duplicate dispenser placements due to clamping
-        for i, disp_coords in enumerate(neighbour_disp_layout):
-            else_array = neighbour_disp_layout[:i] + neighbour_disp_layout[i+1:]
-            while any([disp_coords[0], disp_coords[1]] == coord[:2] for coord in else_array):
-                disp_coords = [max(0, min(width - 1, disp_coords[0] + rand_s(-step_h, step_h + 1))), 
-                            max(0, min(length - 1, disp_coords[1] + rand_s(-step_v, step_v + 1))),
-                            disp_coords[2]]
-                # print(disp_coords)
-                # print(else_array)
-                # print(neighbour_disp_layout)
-                # print("loop1.5", length, width, "\n\n\n")
-                
         neighbour_solution = {
             'length': length,
             'width': width,
@@ -145,11 +126,7 @@ class LayoutParamters:
         }
         
         # Chose a random number of dispensers to change in a random order
-        num_disps = len(neighbour_disp_layout)
         indexes_to_change = np.random.choice(num_disps, rand_s(max(1, num_disps)), replace=False)
-        # print(indexes_to_change)
-        # print(positions)
-        # print(neighbour_solution)
         positions = [[pos[0], pos[1], UNCLEARED] for pos in neighbour_disp_layout]
         for i in indexes_to_change:
             # Randomly select a small change in horizontal and vertical coord (-1, 0, or 1)
@@ -188,7 +165,7 @@ class LayoutParamters:
                 break
 
             neighbour_sol = self.generate_neighbour(current_sol)
-            print(i)
+            # print(i)
             # Either desired fungi produced, or potential wart blocks generated
             current_energy = fast_calc_fung_dist(**current_sol, blocked_blocks=[])[0]
             neighbour_energy, bm_for_prod = fast_calc_fung_dist(**neighbour_sol, blocked_blocks=[])
@@ -320,8 +297,8 @@ def start_optimisation(disp_coords, length, width, wb_per_fungi, fungus_type,
                                         optimise_func, cycles, blocked_coords, has_cleared
                                         )
     
-    print("Time taken to optimise:", time.time() - start_time, "seconds")
-    print("Optimal Solution:", optimal_solution)
+    # print("Time taken to optimise:", time.time() - start_time, "seconds")
+    # print("Optimal Solution:", optimal_solution)
 
     return optimal_solution, optimal_value, iterations
 
@@ -339,7 +316,6 @@ def simulated_annealing(initial_sol, temperature, cooling_rate, min_temperature,
         # Either desired fungi produced, or potential wart blocks generated
         current_energy = optimise_func(length, width, fungus_type, current_sol, cycles, blocked_coords)[0]
         neighbour_energy, bm_for_prod = optimise_func(length, width, fungus_type, neighbour_sol, cycles, blocked_coords)
-        # print("n sol: ", neighbour_sol)
 
         bm_req = bm_for_prod < wb_per_fungi / const.WARTS_PER_BM - const.AVG_BM_TO_GROW_FUNG
         if neighbour_energy > current_energy and bm_req or \
@@ -350,7 +326,6 @@ def simulated_annealing(initial_sol, temperature, cooling_rate, min_temperature,
                 best_sol = neighbour_sol
 
         temperature *= cooling_rate
-    # print("best sol: ", best_sol)
     return best_sol, optimise_func(length, width, fungus_type, best_sol, cycles, blocked_coords)[0]
 
 def acceptance_probability(current_energy, neighbour_energy, temperature):
@@ -458,19 +433,19 @@ def calculate_cooling_rate(start_temp, end_temp, run_time):
 
 def output_results(length, width, optimal_func, solution, start_time):
     """Output the results of the optimisation."""
-    print("Time taken:", time.time() - start_time)
+    # print("Time taken:", time.time() - start_time)
     best_coords = np.array(solution)
-    print("Optimal coords: \n", best_coords)
-    print("Optimal value: ", optimal_func(solution))
-        # Print the location of max_rates_coords in a grid on terminal
+    # print("Optimal coords: \n", best_coords)
+    # print("Optimal value: ", optimal_func(solution))
+    # Print the location of max_rates_coords in a grid on terminal
     for row in range(length):
         for col in range(width):
             if [row, col] in solution:
                 print(f'[{solution.index([row, col])}]', end='')
             else:
                 print('[ ]', end='')
-        print()
-    print()
+        # print()
+    # print()
     
 def run_optimisation(length, width):
     """Run the optimisation for 1 to 10 dispensers and write the results to an Excel file."""
@@ -500,7 +475,7 @@ def plot_cooling_rate_data():
 
     for disp in num_dispensers:
         for rate in cooling_rates:
-            print("\nDispenser", disp, "'s cooling rate:", rate)
+            # print("\nDispenser", disp, "'s cooling rate:", rate)
             results = []
             for _ in range((100*disp)//3):
                 result, *_ = start_optimisation(disp, rate)
@@ -508,9 +483,9 @@ def plot_cooling_rate_data():
             mean_value = np.mean(results)
             mogged_rate = 0.999995 if disp >= 5 else 0.9995
             actual_value, *_ = start_optimisation(disp, mogged_rate)
-            print("Mean value:", mean_value)
-            print("Actual value:", actual_value)
-            print("Accuracy:", mean_value / actual_value)
+            # print("Mean value:", mean_value)
+            # print("Actual value:", actual_value)
+            # print("Accuracy:", mean_value / actual_value)
 
             # Add the results to the DataFrame
             df = pd.concat([df, pd.DataFrame([{

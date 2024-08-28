@@ -22,9 +22,9 @@ selection_cache = np.array([
 
 def fast_calc_fung_dist(length, width, fungus_type, disp_layout, num_cycles, blocked_blocks):
     """Calculate the distribution of foliage for a given set of dispenser offsets fast"""
-    print(f"length: {length}\n"
-          f"width: {width}\n"
-          f"disps: {disp_layout}")
+    # print(f"length: {length}\n"
+    #       f"width: {width}\n"
+    #       f"disps: {disp_layout}")
     if fungus_type == WARPED:
         return warped_calc_fung_dist(length, width, disp_layout, num_cycles, blocked_blocks)
     
@@ -116,9 +116,9 @@ def warped_calc_fung_dist(length, width, disp_layout, num_cycles, blocked_blocks
     return total_des_fungi, bm_for_prod - compost
 
 def fast_calc_hf_dist(length, width, fungus_type, disp_layout, num_cycles, blocked_blocks):
+    """Doesn't take into account stem occlusion (for speed), but should still optimise fine"""
     p_length = length
     p_width = width
-    """Doesn't take into account stem occlusion (for speed), but should still optimise fine"""
     if fungus_type == WARPED:
         return warped_calc_hf_dist(p_length, p_width, disp_layout, num_cycles, blocked_blocks)
     
@@ -243,6 +243,7 @@ def warped_calc_hf_dist(p_length, p_width, disp_layout, num_cycles, blocked_bloc
         nylium_x_curr = nylium_x[nylium_x_idx, nylium_z_idx]
         nylium_z_curr = nylium_z[nylium_x_idx, nylium_z_idx]
         # @TODO code bugs here, not sure if it's this code or new optimisation shit
+        # *breaks when calculating wart blocks for optimise all feature
         heatmap_weighting_curr = des_fungi_grid[nylium_x_idx, nylium_z_idx]
 
         # Calculate weighted chance for all y,z,x coordinates
