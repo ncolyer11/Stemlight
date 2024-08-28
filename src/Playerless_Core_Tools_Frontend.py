@@ -14,7 +14,7 @@ import src.Assets.constants as const
 from src.Assets.helpers import ToolTip, set_title_and_icon, export_custom_heatmaps, resource_path
 from src.Fungus_Distribution_Backend import calc_huge_fungus_distribution, \
     calculate_fungus_distribution, output_viable_coords
-from src.Stochastic_Optimisation import start_optimisation
+from src.Stochastic_Optimisation import start_optimisation, optimise_all
 
 # Testing notes
 # - Run tests on 5x5 and 4x5 for num dispensers 1-5, cycles = 3 to see where the optimal solution
@@ -313,6 +313,9 @@ class App:
         self.optimise_button = tk.Button(self.master, text="Optimise", command=self.optimise,
                                          font=large_button_font, bg=colours.crimson, pady=2)
         self.optimise_button.pack(pady=5)
+        self.optimise_button.bind("<Button-2>", lambda event: self.fe_optimise_all())
+        self.optimise_button.bind("<Control-Button-1>", lambda event: self.fe_optimise_all())
+
 
         self.export_button = tk.Button(self.master, text="Export", command=self.export_heatmaps,
                                          font=large_button_font, bg=colours.aqua_green,
@@ -668,7 +671,11 @@ class App:
             if not error_message.endswith(('.', '!', '?')):
                 error_message += '.'
             messagebox.showwarning("Export Error", error_message)      
-      
+    
+    def fe_optimise_all(self):
+        result = optimise_all()
+        print(result)
+
     def export_heatmaps(self):
         """Export custom heatmaps based on the fungus distribution of the nylium grid"""
         self.dispensers.sort(key=lambda d: d[2])

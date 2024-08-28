@@ -20,18 +20,21 @@ selection_cache = np.array([
 
 # If you've ever done assembly coding, you'd know how expensive function calls are
 
-def fast_calc_fung_dist(length, width, fungus_type, disp_coords, cycles, blocked_blocks):
+def fast_calc_fung_dist(length, width, fungus_type, disp_layout, num_cycles, blocked_blocks):
     """Calculate the distribution of foliage for a given set of dispenser offsets fast"""
+    print(f"length: {length}\n"
+          f"width: {width}\n"
+          f"disps: {disp_layout}")
     if fungus_type == WARPED:
-        return warped_calc_fung_dist(length, width, disp_coords, cycles, blocked_blocks)
+        return warped_calc_fung_dist(length, width, disp_layout, num_cycles, blocked_blocks)
     
     # 2D array for storing distribution of all the foliage
     foliage_grid = np.zeros((width, length))
     x, y = np.ogrid[:width, :length]
 
     bm_for_prod = 0.0
-    for _ in range(cycles):
-        for (disp_x, disp_y, _) in disp_coords:
+    for _ in range(num_cycles):
+        for (disp_x, disp_y, _) in disp_layout:
             # Dispensers placed on blocked blocks don't do shit bud
             if (disp_x, disp_y) in blocked_blocks:
                 continue
@@ -49,7 +52,7 @@ def fast_calc_fung_dist(length, width, fungus_type, disp_coords, cycles, blocked
             foliage_grid += (1 - foliage_grid) * disp_chance * sel_chance
     
         # Replicate triggering pistons to clear foliage on top of selected dispensers
-        for disp in disp_coords:
+        for disp in disp_layout:
             # Clear foliage only on top of cleared dispensers except
             if disp[2] == 0:
                 continue
@@ -61,7 +64,7 @@ def fast_calc_fung_dist(length, width, fungus_type, disp_coords, cycles, blocked
     compost = (8 / 9 * np.sum(foliage_grid)) / const.FOLIAGE_PER_BM
     return total_folige / 9, bm_for_prod - compost
 
-def warped_calc_fung_dist(length, width, disp_coords, cycles, blocked_blocks):
+def warped_calc_fung_dist(length, width, disp_layout, num_cycles, blocked_blocks):
     """Calculate the distribution of foliage for warped separately to crimson as it's slower"""
     # 2D array for storing distribution of all the foliage
     foliage_grid = np.zeros((width, length))
@@ -74,8 +77,8 @@ def warped_calc_fung_dist(length, width, disp_coords, cycles, blocked_blocks):
     sprouts_total = 0.0
 
     x, y = np.ogrid[:width, :length]
-    for _ in range(cycles):
-        for (disp_x, disp_y, _) in disp_coords:
+    for _ in range(num_cycles):
+        for (disp_x, disp_y, _) in disp_layout:
             if (disp_x, disp_y) in blocked_blocks:
                 continue
             x1 = np.abs(x - disp_x).astype(int)
@@ -100,7 +103,7 @@ def warped_calc_fung_dist(length, width, disp_coords, cycles, blocked_blocks):
             sprouts_total += sprouts_chance
 
         # Replicate triggering pistons to clear foliage on top of selected dispensers
-        for disp in disp_coords:
+        for disp in disp_layout:
             # Clear foliage only on top of cleared dispensers except
             if disp[2] == 0:
                 continue
@@ -112,17 +115,19 @@ def warped_calc_fung_dist(length, width, disp_coords, cycles, blocked_blocks):
     compost = (np.sum(foliage_grid) - total_des_fungi - np.sum(sprouts_total)) / const.FOLIAGE_PER_BM
     return total_des_fungi, bm_for_prod - compost
 
-def fast_calc_hf_dist(p_length, p_width, fungus_type, disp_coords, cycles, blocked_blocks):
+def fast_calc_hf_dist(length, width, fungus_type, disp_layout, num_cycles, blocked_blocks):
+    p_length = length
+    p_width = width
     """Doesn't take into account stem occlusion (for speed), but should still optimise fine"""
     if fungus_type == WARPED:
-        return warped_calc_hf_dist(p_length, p_width, disp_coords, cycles, blocked_blocks)
+        return warped_calc_hf_dist(p_length, p_width, disp_layout, num_cycles, blocked_blocks)
     
     # 2D array for storing distribution of all the foliage
     foliage_grid = np.zeros((p_width, p_length))
     x, y = np.ogrid[:p_width, :p_length]
     bm_for_prod = 0.0
-    for _ in range(cycles):
-        for (disp_x, disp_y, _) in disp_coords:
+    for _ in range(num_cycles):
+        for (disp_x, disp_y, _) in disp_layout:
             if (disp_x, disp_y) in blocked_blocks:
                 continue
             x1 = np.abs(x - disp_x).astype(int)
@@ -138,7 +143,7 @@ def fast_calc_hf_dist(p_length, p_width, fungus_type, disp_coords, cycles, block
             foliage_grid += (1 - foliage_grid) * disp_chance * sel_chance
 
         # Replicate triggering pistons to clear foliage on top of selected dispensers
-        for disp in disp_coords:
+        for disp in disp_layout:
             # Clear foliage only on top of cleared dispensers except
             if disp[2] == 0:
                 continue
@@ -148,9 +153,9 @@ def fast_calc_hf_dist(p_length, p_width, fungus_type, disp_coords, cycles, block
     compost_from_foliage = (8 / 9 * np.sum(foliage_grid)) / const.FOLIAGE_PER_BM
     bm_for_prod -= compost_from_foliage
 
-    width = const.NT_MAX_RAD + p_width + const.NT_MAX_RAD
-    length = const.NT_MAX_RAD + p_length + const.NT_MAX_RAD
-    hf_grid = np.zeros((const.NT_MAX_HT, width, length))
+    hf_width = const.NT_MAX_RAD + p_width + const.NT_MAX_RAD
+    hf_length = const.NT_MAX_RAD + p_length + const.NT_MAX_RAD
+    hf_grid = np.zeros((const.NT_MAX_HT, hf_width, hf_length))
 
     # Create coordinate grids
     nylium_x, nylium_z = np.meshgrid(np.arange(p_width), np.arange(p_length))
@@ -175,7 +180,7 @@ def fast_calc_hf_dist(p_length, p_width, fungus_type, disp_coords, cycles, block
     total_wb = np.sum(hf_grid)
     return total_wb, bm_for_prod
 
-def warped_calc_hf_dist(p_length, p_width, disp_coords, cycles, blocked_blocks):
+def warped_calc_hf_dist(p_length, p_width, disp_layout, num_cycles, blocked_blocks):
     """Calculate the distribution of foliage and wart blocks for warped separately to crimson"""
     # 2D array for storing distribution of all the foliage
     foliage_grid = np.zeros((p_width, p_length))
@@ -188,8 +193,8 @@ def warped_calc_hf_dist(p_length, p_width, disp_coords, cycles, blocked_blocks):
     sprouts_total = 0.0
 
     x, y = np.ogrid[:p_width, :p_length]
-    for _ in range(cycles):
-        for (disp_x, disp_y) in disp_coords:
+    for _ in range(num_cycles):
+        for (disp_x, disp_y, *_) in disp_layout:
             if (disp_x, disp_y) in blocked_blocks:
                 continue
             x1 = np.abs(x - disp_x).astype(int)
@@ -213,7 +218,7 @@ def warped_calc_hf_dist(p_length, p_width, disp_coords, cycles, blocked_blocks):
             sprouts_total += sprouts_chance
 
         # Replicate triggering pistons to clear foliage on top of selected dispensers
-        for disp in disp_coords:
+        for disp in disp_layout:
             # Clear foliage only on top of cleared dispensers except
             if disp[2] == 0:
                 continue
@@ -237,6 +242,7 @@ def warped_calc_hf_dist(p_length, p_width, disp_coords, cycles, blocked_blocks):
     for nylium_x_idx, nylium_z_idx in np.ndindex(nylium_x.shape):
         nylium_x_curr = nylium_x[nylium_x_idx, nylium_z_idx]
         nylium_z_curr = nylium_z[nylium_x_idx, nylium_z_idx]
+        # @TODO code bugs here, not sure if it's this code or new optimisation shit
         heatmap_weighting_curr = des_fungi_grid[nylium_x_idx, nylium_z_idx]
 
         # Calculate weighted chance for all y,z,x coordinates
