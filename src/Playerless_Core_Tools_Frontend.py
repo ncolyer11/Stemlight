@@ -236,7 +236,7 @@ class App:
             "Each playerless nether tree farm core uses a platform of nylium with 1 or more " 
             "dispensers directly bone-mealing it to produce fungi.\n\n"
             "To begin, set the length and width of your nylium platform using the sliders.\n\n"
-            "Then, set the amount of cycles the disepnsers are triggered for before the core "
+            "Then, set the amount of cycles the dispensers are triggered for before the core "
             "resets, using the cycles slider.\n\n"
             "Finally, place down your dispensers by left clicking on the nylium blocks, and view "
             "fungus and foliage distribution metrics in the outputs section at the bottom.",
