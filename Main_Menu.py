@@ -131,11 +131,11 @@ def main():
         button.config(activebackground=button.cget('bg'))
 
         # Create a tooltip for the button
-        tooltip = ToolTip(button)
-        button.bind("<Enter>", lambda event, 
-                    prog=program: tooltip.show_tip(prog.description, 
-                                                event.x_root, event.y_root))
-        button.bind("<Leave>", lambda event: tooltip.hide_tip())
+        tooltip = ToolTip(button, program.description)
+        # button.bind("<Enter>", lambda event, 
+        #             prog=program: tooltip.show_tip(prog.description, 
+        #                                         event.x_root, event.y_root))
+        # button.bind("<Leave>", lambda event: tooltip.hide_tip())
 
 
         # If it's the last button and it's the only one in its row, span it across all columns
@@ -148,11 +148,11 @@ def main():
     for i in range(len(programs) // 2):
         root.grid_rowconfigure(i, weight=1)
 
-    try:
-        from ctypes import windll
-        windll.shcore.SetProcessDpiAwareness(1)
-    except:
-        pass
+    # try:
+    #     from ctypes import windll
+    #     windll.shcore.SetProcessDpiAwareness(1)
+    # except:
+    #     pass
     root.mainloop()
 
 if __name__ == "__main__":

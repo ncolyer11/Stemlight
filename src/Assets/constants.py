@@ -1,3 +1,6 @@
+from ctypes import windll
+import tkinter as tk
+
 ### Program/GUI
 YES_OPTIONS = {"y", "yes", "on", "1", "yeah", "true", "sure", "yup",
                "ja", "si", "sí", "haan", "हाँ", "oui", "はい", "da"}
@@ -6,13 +9,32 @@ CRMS_OPTIONS = {"red", "r", "crimson", "c", "crim"}
 BASE_CPU_ITER_TIME = 5.5e-4
 WARPED = 0
 CRIMSON = 1
-# Resoloution Scale Factor
-RSF = 1.25 # Lower for Linux and MacOS, but changes to 1.5 on Windows to fix dpi scaling
-try:
-    from ctypes import windll
-    RSF = 1.5
-except ImportError:
-    pass
+
+def get_dpi_scale_factor():
+    """Get the resolution scale factor based on monitor DPI."""
+    try:
+        # Set process DPI awareness (for newer versions of Windows)
+        windll.shcore.SetProcessDpiAwareness(1)
+        
+        # Obtain the monitor handle for the primary monitor
+        hdc = windll.user32.GetDC(0)
+        
+        # Get the DPI (LOGPIXELSX = 88)
+        dpi = windll.gdi32.GetDeviceCaps(hdc, 88)
+        
+        # Release the device context handle
+        windll.user32.ReleaseDC(0, hdc)
+
+        # Standard DPI is 96, calculate the scale factor based on this
+        return 1.25
+        return dpi / 96.0
+    except:
+        return 1.25  # Default fallback
+
+# Resolution Scale Factor
+RSF = get_dpi_scale_factor() if windll else 1.25  # Automatically set based on DPI
+# Lets just chill with aint any scaling for now shall we?
+RSF = 1
 
 ### Minecraft
 TICKS_PER_HR = 72000

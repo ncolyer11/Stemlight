@@ -2,11 +2,13 @@
 
 import math
 import time
+import numpy as np
 import tkinter as tk
 from tkinter import ttk, messagebox
 import tkinter.font as font
+from ctypes import windll, WINFUNCTYPE, POINTER, c_int
+from ctypes.wintypes import BOOL
 from PIL import Image, ImageDraw, ImageTk
-import numpy as np
 
 from src.Assets import colours
 from src.Assets.constants import RSF
@@ -394,12 +396,8 @@ class App:
         
         self.cycles_label = tk.Label(self.slider_frame, text="No. Cycles:", bg=colours.bg, fg=colours.fg, font=slider_font)
         self.cycles_label.grid(row=2, column=0, padx=5, pady=5, sticky="nsew")
-        cycles_tooltip = ToolTip(self.cycles_label)
-        self.cycles_label.bind("<Enter>", lambda event: 
-                    cycles_tooltip.show_tip((
-                        "Set how many times the dispensers are activated."),
-                        event.x_root, event.y_root))
-        self.cycles_label.bind("<Leave>", lambda event: cycles_tooltip.hide_tip())
+        cycles_tooltip = ToolTip(self.cycles_label, (
+                        "Set how many times the dispensers are activated."))
         self.cycles_slider = tk.Scale(
             self.slider_frame, 
             from_=1, 
@@ -417,13 +415,9 @@ class App:
         self.wb_effic_label = tk.Label(self.slider_frame, text="Wart Blocks/Fungus:", 
                                        bg=colours.bg, fg=colours.fg, font=slider_font)
         self.wb_effic_label.grid(row=2, column=1, padx=5, pady=5, sticky="nsew")
-        wb_effic_tooltip = ToolTip(self.wb_effic_label)
-        self.wb_effic_label.bind("<Enter>", lambda event: 
-                    wb_effic_tooltip.show_tip((
+        wb_effic_tooltip = ToolTip(self.wb_effic_label, (
                         "Restrict optimal solutions to require a certain bone meal\n"
-                        "(or ~8 composted wart blocks) per fungus produced efficiency."),
-                        event.x_root, event.y_root))
-        self.wb_effic_label.bind("<Leave>", lambda event: wb_effic_tooltip.hide_tip())
+                        "(or ~8 composted wart blocks) per fungus produced efficiency."))
         self.wb_effic_slider = tk.Scale(
             self.slider_frame, 
             from_=20, 
@@ -804,28 +798,16 @@ class App:
             # Store the label in the dictionary for later use
             self.output_text_label[i] = label
         
-        bm_for_prod_tooltip = ToolTip(self.output_text_label[2])
-        self.output_text_label[2].bind("<Enter>", lambda event: 
-                    bm_for_prod_tooltip.show_tip((
+        bm_for_prod_tooltip = ToolTip(self.output_text_label[2], (
                         "Bone meal spent by the nylium dispensers that creates the fungi.\n"
-                        "Factors in 75% of bone meal retrieved from composting excess foliage."),
-                        event.x_root, event.y_root))
-        self.output_text_label[2].bind("<Leave>", lambda event: bm_for_prod_tooltip.hide_tip())
+                        "Factors in 75% of bone meal retrieved from composting excess foliage."))
         
-        bm_for_growth_tooltip = ToolTip(self.output_text_label[3])
-        self.output_text_label[3].bind("<Enter>", lambda event: 
-                    bm_for_growth_tooltip.show_tip((
-                        "Bone meal spent on growing already produced fungi."),
-                        event.x_root, event.y_root))
-        self.output_text_label[3].bind("<Leave>", lambda event: bm_for_growth_tooltip.hide_tip())
+        bm_for_growth_tooltip = ToolTip(self.output_text_label[3],(
+                        "Bone meal spent on growing already produced fungi."))
         
-        net_bm_tooltip = ToolTip(self.output_text_label[6])
-        self.output_text_label[6].bind("<Enter>", lambda event: 
-                    net_bm_tooltip.show_tip((
+        net_bm_tooltip = ToolTip(self.output_text_label[6],(
                         "Surplus bone meal after 1 global cycle of the core and subsequent harvest.\n"
-                        "Takes bone meal from composted wart blocks minus production and growth bm."),
-                        event.x_root, event.y_root))
-        self.output_text_label[6].bind("<Leave>", lambda event: net_bm_tooltip.hide_tip())
+                        "Takes bone meal from composted wart blocks minus production and growth bm."))
         
         # Create the labels for output values
         for i, output_value in enumerate(output_values):
@@ -946,12 +928,7 @@ class App:
             # Store the value label in the dictionary for later use
             self.info_text_value[i] = label
         
-        foliage_tooltip = ToolTip(self.output_text_label[2])
-        self.info_text_label[1].bind("<Enter>", lambda event: 
-                    foliage_tooltip.show_tip((
-                        "All other foliage generated at this position (excluding desired fungi)."),
-                        event.x_root, event.y_root))
-        self.info_text_label[1].bind("<Leave>", lambda event: foliage_tooltip.hide_tip())
+        foliage_tooltip = ToolTip(self.output_text_label[1], "All other foliage generated at this position (excluding desired fungi).")
         
     def set_cleared_or_blocked(self, x, y):
         """Set a dispenser to a clearing dispenser by middle clicking or nylium to a blocked block"""
@@ -982,8 +959,24 @@ class App:
         """Set the run time of the optimisation algorithm."""
         self.run_time.set(time)
 
+def set_dpi_awareness():
+    """Ensure the program is DPI aware for all Windows versions."""
+    try:
+        # Check if DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 exists
+        DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4
+        SetProcessDpiAwarenessContext = WINFUNCTYPE(BOOL, POINTER(c_int))(("SetProcessDpiAwarenessContext", windll.user32))
+        SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
+    except:
+        # Fallback if unavailable
+        try:
+            windll.shcore.SetProcessDpiAwareness(1)
+        except:
+            pass
+
 def start(root):
     """Start the Playerless Core Tools program."""
+    set_dpi_awareness()  # Ensure DPI awareness
+    
     child = tk.Toplevel(root)
     set_title_and_icon(child, "Playerless Core Tools")
 
@@ -1000,10 +993,6 @@ def start(root):
 
     # Update the window so it actually appears in the correct position
     child.update_idletasks()
-    try:
-        from ctypes import windll
-        windll.shcore.SetProcessDpiAwareness(1)
-    except:
-        pass
+
     app = App(child)
     child.mainloop()

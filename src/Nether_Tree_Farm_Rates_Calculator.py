@@ -317,10 +317,10 @@ def start(root):
                                         textvariable=infinite_dispenser_val)
     infinite_dispenser_entry.grid(row=8, column=1, padx=PAD, pady=PAD)
 
-    try:
-        from ctypes import windll
-        windll.shcore.SetProcessDpiAwareness(1)
-    except:
-        pass
+    # try:
+    #     from ctypes import windll
+    #     windll.shcore.SetProcessDpiAwareness(1)
+    # except:
+    #     pass
     child.mainloop()
     

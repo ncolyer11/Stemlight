@@ -12,30 +12,47 @@ from src.Assets import heatmap_data, constants as const
 from src.Assets.version import version
 
 class ToolTip:
-    def __init__(self, widget):
+    def __init__(self, widget, tooltip_text):
         self.widget = widget
+        self.tooltip_text = tooltip_text
         self.tip_window = None
+        self.widget.bind("<Enter>", self.enter)
+        self.widget.bind("<Leave>", self.leave)
+        self.widget.bind("<ButtonPress>", self.leave)  # Dismiss on click
 
-    def show_tip(self, tip_text, x, y):
+        # Delay timer variable
+        self.timer = None
+
+    def enter(self, event):
+        if self.tip_window:
+            return  # Do not create a new tooltip if one already exists
+        # Use a timer to delay showing the tooltip
+        self.timer = self.widget.after(500, self.show_tip, event.x_root, event.y_root)  # 500 ms delay
+
+    def leave(self, event):
+        if self.timer:
+            self.widget.after_cancel(self.timer)  # Cancel the timer if leaving
+            self.timer = None
+        self.hide_tip()
+
+    def show_tip(self, x, y):
         "Display text in a tooltip window"
-        if self.tip_window or not tip_text:
+        if self.tip_window or not self.tooltip_text:
             return
-        x -= self.widget.winfo_width() // 2
         self.tip_window = tw = tk.Toplevel(self.widget)
         tw.wm_overrideredirect(True)
         tw.wm_geometry(f"+{x}+{y}")
         main_font = font.Font(family='Segoe UI', size=int((const.RSF**1.765)*8))
 
-        label = tk.Label(tw, text=tip_text, justify=tk.CENTER,
-                    background="#ffffe0", relief=tk.SOLID, borderwidth=1,
-                    font=main_font)
+        label = tk.Label(tw, text=self.tooltip_text, justify=tk.CENTER,
+                         background="#ffffe0", relief=tk.SOLID, borderwidth=1,
+                         font=main_font)
         label.pack(ipadx=1)
 
     def hide_tip(self):
-        tw = self.tip_window
-        self.tip_window = None
-        if tw:
-            tw.destroy()
+        if self.tip_window:
+            self.tip_window.destroy()
+            self.tip_window = None
 
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller"""
