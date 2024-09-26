@@ -31,7 +31,7 @@ def start(root):
             " - VRM2: Cyan concrete (2 blocks above a pre-placed wart block).\n"
             " - VRM3: Light blue concrete (3 blocks above a pre-placed wart block).\n\n"
             
-            "Note in some layouts there may be intermediary types of VRM which can generally be approximated by selecting the closed integer VRM.\n\n"
+            "Note in some layouts there may be intermediary types of VRM which can generally be approximated by selecting the closest integer VRM.\n\n"
             
             "Once you've encoded all your layout with concrete, take a 7x7x27 tall schematic with the bottom face centred just above the base nylium block.",
             icon='info'
