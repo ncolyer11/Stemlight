@@ -1,15 +1,13 @@
 """A program that calculates the rates of a nether tree farm \nfrom basic info (dispensers, clock speed, etc) or an encoded ntf layout schematic file"""
 
-import sys
+import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import tkinter.font as font
-import os
 
 from src.Assets import colours as col, constants as const
 from src.Assets.constants import RSF
-from src.Assets.version import version
-from src.Assets.helpers import resource_path, set_title_and_icon
+from src.Assets.helpers import set_title_and_icon
 from src.Assets.helpers import schem_layout_to_rates_data
 
 def start(root):

@@ -6,8 +6,6 @@ import numpy as np
 import tkinter as tk
 from tkinter import ttk, messagebox
 import tkinter.font as font
-from ctypes import windll, WINFUNCTYPE, POINTER, c_int
-from ctypes.wintypes import BOOL
 from PIL import Image, ImageDraw, ImageTk
 
 from src.Assets import colours
@@ -98,7 +96,6 @@ class App:
         self.run_time = tk.StringVar(value="7")
         self.blast_chamber_effic = tk.StringVar(value="1")
         self.vars = []
-        self.create_widgets()
         self.output_text_label = {}
         self.output_text_value = {}
         self.info_text_label = {}
@@ -110,13 +107,68 @@ class App:
         self.clearing_image = tk.PhotoImage(file=clearing_path)
         self.clearing_image = self.clearing_image.subsample(3, 3)
 
+        # Create a Canvas and Scrollbar 1055
+        self.canvas = tk.Canvas(master, width=int(RSF*760), height=int(RSF*1055), bg=colours.bg)
+        
+        self.scrollbar = tk.Scrollbar(master, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+        
+        # Create the scrollable frame inside the canvas
+        self.scrollable_frame = tk.Frame(self.canvas, bg=colours.bg)
+        self.scrollable_frame_id = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+
+        # Bind the scrollable region update to the frame configuration changes
+        self.scrollable_frame.bind("<Configure>", self.update_scroll_region)
+        self.canvas.bind("<Configure>", self.resize_frame)
+
+        # Pack the canvas and scrollbar
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.scrollbar.pack(side="right", fill="y")
+
+        # Bind mouse wheel scrolling
+        self.canvas.bind_all("<MouseWheel>", self._on_mouse_wheel)
+
+        # Now, call your method to create widgets within the scrollable_frame
+        self.create_widgets()
+
         # Create menu
-        toolbar = tk.Menu(master)
-        master.config(menu=toolbar)
+        self.create_menu()
+
+    def update_scroll_region(self, event):
+        """Update the scrollable region based on the contents of the frame."""
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def resize_frame(self, event):
+        """Make sure the frame size matches the canvas width."""
+        self.canvas.itemconfig(self.scrollable_frame_id, width=event.width)
+
+    def _on_mouse_wheel(self, event):
+        # Get the current scroll position
+        current_scroll_position = self.canvas.yview()
+        
+        # Limit values, e.g., preventing the upper scroll to be less than 0.1 (10% down from top)
+        min_scroll = 0   # Set your desired upper limit
+        max_scroll = 1.0   # Maximum scroll value corresponds to the bottom-most position
+
+        # Calculate the new scroll position based on mouse wheel delta
+        new_scroll_position = current_scroll_position[0] + (-1 * (event.delta / 120) / 10)  # Adjust sensitivity by changing /10
+
+        # Check and enforce the scroll limits
+        if new_scroll_position < min_scroll:
+            self.canvas.yview_moveto(min_scroll)
+        elif new_scroll_position > max_scroll:
+            self.canvas.yview_moveto(max_scroll)
+        else:
+            self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def create_menu(self):
+        """Setup the menu for the application."""
+        toolbar = tk.Menu(self.master)
+        self.master.config(menu=toolbar)
 
         file_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         toolbar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="Exit", command=master.destroy)
+        file_menu.add_command(label="Exit", command=self.master.destroy)
         file_menu.add_command(label="Export Custom Heatmaps", command=self.export_heatmaps)
 
         help_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
@@ -158,30 +210,6 @@ class App:
             if not data:
                 f.seek(0)
                 f.write(f"{const.BASE_CPU_ITER_TIME}\n")
-        
-
-        # optimise_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
-        # toolbar.add_cascade(label="Optimise For", menu=optimise_menu)
-        # optimise_menu.add_radiobutton(
-        #     label="  Desired Fungi",
-        #     variable=self.optimise_func_str,
-        #     value='fast_calc_fung_dist',
-        #     command=lambda: self.set_optimise_func('fast_calc_fung_dist')
-        # )
-    
-        # optimise_menu.add_radiobutton(
-        #     label="  Wart Blocks", 
-        #     variable=self.optimise_func_str, 
-        #     value='fast_calc_hf_dist',
-        #     command=lambda: self.set_optimise_func('fast_calc_hf_dist')
-        # )
-
-
-
-    # def set_optimise_func(self, optimise_func):
-    #     """Change what function is optimise via the simulated annealing algorithm"""
-    #     self.optimise_func = self.func_dict[optimise_func]
-    #     self.optimise_func_str.set(optimise_func)
 
     def calibrate_run_time(self):
         """Runs a benchmark optimisation test to measure user's processing speed and modify cooling rate accordingly"""
@@ -301,7 +329,7 @@ class App:
 
         self.create_sliders()
 
-        self.button_slider_frame = tk.Frame(self.master, bg=colours.bg)
+        self.button_slider_frame = tk.Frame(self.scrollable_frame, bg=colours.bg)
         self.button_slider_frame.pack(pady=10)  
 
         self.reset_button = tk.Button(self.button_slider_frame, text="Reset", command=self.reset_grid, font=small_button_font, bg=colours.warped)
@@ -310,22 +338,22 @@ class App:
         self.nylium_switch = SlideSwitch(self.button_slider_frame, callback=self.update_nylium_type)
         self.nylium_switch.pack(side=tk.LEFT, padx=5, pady=5)
 
-        self.grid_frame = tk.Frame(self.master, bg=colours.bg)
+        self.grid_frame = tk.Frame(self.scrollable_frame, bg=colours.bg)
         self.grid_frame.pack(pady=5)
 
-        self.optimise_button = tk.Button(self.master, text="Optimise", command=self.optimise,
+        self.optimise_button = tk.Button(self.scrollable_frame, text="Optimise", command=self.optimise,
                                          font=large_button_font, bg=colours.crimson, pady=2)
         self.optimise_button.pack(pady=5)
         self.optimise_button.bind("<Button-2>", lambda event: self.fe_optimise_all())
         self.optimise_button.bind("<Control-Button-1>", lambda event: self.fe_optimise_all())
 
 
-        self.export_button = tk.Button(self.master, text="Export", command=self.export_heatmaps,
+        self.export_button = tk.Button(self.scrollable_frame, text="Export", command=self.export_heatmaps,
                                          font=large_button_font, bg=colours.aqua_green,
                                          pady=2, padx=16)
         self.export_button.pack(pady=5)
 
-        self.master_frame = tk.Frame(self.master)
+        self.master_frame = tk.Frame(self.scrollable_frame)
         self.master_frame.pack(pady=5)
 
         # Create a new frame for the output results
@@ -354,7 +382,7 @@ class App:
         self.info_value.grid(row=0, column=3, sticky='w')
 
     def create_sliders(self):
-        self.master_frame = tk.Frame(self.master)
+        self.master_frame = tk.Frame(self.scrollable_frame)
         self.master_frame.pack(pady=5)
 
         # Create a new frame for the output results
@@ -433,7 +461,7 @@ class App:
         self.wb_effic_slider.grid(row=3, column=1, padx=5, pady=5, sticky="nsew")      
 
     def reset_slider(self, event, default=5):
-        self.master.after(10, lambda: event.widget.set(default))
+        self.scrollable_frame.after(10, lambda: event.widget.set(default))
     
     def update_nylium_type(self, nylium_type=None):
         if nylium_type == WARPED:
@@ -959,29 +987,14 @@ class App:
         """Set the run time of the optimisation algorithm."""
         self.run_time.set(time)
 
-def set_dpi_awareness():
-    """Ensure the program is DPI aware for all Windows versions."""
-    try:
-        # Check if DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 exists
-        DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4
-        SetProcessDpiAwarenessContext = WINFUNCTYPE(BOOL, POINTER(c_int))(("SetProcessDpiAwarenessContext", windll.user32))
-        SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
-    except:
-        # Fallback if unavailable
-        try:
-            windll.shcore.SetProcessDpiAwareness(1)
-        except:
-            pass
-
 def start(root):
     """Start the Playerless Core Tools program."""
-    set_dpi_awareness()  # Ensure DPI awareness
     
     child = tk.Toplevel(root)
     set_title_and_icon(child, "Playerless Core Tools")
 
     child.configure(bg=colours.bg)
-    child.size = (int(RSF*300), int(RSF*325))
+    child.size = (int(RSF*1), int(RSF*1))
 
     # Get the root window's position and size
     root_x = root.winfo_x()
@@ -996,3 +1009,4 @@ def start(root):
 
     app = App(child)
     child.mainloop()
+    

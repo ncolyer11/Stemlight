@@ -1,6 +1,3 @@
-from ctypes import windll
-import tkinter as tk
-
 ### Program/GUI
 YES_OPTIONS = {"y", "yes", "on", "1", "yeah", "true", "sure", "yup",
                "ja", "si", "sí", "haan", "हाँ", "oui", "はい", "da"}
@@ -10,29 +7,29 @@ BASE_CPU_ITER_TIME = 5.5e-4
 WARPED = 0
 CRIMSON = 1
 
-def get_dpi_scale_factor():
-    """Get the resolution scale factor based on monitor DPI."""
-    try:
-        # Set process DPI awareness (for newer versions of Windows)
-        windll.shcore.SetProcessDpiAwareness(1)
+# def get_dpi_scale_factor():
+#     """Get the resolution scale factor based on monitor DPI."""
+#     try:
+#         # Set process DPI awareness (for newer versions of Windows)
+#         windll.shcore.SetProcessDpiAwareness(1)
         
-        # Obtain the monitor handle for the primary monitor
-        hdc = windll.user32.GetDC(0)
+#         # Obtain the monitor handle for the primary monitor
+#         hdc = windll.user32.GetDC(0)
         
-        # Get the DPI (LOGPIXELSX = 88)
-        dpi = windll.gdi32.GetDeviceCaps(hdc, 88)
+#         # Get the DPI (LOGPIXELSX = 88)
+#         dpi = windll.gdi32.GetDeviceCaps(hdc, 88)
         
-        # Release the device context handle
-        windll.user32.ReleaseDC(0, hdc)
+#         # Release the device context handle
+#         windll.user32.ReleaseDC(0, hdc)
 
-        # Standard DPI is 96, calculate the scale factor based on this
-        return 1.25
-        return dpi / 96.0
-    except:
-        return 1.25  # Default fallback
+#         # Standard DPI is 96, calculate the scale factor based on this
+#         return 1.25
+#         return dpi / 96.0
+#     except:
+#         return 1.25  # Default fallback
 
-# Resolution Scale Factor
-RSF = get_dpi_scale_factor() if windll else 1.25  # Automatically set based on DPI
+# # Resolution Scale Factor
+# RSF = get_dpi_scale_factor() if windll else 1.25  # Automatically set based on DPI
 # Lets just chill with aint any scaling for now shall we?
 RSF = 1
 

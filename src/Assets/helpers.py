@@ -11,6 +11,12 @@ from litemapy import Schematic
 from src.Assets import heatmap_data, constants as const
 from src.Assets.version import version
 
+try:
+    from ctypes import windll
+    windll.shcore.SetProcessDpiAwareness(1)
+except:
+    pass
+
 class ToolTip:
     def __init__(self, widget, tooltip_text):
         self.widget = widget

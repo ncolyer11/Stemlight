@@ -1,11 +1,11 @@
 """Displays charts on various nether tree farm\nrelated statistics and phenomena"""
 
-import ctypes
+import os
 import math
 import tkinter as tk
 import tkinter.font as font
 from PIL import Image, ImageTk
-import os
+import ctypes
 
 from Main_Menu import ToolTip
 from src.Assets import colours
@@ -16,7 +16,7 @@ MAX_COL = 9
 
 def start(root):
     def open_image(image_file_path, photo):
-            # Get the actual screen's width and height
+        # Get the actual screen's width and height
         image2 = Image.open(image_file_path)
         screen_width = child.winfo_screenwidth()
         screen_height = child.winfo_screenheight()
@@ -74,8 +74,6 @@ def start(root):
             scrollregion=canvas.bbox("all")
         )
     )
-    
-    
 
     canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", tags="frame")
     canvas.configure(yscrollcommand=scrollbar.set)
@@ -182,27 +180,6 @@ def start(root):
     button_widgets = []
     caption_widgets = []
 
-    def calculate_columns():
-        screen_width = child.winfo_width()
-        available_width = screen_width - 250
-        max_thumbnail_width = 370 * S
-        cols = max(1, available_width // max_thumbnail_width)
-        return min(MAX_COL, math.floor(cols))
-
-    def update_grid():
-        cols = calculate_columns()
-        for i, (button, caption) in enumerate(zip(button_widgets, caption_widgets)):
-            row = 2 * (i // cols)
-            col = i % cols
-            button.grid(row=row + 1, column=col, padx=10, pady=10)
-            caption.grid(row=row, column=col, padx=10, pady=3)
-
-    def center_frame(event):
-        canvas_width = canvas.winfo_width()
-        frame_width = scrollable_frame.winfo_reqwidth()
-        canvas.coords("frame", canvas_width // 2 - frame_width // 2, 0)
-        update_grid()
-
     canvas.bind("<Configure>", center_frame)
     child.bind("<Configure>", lambda event: update_grid())
     tooltips = []
@@ -238,10 +215,25 @@ def start(root):
 
     update_grid()
 
-    # try:
-    #     from ctypes import windll
-    #     windll.shcore.SetProcessDpiAwareness(1)
-    # except:
-    #     pass
-
     child.mainloop()
+
+    def calculate_columns():
+        screen_width = child.winfo_width()
+        available_width = screen_width - 250
+        max_thumbnail_width = 370 * S
+        cols = max(1, available_width // max_thumbnail_width)
+        return min(MAX_COL, math.floor(cols))
+
+    def update_grid():
+        cols = calculate_columns()
+        for i, (button, caption) in enumerate(zip(button_widgets, caption_widgets)):
+            row = 2 * (i // cols)
+            col = i % cols
+            button.grid(row=row + 1, column=col, padx=10, pady=10)
+            caption.grid(row=row, column=col, padx=10, pady=3)
+
+    def center_frame(event):
+        canvas_width = canvas.winfo_width()
+        frame_width = scrollable_frame.winfo_reqwidth()
+        canvas.coords("frame", canvas_width // 2 - frame_width // 2, 0)
+        update_grid()
