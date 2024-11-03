@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import numpy as np
 import itertools
@@ -51,34 +52,36 @@ def plot_from_csv():
     """
     num_disps = int(input("Enter the number of dispensers: "))
     plot_type = input("Enter plot type (2/3): ")
-    
-
+    f_type = int(input("Enter the fungus type (0 for warped, 1 for crimson): "))
+    f_name = 'warped' if f_type == WARPED else 'crimson'
     print("Reading and plotting from CSV file...")
-    file_name = f"{num_disps}_dispenser{'s' if num_disps > 1 else ''}_5x5.csv"
+    file_name = f"{num_disps}_dispenser{'s' if num_disps > 1 else ''}_5x5 ({f_name}).csv"
+
     file_path = os.path.join('disp_optimisation', file_name)
     data = pd.read_csv(file_path).values
     
     if plot_type == '3':
-        n_dim_plot_disps_3d_plotly(data, num_disps)
+        n_dim_plot_disps_3d_plotly(data, num_disps, f_name)
     else:
-        n_dim_plot_disps_2d(data, num_disps)
+        n_dim_plot_disps_2d(data, num_disps, f_name)
 
 def export_plot_as_2d_image():
     """
     Generates a 2D plot from a CSV file and saves it as an image.
     """
-    num_dispensers = int(input("Enter the number of dispensers: "))
-    file_name = f"{num_dispensers}_dispenser{'s' if num_dispensers > 1 else ''}_5x5.csv"
+    num_disps = int(input("Enter the number of dispensers: "))
+    f_type = int(input("Enter the fungus type (0 for warped, 1 for crimson): "))
+    f_name = 'warped' if f_type == WARPED else 'crimson'
+    file_name = f"{num_disps}_dispenser{'s' if num_disps > 1 else ''}_5x5 ({f_name}).csv"
     file_path = os.path.join('disp_optimisation', file_name)
     data = pd.read_csv(file_path).values
     
     # dpi = int(input("Enter the DPI for the image: "))
-    dpi = max(400, int(MPL_FIG_RATIO * 5 ** num_dispensers / 10))
+    dpi = max(400, int(MPL_FIG_RATIO * 5 ** num_disps / 10))
     
-    file_name = f"{num_dispensers}_dispenser{'s' if num_dispensers > 1 else ''}_5x5 dpi={dpi}.png"
+    file_name = f"{num_disps}_dispenser{'s' if num_disps > 1 else ''}_5x5 dpi={dpi} ({f_name}).png"
     file_path = os.path.join(f'disp_optimisation', file_name)
-    n_dim_plot_disps_2d(data, num_dispensers, dpi, True)
-    
+    n_dim_plot_disps_2d(data, num_disps, f_name, dpi, True)
     print(f"Saved in {file_path}")
    
 def simulate_and_plot_custom_layout():
@@ -87,6 +90,8 @@ def simulate_and_plot_custom_layout():
     """
     num_disps = int(input("Enter the number of dispensers: "))
     plot_type = input("Enter plot type (2/3): ")
+    f_type = int(input("Enter the fungus type (0 for warped, 1 for crimson): "))
+    f_name = 'warped' if f_type == WARPED else 'crimson'
     
     print("Plotting custom layout...")
     big_size = 5 ** (num_disps)
@@ -104,15 +109,15 @@ def simulate_and_plot_custom_layout():
         row = np.sum(row_vals * powers_of_5)
         col = np.sum(col_vals * powers_of_5)
         
-        des_fungi = fast_calc_fung_dist(5, 5, CRIMSON, layout)
+        des_fungi = fast_calc_fung_dist(5, 5, f_type, layout)
         data[row, col] = des_fungi
     
     print(f"max: {np.max(data)}")
     if plot_type == '3':
-        n_dim_plot_disps_3d_plotly(data, num_disps)
-        # n_dim_plot_disps_3d(data, num_disps)
+        n_dim_plot_disps_3d_plotly(data, num_disps, f_name)
+        # n_dim_plot_disps_3d(data, num_disps, f_name)
     else:
-        n_dim_plot_disps_2d(data, num_disps)
+        n_dim_plot_disps_2d(data, num_disps, f_name)
 
 def run_all_sims_and_export():
     """
@@ -124,6 +129,14 @@ def run_all_sims_and_export():
     f_type = int(input("Enter the fungus type (0 for warped, 1 for crimson): "))
     f_name = 'warped' if f_type == WARPED else 'crimson'
     for i in range(1, max_disp_count + 1):
+        file_name = f"{i}_dispenser{'s' if i > 1 else ''}_5x5 ({f_name}).csv"
+        file_path = os.path.join('disp_optimisation', file_name)
+        
+        # Check if the file already exists
+        if os.path.exists(file_path):
+            print(f"File {file_path} already exists. Skipping...")
+            continue
+
         start_time = time.time_ns()
         big_size = 5 ** i
         edge = big_size - 1
@@ -141,8 +154,6 @@ def run_all_sims_and_export():
                 des_fungi = fast_calc_fung_dist(5, 5, f_type, layout)
                 fill_octants(edge, row, col, des_fungi, data)
         
-        file_name = f"{i}_dispenser{'s' if i > 1 else ''}_5x5 ({f_name}).csv"
-        file_path = os.path.join('disp_optimisation', file_name)
         df = pd.DataFrame(data)
         df.to_csv(file_path, index=False)
         print(f"Saved to {file_path} in {1e-9*(time.time_ns() - start_time):.5f} seconds")
@@ -152,7 +163,7 @@ def run_all_sims_and_export():
 #####################################
 ### ADDITIONAL PLOTTING FUNCTIONS ###
 #####################################
-def n_dim_plot_disps_3d(data, n):
+def n_dim_plot_disps_3d(data, n, f_name):
     fig = plt.figure(figsize=(10, 7))
     ax = fig.add_subplot(111, projection='3d')
     
@@ -194,7 +205,7 @@ def n_dim_plot_disps_3d(data, n):
     ax.set_ylabel(f"z-coords for {n} dispensers")
     ax.set_zlabel("Avg Fungi Generated")
     ax.set_title(f"1+2*{n} = {1+2*n}-Dimensional (projected down) plot\n"
-                 f"for total desired fungi for {n} dispensers\nMax: {max_value}")
+                 f"for total {f_name} fungi for {n} dispensers\nMax: {max_value}")
     
     # Customize ticks for base 5 on x and y axes
     x = x[::3 ** (n - 1)]
@@ -206,7 +217,7 @@ def n_dim_plot_disps_3d(data, n):
     
     plt.show()
 
-def n_dim_plot_disps_2d(data, n, dpi=300, export_only=False):
+def n_dim_plot_disps_2d(data, n, f_name, dpi=300, export_only=False):
     fig, ax = plt.subplots(figsize=(10, 10))
     
     # Plot the data using imshow
@@ -235,37 +246,36 @@ def n_dim_plot_disps_2d(data, n, dpi=300, export_only=False):
     cax.set_data(data)
     cax.set_clim(vmin=np.nanmin(data), vmax=np.nanmax(data))  # Adjust color limits to exclude NaN values
     
-    lws = LW_BASE_WDTH * np.flip(np.array([0.5 ** i for i in range(n)]))
-    for i in range(0, data.shape[0], 5):
-        lw = get_line_width(lws, n, i)
-        ax.axhline(i - 0.5, color='black', linestyle='-', linewidth=lw)
-    for j in range(0, data.shape[1], 5):
-        lw = get_line_width(lws, n, j)
-        ax.axvline(j - 0.5, color='black', linestyle='-', linewidth=lw)
+    # lws = LW_BASE_WDTH * np.flip(np.array([0.5 ** i for i in range(n)]))
+    # for i in range(0, data.shape[0], 5):
+    #     lw = get_line_width(lws, n, i)
+    #     ax.axhline(i - 0.5, color='black', linestyle='-', linewidth=lw)
+    # for j in range(0, data.shape[1], 5):
+    #     lw = get_line_width(lws, n, j)
+    #     ax.axvline(j - 0.5, color='black', linestyle='-', linewidth=lw)
     
     ax.set_xlabel(f"x-coords for {n} dispensers")
     ax.set_ylabel(f"y-coords for {n} dispensers")
-    ax.set_title(f"2D plot for total desired fungi for {n} dispensers\nMax: {max_value}")
+    ax.set_title(f"2D plot for total {f_name} fungi for {n} dispensers\nMax: {max_value}")
     
     # Customize ticks for base 5 on x and y axes
     x = np.arange(data.shape[0])
     y = np.arange(data.shape[1])
-    x = x[::2 ** (n - 1)]
-    y = y[::2 ** (n - 1)]
+    x = x[::5 ** (n - 2)]
+    y = y[::5 ** (n - 2)]
     ax.set_xticks(y)
     ax.set_yticks(x)
     ax.set_xticklabels([np.base_repr(val, base=5).zfill(n) for val in y], rotation=45)
     ax.set_yticklabels([np.base_repr(val, base=5).zfill(n) for val in x], rotation=45)
     
-    file_name = f"{n} dispenser{'s' if n > 1 else ''} 5x5 dpi={dpi}.png"
+    file_name = f"{n} dispenser{'s' if n > 1 else ''} 5x5 dpi={dpi} {f_name}.png"
     file_path = os.path.join('disp_optimisation', file_name)
-    base_name, ext = os.path.splitext(file_path)
     if export_only:
         plt.savefig(file_path, dpi=dpi)
     else:
         plt.show()
 
-def n_dim_plot_disps_3d_plotly(data, n):
+def n_dim_plot_disps_3d_plotly(data, n, f_name):
     # Create base coordinates
     x = np.arange(data.shape[0])
     y = np.arange(data.shape[1])
@@ -310,7 +320,7 @@ def n_dim_plot_disps_3d_plotly(data, n):
 
     # Configure x and y axes in base-5 with automatic tick spacing
     fig.update_layout(
-        title=f"1+2*{n} = {1+2*n}-Dimensional (projected down) plot<br>for total desired fungi for {n} dispensers",
+        title=f"1+2*{n} = {1+2*n}-Dimensional (projected down) plot<br>for total desired {f_name} fungi for {n} dispensers",
         scene=dict(
             xaxis=dict(
                 title=f"x-coords for {n} dispensers",
@@ -413,7 +423,6 @@ def fast_calc_fung_dist(length, width, fungus_type, disp_layout):
         disp_chance = (1 - foliage_grid[disp_x, disp_y])
 
         foliage_grid += (1 - foliage_grid) * disp_chance * sel_chance
-
     return np.sum(foliage_grid) / 9
 
 def warped_calc_fung_dist(length, width, disp_layout):
@@ -442,6 +451,7 @@ def warped_calc_fung_dist(length, width, disp_layout):
     return np.sum(des_fungi_grid)
 
 def generate_dispenser_positions(n):
+    # this CHEWS memory, so try converting it into a generator instead of an array returner
     # Generate all row, col positions on a 5x5 grid
     grid_positions = [(i, j) for i in range(5) for j in range(5)]
     
@@ -449,7 +459,7 @@ def generate_dispenser_positions(n):
     position_combinations = list(itertools.product(grid_positions, repeat=n))[:5**(2*n)]
     # print(f"position_combinations: {position_combinations} (total: {len(position_combinations)})\n")  # Showing a subset for brevity
     
-    result = np.zeros((len(position_combinations), n, 2), dtype=int)
+    result = np.zeros((len(position_combinations), n, 2), dtype=np.int8)
     
     for pos_idx, positions in enumerate(position_combinations):
             result[pos_idx] = positions
