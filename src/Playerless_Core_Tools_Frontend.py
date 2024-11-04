@@ -38,10 +38,6 @@ DP = 5
 MAX_SIDE_LEN = 20
 DEFAULT_SIDE_LEN = 20
 DEFAULT_RUN_TIME = 7
-WARPED: FungusType = 0
-CRIMSON: FungusType = 1
-UNCLEARED: ClearedStatus = False
-CLEARED: ClearedStatus = True
 RUN_TIME_VALS = [1, 4, 7, 10, 15, 30, 60, 300, 1000]
 BC_EFFIC_VALS = [0.0, 0.5, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1]
 
@@ -673,12 +669,12 @@ class App:
         L_optimise = PlayerlessCore(
             num_disps=self.L.num_disps,
             disp_coords=self.L.disp_coords,
-            size=(self.col_slider.get(), self.row_slider.get()),
+            size=self.L.size,
             nylium_type=fungus_type,
-            cycles=self.cycles_slider.get(),
+            cycles=self.L.cycles,
             blocked_blocks=self.L.blocked_blocks,
-            warts_effic=self.wb_effic_slider.get(),
-            blast_chamber_effic=None,
+            warts_effic=self.L.warts_effic,
+            blast_chamber_effic=self.L.blast_chamber_effic.get(),
             run_time=self.L.run_time.get(),
             all_optimised=False
         )
@@ -701,16 +697,7 @@ class App:
             self.add_dispenser(disp_coord.row, disp_coord.col, disp_coord.cleared)
         # Generate a list of other viable coords that are as optimal or within 0.1% of the most
         # optimal found solution, storing them in an external file
-        result = output_viable_coords(
-            optimal_coords, 
-            optimal_value, 
-            self.col_slider.get(),
-            self.row_slider.get(),
-            self.wb_effic_slider.get(),
-            fungus_type,
-            self.cycles_slider.get(),
-            self.L.blocked_blocks
-        )
+        result = output_viable_coords(self.L, optimal_coords, optimal_value)
         if isinstance(result, (int, float)) and not isinstance(result, BaseException):
             # 8 transformations for a square grid, 4 for a rectangular grid
             transforms = 8 if self.col_slider.get() == self.row_slider.get() else 4
@@ -843,23 +830,24 @@ class App:
     
     def display_block_info(self, row=None, col=None):
         """Display the growth statistics of a specific block and/or dispenser"""
+        length = self.L.size.length
+        width = self.L.size.width
+        sel_block_row = 0 if not self.D.selected_block else self.D.selected_block[0]
+        sel_block_col = 0 if not self.D.selected_block else self.D.selected_block[1]
+        
         # Return if no block is selected
         if not self.D.selected_block and row == None:
-            return
-        # Reset labels and deselect block if already selected
-        elif (row, col) == self.D.selected_block:
-            self.D.selected_block = ()
-            for label in self.D.info_label.values():
-                label.destroy()
-            self.D.info_label = {}
-
-            for value_label in self.D.info_value.values():
-                value_label.destroy()
-            self.D.info_value = {}
             return
         # Calling with empty arguments simply updates the currently selected block
         elif row is None and col is None:
             row, col = self.D.selected_block
+            # Reset selected block if it is out of bounds
+            if row >= length or col >= width or sel_block_row >= length or sel_block_col >= width:
+                return self.remove_selected_block()
+                
+        # Rest selected block if it's already selected (toggling it)
+        elif (row, col) == self.D.selected_block:
+            return self.remove_selected_block()
         # Default behaviour is to just select a new block
         else:
             self.D.selected_block = (row, col)
@@ -968,9 +956,22 @@ class App:
         self.display_block_info()
         return "break"
 
+    def remove_selected_block(self):
+        """Remove the currently selected block"""
+        self.D.selected_block = ()
+        self.remove_labels(self.D.info_label)
+        self.remove_labels(self.D.info_value)
+       
+    def remove_labels(self, labels):
+        """Remove the labels from the grid."""
+        for label in labels.values():
+            label.destroy()
+        labels = {}
+
     def set_rt(self, time):
         """Set the run time of the optimisation algorithm."""
         self.run_time.set(time)
+
 
 def start(root):
     """Start the Playerless Core Tools program."""

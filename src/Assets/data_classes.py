@@ -18,6 +18,9 @@ class Dispenser:
     col: int
     timestamp: int
     cleared: ClearedStatus
+    
+    def copy(self):
+        return Dispenser(self.row, self.col, self.timestamp, self.cleared)
  
 @dataclass
 class PlayerlessCore:
@@ -83,7 +86,9 @@ class DisplayInfo:
 class SimAnnealingParams:
     optimise_func: Callable
     initial_solution: Any
+    current_solution: Any
+    best_solution: Any
     start_temp: float
     end_temp: float
     cooling_rate: float
-    max_iter: int
+    max_iterations: int

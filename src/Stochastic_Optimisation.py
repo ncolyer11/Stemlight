@@ -17,7 +17,8 @@ MAX_ALL_LENGTH = 4
 MAX_ALL_CYCLES = 5
 ALL_RUN_TIME = 10
 MAX_ALL_AVG_NUM_DISPS = 10
-MAX_ITER = 1000000
+MAX_ITERATIONS = 1000000
+NULL_TIME = 0
 
 class LayoutParamters:
     """A class to store parameters of a playerless core nether tree farm to be optimised"""
@@ -77,7 +78,7 @@ class LayoutParamters:
             'cycles': cycles
         }
 
-    def generate_neighbour(self, current_sol):
+    def all_generate_neighbour(self, current_sol):
         disp_coords = current_sol['disp_coords']
         # Change paramter vals by -1, 0, or 1, ensuring it still remains at a valid value
         length = max(1, min(current_sol['length'] + rand_s(-1, 2), MAX_ALL_LENGTH))
@@ -91,16 +92,15 @@ class LayoutParamters:
         # print("New num disps:", num_disps)
         # Create a copy of the current solution
         neighbour_disp_coords = disp_coords.copy()
-        positions = [[pos[0], pos[1], UNCLEARED] for pos in disp_coords]
         # print("Initial disp layout:", neighbour_disp_coords)
-        if num_disps < len(disp_coords):
+        if num_disps < num_disps:
             # If there's one less dispenser, then randomly remove one from the layout
             neighbour_disp_coords.remove(random.choice(neighbour_disp_coords))
-        elif num_disps > len(disp_coords):
+        elif num_disps > num_disps:
             # If there's one more dispenser, then randomly place it at an empty spot on the platform
-            new_disp = [rand_s(width), rand_s(length), UNCLEARED]
-            while new_disp in positions:
-                new_disp = [rand_s(width), rand_s(length), UNCLEARED]
+            new_disp = Dispenser(rand_s(width), rand_s(length), NULL_TIME, UNCLEARED)
+            while new_disp in disp_coords:
+                new_disp = Dispenser(rand_s(width), rand_s(length), NULL_TIME,UNCLEARED)
             neighbour_disp_coords.append(new_disp)
 
         # print("Disp layout after +/- disp:", neighbour_disp_coords)
@@ -125,31 +125,33 @@ class LayoutParamters:
         
         # Chose a random number of dispensers to change in a random order
         indexes_to_change = np.random.choice(num_disps, rand_s(max(1, num_disps)), replace=False)
-        positions = [[pos[0], pos[1], UNCLEARED] for pos in neighbour_disp_coords]
+        positions = [[pos.row, pos.col] for pos in neighbour_disp_coords]
         for i in indexes_to_change:
             # Randomly select a small change in horizontal and vertical coord (-1, 0, or 1)
-            sol_x, sol_y, _ = positions[i]
+            sol_row, sol_col = positions[i]
             # Randomly chose between cleared and non-cleared dispenser if there's at least 1 cleared
             # dispenser in the input field already
             cleared_val = rand_s(0, 2)
-            new_coords = [max(0, min(width - 1, sol_x + rand_s(-step_h, step_h + 1))),
-                        max(0, min(length - 1, sol_y + rand_s(-step_v, step_v + 1))),
-                        cleared_val]
+            new_disp = Dispenser(max(0, min(width - 1, sol_row + rand_s(-step_h, step_h + 1))),
+                        max(0, min(length - 1, sol_col + rand_s(-step_v, step_v + 1))),
+                        NULL_TIME, cleared_val)
 
             # Make sure no two coords can be the same
             else_array = positions[:i] + positions[i+1:]
-            while any([new_coords[0], new_coords[1]] == coord[:2] for coord in else_array):
-                new_coords = [max(0, min(width - 1, new_coords[0] + rand_s(-step_h, step_h + 1))), 
-                            max(0, min(length - 1, new_coords[1] + rand_s(-step_v, step_v + 1))),
-                            cleared_val]
-                # print(new_coords)
+            while any([new_disp.row, new_disp.col] == coord[:2] for coord in else_array):
+                new_disp = Dispenser(
+                    max(0, min(width - 1, new_disp.row + rand_s(-step_h, step_h + 1))), 
+                    max(0, min(length - 1, new_disp.col + rand_s(-step_v, step_v + 1))),
+                    NULL_TIME, cleared_val
+                )
+                # print(new_disp)
                 # print(else_array)
                 # print(positions)
                 # print("loop2", length, width)
         
             # Update the disp_coords with the new coord and its cleared status
-            positions[i] = new_coords.copy()
-            neighbour_solution['disp_coords'][i] = new_coords
+            positions[i] = [new_disp.row, new_disp.col]
+            neighbour_solution['disp_coords'][i] = new_disp
 
         return neighbour_solution
 
@@ -164,7 +166,7 @@ class LayoutParamters:
             if temperature < min_temperature:
                 break
 
-            neighbour_sol = self.generate_neighbour(current_sol)
+            neighbour_sol = self.all_generate_neighbour(current_sol)
             # Either desired fungi produced, or potential wart blocks generated
             current_energy = fast_calc_fung_dist(**current_sol, blocked_blocks=[])[0]
             neighbour_energy, bm_for_prod = fast_calc_fung_dist(**neighbour_sol, blocked_blocks=[])
@@ -265,23 +267,27 @@ def optimise_all():
 
 def start_optimisation(L: PlayerlessCore) -> Tuple[List[Dispenser], float, int]:
     """Start optimising the function using the simulated annealing algorithm."""
-    num_dispensers = len(L.disp_coords)
-    if num_dispensers == 0:
+    if L.num_disps == 0:
         return [], 0
-    cleared_array = [d[2] for d in L.disp_coords]
     has_cleared = False
-    if CLEARED in cleared_array:
+    if CLEARED in [d.cleared for d in L.disp_coords]:
         has_cleared = True
     optimise_func = fast_calc_fung_dist
-    temps = calculate_temp_bounds(L, num_dispensers, optimise_func, has_cleared)
+    temps = calculate_temp_bounds(L, optimise_func, has_cleared)
+    # Start with all worst case dispensers off the grid with no clearing
+    init_sol = [Dispenser(-1, -1, NULL_TIME, UNCLEARED) for _ in range(L.num_disps)]
     S = SimAnnealingParams(
         optimise_func=optimise_func,
-        initial_solution=[[-1, -1, 0] for _ in range(num_dispensers)], # Start with all worst case
-        start_temp=temps[0],                                           # dispensers off the grid
-        end_temp=temps[1],                                             # with no clearing
+        initial_solution=init_sol,
+        current_solution=None,
+        best_solution=None,
+        start_temp=temps[0],               
+        end_temp=temps[1],  
         cooling_rate=calculate_cooling_rate(temps[0], temps[1], L.run_time),
-        max_iter=MAX_ITER
+        max_iterations=MAX_ITERATIONS
     )
+    S.current_solution = S.initial_solution # Start with the worst case solution
+    S.best_solution = S.initial_solution
     optimise_func = fast_calc_fung_dist
     start_time = time.time()
    
@@ -304,28 +310,31 @@ def simulated_annealing(
     has_cleared=False
 ) -> Tuple[List[Dispenser], float]:
     """Simulated annealing algorithm for discrete optimisation of fungus distribution."""
-    current_sol = S.initial_sol
-    best_sol = S.initial_sol
+    temperature = S.start_temp
     for _ in range(S.max_iterations):
-        if temperature < S.min_temperature:
+        if temperature < S.end_temp:
             break
-        neighbour_sol = generate_neighbour(current_sol, L.size, has_cleared)
+        neighbour_sol = generate_neighbour(S.current_solution, L.size, has_cleared)
         # Either desired fungi produced, or potential wart blocks generated
-        current_energy = S.optimise_func(L.size.length, L.size.width, L.nylium_type, current_sol, L.cycles, 
-                                         L.blocked_coords)[0]
-        neighbour_energy, bm_for_prod = S.optimise_func(L.size.length, L.size.width, L.nylium_type, neighbour_sol,
-                                                        L.cycles, L.blocked_coords)
+        current_energy = S.optimise_func(L.size.length, L.size.width, L.nylium_type,
+                                         S.current_solution, L.cycles, L.blocked_blocks)[0]
+        neighbour_energy, bm_for_prod = S.optimise_func(L.size.length, L.size.width, L.nylium_type,
+                                                        neighbour_sol, L.cycles, L.blocked_blocks)
 
         bm_req = bm_for_prod < L.warts_effic / WARTS_PER_BM - AVG_BM_TO_GROW_FUNG
         if neighbour_energy > current_energy and bm_req or \
            np.random.rand() < acceptance_probability(current_energy, neighbour_energy, temperature):
-            current_sol = neighbour_sol
-            if neighbour_energy > S.optimise_func(L.size.length, L.size.width, L.nylium_type, best_sol, L.cycles,
-                                                  L.blocked_coords)[0] and bm_req:
-                best_sol = neighbour_sol
+            S.current_sol = neighbour_sol
+            if bm_req and neighbour_energy > S.optimise_func(L.size.length, L.size.width,
+                                                             L.nylium_type, S.best_solution,
+                                                             L.cycles, L.blocked_blocks)[0]:
+                S.best_solution = neighbour_sol
 
         temperature *= S.cooling_rate
-    return best_sol, S.optimise_func(L.size.length, L.size.width, L.nylium_type, best_sol, L.cycles, L.blocked_coords)[0]
+    optimal_value = S.optimise_func(
+        L.size.length, L.size.width, L.nylium_type, S.best_solution, L.cycles, L.blocked_blocks
+    )[0]
+    return S.best_solution, optimal_value
 
 def acceptance_probability(current_energy, neighbour_energy, temperature):
     """Calculate the probability of accepting a worse solution."""
@@ -345,55 +354,64 @@ def generate_neighbour(solution: Any, size: Dimensions, has_cleared: ClearedStat
 
     # Create a copy of the current solution
     neighbour_solution = solution.copy()
-    positions = [[pos[0], pos[1], UNCLEARED] for pos in solution]
     # Randomly select coords to change
     indexes_to_change = np.random.choice(len(solution), len(solution), replace=False)
+    positions = [[pos.row, pos.col] for pos in neighbour_solution]
     for i in indexes_to_change:
         # Randomly select a small change in horizontal and vertical coord (-1, 0, or 1)
-        sol_x, sol_y, _ = positions[i]
+        sol_row, sol_col = positions[i]
         # Randomly chose between cleared and non-cleared dispenser if there's at least 1 cleared
         # dispenser in the input field already
         cleared_val = rand_s(0, cleared_state)
-        new_coords = [max(0, min(size.width - 1, sol_x + rand_s(-step_h, step_h + 1))),
-                      max(0, min(size.length - 1, sol_y + rand_s(-step_v, step_v + 1))),
-                      cleared_val]
+        new_disp = Dispenser(
+            max(0, min(size.width - 1, sol_row + rand_s(-step_h, step_h + 1))),
+            max(0, min(size.length - 1, sol_col + rand_s(-step_v, step_v + 1))),
+            NULL_TIME, cleared_val
+        )
 
         # Make sure no two coords can be the same
         else_array = positions[:i] + positions[i+1:]
-        while new_coords in else_array:
-            new_coords = [max(0, min(size.width - 1, new_coords[0] + rand_s(-step_h, step_h + 1))), 
-                          max(0, min(size.length - 1, new_coords[1] + rand_s(-step_v, step_v + 1))),
-                          cleared_val]
+        while any([new_disp.row, new_disp.col] == coord[:2] for coord in else_array):
+            new_disp = Dispenser(
+                max(0, min(size.width - 1, new_disp.row + rand_s(-step_h, step_h + 1))), 
+                max(0, min(size.length - 1, new_disp.col + rand_s(-step_v, step_v + 1))),
+                NULL_TIME, cleared_val
+            )
     
         # Update the solution with the new coord and its cleared status
-        positions[i] = new_coords.copy()
-        neighbour_solution[i] = new_coords
+        positions[i] = [new_disp.row, new_disp.col]
+        neighbour_solution[i] = new_disp
 
     return neighbour_solution
 
-def calculate_temp_bounds(L: PlayerlessCore, optimise_func: Callable, has_cleared: ClearedStatus):
+def calculate_temp_bounds(
+    L: PlayerlessCore,
+    optimise_func: Callable,
+    has_cleared: ClearedStatus
+) -> Tuple[float, float, float, float]:
     """Calculate the starting temperature for the simulated annealing algorithm."""
     # Find the lowest energy point
     rand_s = np.random.randint
-    lowest_energy = get_lowest_energy(L)
+    lowest_energy = get_lowest_energy(L, optimise_func)
 
     # Create a valid set of coords by passing it through generate_neighbour
     average_solutions = []
     trials = 300 * L.num_disps if optimise_func == fast_calc_fung_dist else 150 * L.num_disps
     for _ in range(trials):
-        coords = [[
-            rand_s(0, L.size.width), rand_s(0, L.size.length), UNCLEARED
-            ] for _ in range(L.num_disps)
+        coords = [
+            Dispenser(
+                rand_s(0, L.size.width), rand_s(0, L.size.length), NULL_TIME, UNCLEARED
+            ) for _ in range(L.num_disps)
         ]
         average_solutions.append(
-            generate_neighbour(coords, L.size.length, L.size.width,has_cleared)
+            generate_neighbour(coords, L.size, has_cleared)
         )
     
     # Calculate the average energy of the initial solution
     avg_energy = np.mean([
         optimise_func(
             L.size.length, L.size.width, L.nylium_type, average_solutions[i], L.cycles, 
-            L.blocked_coords
+            L.blocked_blocks
         )[0] for i in range(trials)
     ])
 
@@ -402,17 +420,19 @@ def calculate_temp_bounds(L: PlayerlessCore, optimise_func: Callable, has_cleare
     end_temperature = -high_energy_change / np.log(REJECTION_POINT)
     return start_temperature, end_temperature, lowest_energy, avg_energy
 
-def get_lowest_energy(L: PlayerlessCore, optimise_func: Callable):
+def get_lowest_energy(L: PlayerlessCore, optimise_func: Callable) -> float:
+    """
+    Get the lowest energy point of the optimisation space. I.e. the worst dispenser layout possible.
+    """
     # Worst case energy with a single blocked block is every dispenser on a blocked block, 0:
-    if len(L.blocked_coords) > 0:
+    if len(L.blocked_blocks) > 0:
         return 0
-    
     # Otherwise just chuck up all the dispensers in the top left corner
     return optimise_func(
         L.size.length, L.size.width, L.nylium_type,
-        [[0, 0, UNCLEARED] for _ in range(L.num_disps)],
+        [Dispenser(0, 0, NULL_TIME, UNCLEARED) for _ in range(L.num_disps)],
         L.cycles,
-        L.blocked_coords
+        L.blocked_blocks
     )[0]
 
 def calculate_cooling_rate(start_temp, end_temp, run_time):
