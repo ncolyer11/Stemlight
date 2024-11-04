@@ -422,7 +422,7 @@ def fast_calc_fung_dist(length, width, fungus_type, disp_layout):
 
         disp_chance = (1 - foliage_grid[disp_x, disp_y])
 
-        foliage_grid += (1 - foliage_grid) * disp_chance * sel_chance
+        foliage_grid += (1 - foliage_grid) * np.where(x1 + y1 == 0, 1, disp_chance) * sel_chance
     return np.sum(foliage_grid) / 9
 
 def warped_calc_fung_dist(length, width, disp_layout):
@@ -438,7 +438,7 @@ def warped_calc_fung_dist(length, width, disp_layout):
                             selection_cache[np.minimum(x1, 2), np.minimum(y1, 2)])
         
         disp_chance = (1 - foliage_grid[disp_x, disp_y])
-        foliage_chance = sel_chance * disp_chance
+        foliage_chance = sel_chance * np.where(x1 + y1 == 0, 1, disp_chance)
 
         des_fungi_grid += (1 - foliage_grid) * foliage_chance * const.WARP_FUNG_CHANCE
         
