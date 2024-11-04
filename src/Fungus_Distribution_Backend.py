@@ -101,7 +101,9 @@ def generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y):
     bm_for_prod += disp_bm_chance
 
     # P(foliage at x,y) = P(Air above dispensers) * P(x,y being selected)
-    foliage_chance = disp_bm_chance * selection_chance(x - disp_x, y - disp_y)
+    # Note, don't double multiply the chance of air above the position if it's at the dispenser
+    foliage_chance = np.where((x == disp_x) & (y == disp_y), 1, disp_bm_chance) \
+                     * selection_chance(x - disp_x, y - disp_y)
     return foliage_chance, bm_for_prod
 
 def get_totals(des_fungi_grid, foliage_grid):
@@ -141,7 +143,7 @@ def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungus
     }
 
 def calc_huge_fungus_distribution(p_length, p_width, fungus_type, disp_coords,
-                 cycles, blocked_blocks, blast_chamber_effic=1):
+                                  cycles, blocked_blocks, blast_chamber_effic=1):
     """Approximately calculates huge fungi generation based off desired fungus distribution"""
     # Only approximately as calculating the expected wart block distribution given an expected 
     # warped fungi distribution relies on a heap of interacting variables and also that's not even
@@ -285,7 +287,8 @@ def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fu
         print("An error has occured whilst finding viable coordinates:", e)
         return e
 
-def export_alt_placements(length, width, metrics, optimal_value, worst_value, start_time, blocked_blocks):
+def export_alt_placements(length, width, metrics, optimal_value, worst_value, start_time,
+                          blocked_blocks):
     """Write the sorted list to a file"""
     alt_placements = len(metrics)
     f = open("Alternate Dispenser Placements.txt", "w")

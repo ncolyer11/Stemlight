@@ -32,7 +32,8 @@ DP = 5
 MAX_SIDE_LEN = 20
 WARPED = 0
 CRIMSON = 1
-UNCLEARED = 0
+UNCLEARED = False
+CLEARED = True
 
 class SlideSwitch(tk.Canvas):
     def __init__(self, parent, callback=None, *args, **kwargs):
@@ -558,7 +559,7 @@ class App:
                     var.set(saved_states[i][j])
                     if saved_states[i][j] == 1:
                         cleared = dispenser_array[i][j][2]
-                        if cleared == 1:
+                        if cleared == CLEARED:
                             cb.config(image=self.clearing_image)
                         else:
                             cb.config(image=self.checked_image)
