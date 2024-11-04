@@ -36,7 +36,7 @@ PAD = 5
 RAD = 26
 DP = 5
 MAX_SIDE_LEN = 20
-DEFAULT_SIDE_LEN = 20
+DEFAULT_SIDE_LEN = 5
 DEFAULT_RUN_TIME = 7
 RUN_TIME_VALS = [1, 4, 7, 10, 15, 30, 60, 300, 1000]
 BC_EFFIC_VALS = [0.0, 0.5, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1]
@@ -223,16 +223,18 @@ class App:
         for i in range(0, num_tests):
             start_time = time.time()
             f = open(resource_path("cpu_benchmark.txt"), "r+")
-            _, _, iterations = start_optimisation(
-                disp_coords,
-                5, # Default 5x5 nylium platform
-                5,
-                120, # High val for wart block efficiency
-                WARPED,
-                des_run_time, # Desired run time of 15 secs
-                1, # 1 Cycle
-                [] # No blocked blocks
+            L_calibrate = PlayerlessCore(
+                disp_coords=disp_coords,
+                size=Dimensions(5, 5),
+                nylium_type=WARPED,
+                cycles=1,
+                blocked_blocks=[],
+                warts_effic=120,
+                blast_chamber_effic=1,
+                run_time=des_run_time,
+                all_optimised=False
             )
+            _, _, iterations = start_optimisation(L_calibrate)
 
             total_iter_time = (time.time() - start_time)
             time_diff_percent = 100 * (total_iter_time - des_run_time) / des_run_time
@@ -767,7 +769,7 @@ class App:
         total_wart_blocks, *_ = calc_huge_fungus_distribution(self.L, dist_data)
 
         output_labels = [
-            f"Total {'Warped' if self.L.nylium_type.get() == 'crimson' else 'Crimson'} Fungi",
+            f"Total {'Warped' if self.L.nylium_type.get() == 'warped' else 'Crimson'} Fungi",
             "Bone Meal to Produce a Fungus",
             "Bone Meal for Production",
             "Bone Meal for Growth",
@@ -857,7 +859,7 @@ class App:
         disp_des_fungi_grids = dist_data.disp_des_fungi_grids
         
         info_labels = [
-            f"{'Warped' if self.L.nylium_type == WARPED else 'Crimson'} Fungi at {(row, col)}",
+            f"{'Warped' if self.L.nylium_type.get() == 'warped' else 'Crimson'} Fungi at {(row, col)}",
             f"Foliage at {(row,col)}",
         ]
 
@@ -885,7 +887,7 @@ class App:
                     cycle_sum += np.sum(disp_foliage_grids[:index, cycle, :, :], axis=0)
                 bone_meal_used += 1 - cycle_sum[row, col]
 
-            info_labels.append(f"{'Warped' if self.L.nylium_type == WARPED else 'Crimson'} "
+            info_labels.append(f"{'Warped' if self.L.nylium_type == 'warped' else 'Crimson'} "
                                f"Fungi Produced")
             info_labels.append("Bone Meal Used")
             info_labels.append("Bone Meal per Fungi")

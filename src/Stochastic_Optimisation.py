@@ -151,7 +151,7 @@ class LayoutParamters:
         
             # Update the disp_coords with the new coord and its cleared status
             positions[i] = [new_disp.row, new_disp.col]
-            neighbour_solution['disp_coords'][i] = new_disp
+            neighbour_solution['disp_coords'][i] = new_disp.copy()
 
         return neighbour_solution
 
@@ -315,6 +315,7 @@ def simulated_annealing(
         if temperature < S.end_temp:
             break
         neighbour_sol = generate_neighbour(S.current_solution, L.size, has_cleared)
+        print(neighbour_sol)
         # Either desired fungi produced, or potential wart blocks generated
         current_energy = S.optimise_func(L.size.length, L.size.width, L.nylium_type,
                                          S.current_solution, L.cycles, L.blocked_blocks)[0]
@@ -334,6 +335,8 @@ def simulated_annealing(
     optimal_value = S.optimise_func(
         L.size.length, L.size.width, L.nylium_type, S.best_solution, L.cycles, L.blocked_blocks
     )[0]
+    print("Optimal value:", optimal_value)
+    print(S.best_solution)
     return S.best_solution, optimal_value
 
 def acceptance_probability(current_energy, neighbour_energy, temperature):
@@ -347,7 +350,6 @@ def generate_neighbour(solution: Any, size: Dimensions, has_cleared: ClearedStat
     """Generate a new dispenser permutation by altering 1 to all of their coords slightly"""
     step_h = 1 if size.width != 1 else 0
     step_v = 1 if size.length != 1 else 0
-    rand_s = np.random.randint
     cleared_state = 1
     if has_cleared == True:
         cleared_state = 2
@@ -356,32 +358,32 @@ def generate_neighbour(solution: Any, size: Dimensions, has_cleared: ClearedStat
     neighbour_solution = solution.copy()
     # Randomly select coords to change
     indexes_to_change = np.random.choice(len(solution), len(solution), replace=False)
-    positions = [[pos.row, pos.col] for pos in neighbour_solution]
+    positions = [[pos.row, pos.col, NULL_TIME, UNCLEARED] for pos in neighbour_solution]
     for i in indexes_to_change:
         # Randomly select a small change in horizontal and vertical coord (-1, 0, or 1)
-        sol_row, sol_col = positions[i]
+        sol_row, sol_col, *_ = positions[i]
         # Randomly chose between cleared and non-cleared dispenser if there's at least 1 cleared
         # dispenser in the input field already
         cleared_val = rand_s(0, cleared_state)
-        new_disp = Dispenser(
+        new_coords = [
             max(0, min(size.width - 1, sol_row + rand_s(-step_h, step_h + 1))),
             max(0, min(size.length - 1, sol_col + rand_s(-step_v, step_v + 1))),
             NULL_TIME, cleared_val
-        )
+        ]
 
         # Make sure no two coords can be the same
         else_array = positions[:i] + positions[i+1:]
-        while any([new_disp.row, new_disp.col] == coord[:2] for coord in else_array):
-            new_disp = Dispenser(
-                max(0, min(size.width - 1, new_disp.row + rand_s(-step_h, step_h + 1))), 
-                max(0, min(size.length - 1, new_disp.col + rand_s(-step_v, step_v + 1))),
+        while any([new_coords[0], new_coords[1]] == coord[:2] for coord in else_array):
+            new_coords = [
+                max(0, min(size.width - 1, new_coords[0] + rand_s(-step_h, step_h + 1))), 
+                max(0, min(size.length - 1, new_coords[1] + rand_s(-step_v, step_v + 1))),
                 NULL_TIME, cleared_val
-            )
+            ]
     
         # Update the solution with the new coord and its cleared status
-        positions[i] = [new_disp.row, new_disp.col]
-        neighbour_solution[i] = new_disp
-
+        positions[i] = new_coords.copy()
+        neighbour_solution[i] = new_coords
+    neighbour_solution = [Dispenser(*coords) for coords in neighbour_solution]
     return neighbour_solution
 
 def calculate_temp_bounds(

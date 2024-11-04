@@ -40,7 +40,7 @@ def selection_chance(x1, y1):
 
 def calculate_distribution(L: PlayerlessCore) -> PlayerlessCoreDistOutput:
     """Calculates the distribution of foliage and fungi on a custom size grid of nylium"""
-    fungi_weight = WARP_FUNG_CHANCE if L.nylium_type == WARPED else CRMS_FUNG_CHANCE
+    fungi_weight = WARP_FUNG_CHANCE if L.nylium_type.get() == 'warped' else CRMS_FUNG_CHANCE
     sprouts_total = np.zeros((L.size.length, L.size.width))
     # 4D array for storing distribution of foliage for all dispensers and cycles
     disp_foliage_grids = np.zeros((L.num_disps, L.cycles, L.size.length, L.size.width))
