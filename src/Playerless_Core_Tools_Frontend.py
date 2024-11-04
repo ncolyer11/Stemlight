@@ -673,10 +673,11 @@ class App:
                 f"\n\nNote {transforms * math.factorial(n) - 8:,} possible alternate "
                 "placements (permutations of firing order) were trimmed "
                 "for computational reasons."
-            )            
+            )    
+            # @TODO add an option button to open the file then and there        
             messagebox.showinfo(f"Success", 
                                 f"Successfully exported {result} alternate "
-                                f"placement{'s' if result != 1 else ''} to viable_coords.txt."
+                                f"placement{'s' if result != 1 else ''} to Alternate Dispenser Placements.txt."
                                 f"{trimmed_string if n > 8 else ''}")
         else:
             error_message = f"An error has occurred:\n{result}"
