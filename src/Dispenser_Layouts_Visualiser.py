@@ -13,6 +13,9 @@ CRIMSON = 1
 MPL_FIG_RATIO = 2.2
 LW_BASE_WDTH = 0.5
 
+# TODO:
+# Look into using https://vaex.readthedocs.io/en/docs/index.html for faster data manipulation vs pandas
+
 # Selection cache
 selection_cache = np.array([
     [0.6535605838853813, 0.4997510328685407, 0.28798973593014715],

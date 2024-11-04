@@ -6,6 +6,7 @@ import numpy as np
 import tkinter as tk
 from tkinter import ttk, messagebox
 import tkinter.font as font
+from typing import List, Any
 from PIL import Image, ImageDraw, ImageTk
 
 from src.Assets import colours
@@ -22,6 +23,9 @@ from src.Stochastic_Optimisation import start_optimisation, optimise_all
 # Keep an eye out during future patches for the wart block and bone meal calc values going
 # inaccurate after optimising a bunch
 
+# TODO:
+# Add export and import layout settings feature to file menu
+
 # Non-linear scaling 
 NLS = 1.765
 WDTH = 92
@@ -33,6 +37,23 @@ MAX_SIDE_LEN = 20
 WARPED = 0
 CRIMSON = 1
 UNCLEARED = 0
+
+class LayoutInfo:
+    def __init__(
+        self,
+        num_disps: int,
+        disp_layout: List[List[int, int, int]],
+        cycles: int,
+        blocked_blocks: List[List[int, int]],
+        run_time: int,
+        wart_block_efficiency: float
+    ):
+        self.num_disps = num_disps
+        self.disp_layout = disp_layout
+        self.cycles = cycles
+        self.blocked_blocks = blocked_blocks
+        self.run_time = run_time
+        self.wart_block_efficiency = wart_block_efficiency
 
 class SlideSwitch(tk.Canvas):
     def __init__(self, parent, callback=None, *args, **kwargs):

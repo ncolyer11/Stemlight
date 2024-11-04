@@ -128,7 +128,7 @@ def start(root):
         filename2 = os.path.basename(schematic_path_val.get())  # get the filename
         name2, extension2 = os.path.splitext(filename2)  # split the filename into name and extension
         name2 = f"Selected schematic: '{name2}'"
-        toolbar.entryconfig(3, label=name2)
+        toolbar.entryconfig(4, label=name2)
 
     def open_file_explorer():
         file_path = filedialog.askopenfilename()
