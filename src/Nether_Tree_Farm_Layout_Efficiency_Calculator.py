@@ -151,9 +151,9 @@ def start(root):
         label2.grid(row=1, column=j)
         vrm_labels[j + 4] = label2
 
-    try:
-        from ctypes import windll
-        windll.shcore.SetProcessDpiAwareness(1)
-    except:
-        pass
+    # try:
+    #     from ctypes import windll
+    #     windll.shcore.SetProcessDpiAwareness(1)
+    # except:
+    #     pass
     child.mainloop()

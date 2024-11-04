@@ -1,9 +1,11 @@
-import ctypes
+"""Displays charts on various nether tree farm\nrelated statistics and phenomena"""
+
+import os
 import math
 import tkinter as tk
 import tkinter.font as font
 from PIL import Image, ImageTk
-import os
+import ctypes
 
 from Main_Menu import ToolTip
 from src.Assets import colours
@@ -14,7 +16,7 @@ MAX_COL = 9
 
 def start(root):
     def open_image(image_file_path, photo):
-            # Get the actual screen's width and height
+        # Get the actual screen's width and height
         image2 = Image.open(image_file_path)
         screen_width = child.winfo_screenwidth()
         screen_height = child.winfo_screenheight()
@@ -178,6 +180,43 @@ def start(root):
     button_widgets = []
     caption_widgets = []
 
+    canvas.bind("<Configure>", center_frame)
+    child.bind("<Configure>", lambda event: update_grid())
+    tooltips = []
+    
+    # Load the placeholder image or create an empty one if it doesn't exist
+    invisible_image = Image.new("RGBA", (1, 1), (0, 0, 0, 0))  # Transparent 1x1 image
+    invisible_photo = ImageTk.PhotoImage(invisible_image)  # Make it a PhotoImage for Tkinter
+
+    for path, details in zip(image_paths, image_files.values()):
+        if path.endswith("invisible_placeholder.png"):
+            photo = invisible_photo
+        else:
+            image = Image.open(path)
+            image.thumbnail((thumbnail_width, thumbnail_height))
+            new_image = Image.new("RGB", (thumbnail_width, thumbnail_height), colours.bg)
+            paste_x = (thumbnail_width - image.width) // 2
+            paste_y = (thumbnail_height - image.height) // 2
+            new_image.paste(image, (paste_x, paste_y))
+
+            photo = ImageTk.PhotoImage(new_image)
+            photo_images.append(photo)
+
+        # Create the button and capture `details` correctly in a lambda
+        button = tk.Button(scrollable_frame, image=photo, command=lambda path=path: open_image(path, photo))
+        button_widgets.append(button)
+
+        caption = tk.Label(scrollable_frame, text=details["caption"], bg=colours.bg, fg=colours.fg, font=main_font)
+        caption_widgets.append(caption)
+
+        # Create tooltip instance for the button
+        tooltip = ToolTip(button, details["tooltip"])
+        tooltips.append(tooltip)
+
+    update_grid()
+
+    child.mainloop()
+
     def calculate_columns():
         screen_width = child.winfo_width()
         available_width = screen_width - 250
@@ -198,41 +237,3 @@ def start(root):
         frame_width = scrollable_frame.winfo_reqwidth()
         canvas.coords("frame", canvas_width // 2 - frame_width // 2, 0)
         update_grid()
-
-    canvas.bind("<Configure>", center_frame)
-    child.bind("<Configure>", lambda event: update_grid())
-    tooltips = []
-    for path, details in zip(image_paths, image_files.values()):
-        image = Image.open(path)
-        image.thumbnail((thumbnail_width, thumbnail_height))
-        new_image = Image.new("RGB", (thumbnail_width, thumbnail_height), colours.bg)
-        paste_x = (thumbnail_width - image.width) // 2
-        paste_y = (thumbnail_height - image.height) // 2
-        new_image.paste(image, (paste_x, paste_y))
-
-        photo = ImageTk.PhotoImage(new_image)
-        photo_images.append(photo)
-
-        button = tk.Button(scrollable_frame, image=photo, command=lambda path=path, photo=photo: open_image(path, photo))
-        button_widgets.append(button)
-
-        caption = tk.Label(scrollable_frame, text=details["caption"], bg=colours.bg, fg=colours.fg, font=main_font)
-        caption_widgets.append(caption)
-
-        # Add tooltip to caption if tooltip text is present
-        if "tooltip" in details and details["tooltip"]:
-            tooltip = ToolTip(button)
-            tooltips.append(tooltip)
-            button.bind("<Enter>", lambda event, tip_text=details["tooltip"]: tooltip.show_tip(tip_text, event.x_root, event.y_root))
-            button.bind("<Leave>", lambda event: tooltip.hide_tip())
-
-
-    update_grid()
-
-    try:
-        from ctypes import windll
-        windll.shcore.SetProcessDpiAwareness(1)
-    except:
-        pass
-
-    child.mainloop()

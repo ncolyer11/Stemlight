@@ -1,15 +1,13 @@
 """A program that calculates the rates of a nether tree farm \nfrom basic info (dispensers, clock speed, etc) or an encoded ntf layout schematic file"""
 
-import sys
-import tkinter as tk
-from tkinter import filedialog
-import tkinter.font as font
 import os
+import tkinter as tk
+from tkinter import filedialog, messagebox
+import tkinter.font as font
 
 from src.Assets import colours as col, constants as const
 from src.Assets.constants import RSF
-from src.Assets.version import version
-from src.Assets.helpers import resource_path, set_title_and_icon
+from src.Assets.helpers import set_title_and_icon
 from src.Assets.helpers import schem_layout_to_rates_data
 
 def start(root):
@@ -20,6 +18,22 @@ def start(root):
 
     def set_dp(value):
         dp.set(value)
+    
+    def show_use_message():
+        """Provide some information to the user about how to use this tool"""
+        messagebox.showinfo(
+            "Information",
+            "Schematics should be created and imported with the following format:\n"
+            " - No VRM: Red concrete (a position such as the trunk region or any spot not 3 blocks above a pre-placed wart block).\n"
+            " - VRM1: Dark blue concrete (1 block above a pre-placed wart block).\n"
+            " - VRM2: Cyan concrete (2 blocks above a pre-placed wart block).\n"
+            " - VRM3: Light blue concrete (3 blocks above a pre-placed wart block).\n\n"
+            
+            "Note in some layouts there may be intermediary types of VRM which can generally be approximated by selecting the closest integer VRM.\n\n"
+            
+            "Once you've encoded all your layout with concrete, take a 7x7x27 tall schematic with the bottom face centred just above the base nylium block.",
+            icon='info'
+        )
 
     def calculate(dispenser_value, dispenser_period_value, hat_period_value, trunk_period_value,
                 trunk_height_value, layer2_dispenser_value, trunk_start_value,
@@ -151,6 +165,10 @@ def start(root):
     file_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
     toolbar.add_cascade(label="File", menu=file_menu)
     file_menu.add_command(label="Exit", command=child.destroy)
+    
+    help_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
+    toolbar.add_cascade(label="Help", menu=help_menu)
+    help_menu.add_command(label="How to Use this Tool", command=show_use_message)
 
     dp_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
     toolbar.add_cascade(label="Decimal Places", menu=dp_menu)
@@ -297,9 +315,10 @@ def start(root):
                                         textvariable=infinite_dispenser_val)
     infinite_dispenser_entry.grid(row=8, column=1, padx=PAD, pady=PAD)
 
-    try:
-        from ctypes import windll
-        windll.shcore.SetProcessDpiAwareness(1)
-    except:
-        pass
+    # try:
+    #     from ctypes import windll
+    #     windll.shcore.SetProcessDpiAwareness(1)
+    # except:
+    #     pass
     child.mainloop()
+    

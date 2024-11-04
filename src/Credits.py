@@ -22,9 +22,9 @@ def start(root):
     set_title_and_icon(child, "Credits")
 
     # Set the window size
-    window_width = int(RSF*275)
-    window_height = int(RSF*250)
-    child.geometry(f"{window_width}x{window_height}")
+    # window_width = int(RSF*275)
+    # window_height = int(RSF*250)
+    # child.geometry(f"{window_width}x{window_height}")
 
     child.configure(bg=colours.bg)
 
@@ -65,9 +65,9 @@ def start(root):
     child.columnconfigure(0, weight=1)
     child.rowconfigure(0, weight=1)
 
-    try:
-        from ctypes import windll
-        windll.shcore.SetProcessDpiAwareness(1)
-    except:
-        pass
+    # try:
+    #     from ctypes import windll
+    #     windll.shcore.SetProcessDpiAwareness(1)
+    # except:
+    #     pass
     child.mainloop()

@@ -126,9 +126,9 @@ def start(root):
     result_label = tk.Label(child, text="", bg=cols.bg, fg=cols.fg, font=main_font)
     result_label.grid(row=4, column=0, columnspan=2, pady=(0, 2*PAD))
 
-    try:
-        from ctypes import windll
-        windll.shcore.SetProcessDpiAwareness(1)
-    except:
-        pass
+    # try:
+    #     from ctypes import windll
+    #     windll.shcore.SetProcessDpiAwareness(1)
+    # except:
+    #     pass
     child.mainloop()
