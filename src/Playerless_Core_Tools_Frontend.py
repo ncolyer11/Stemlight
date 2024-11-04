@@ -36,7 +36,8 @@ DP = 5
 MAX_SIDE_LEN = 20
 WARPED = 0
 CRIMSON = 1
-UNCLEARED = 0
+UNCLEARED = False
+CLEARED = True
 
 class LayoutInfo:
     def __init__(
@@ -579,7 +580,7 @@ class App:
                     var.set(saved_states[i][j])
                     if saved_states[i][j] == 1:
                         cleared = dispenser_array[i][j][2]
-                        if cleared == 1:
+                        if cleared == CLEARED:
                             cb.config(image=self.clearing_image)
                         else:
                             cb.config(image=self.checked_image)
@@ -716,10 +717,11 @@ class App:
                 f"\n\nNote {transforms * math.factorial(n) - 8:,} possible alternate "
                 "placements (permutations of firing order) were trimmed "
                 "for computational reasons."
-            )            
+            )    
+            # @TODO add an option button to open the file then and there        
             messagebox.showinfo(f"Success", 
                                 f"Successfully exported {result} alternate "
-                                f"placement{'s' if result != 1 else ''} to viable_coords.txt."
+                                f"placement{'s' if result != 1 else ''} to Alternate Dispenser Placements.txt."
                                 f"{trimmed_string if n > 8 else ''}")
         else:
             error_message = f"An error has occurred:\n{result}"
@@ -911,6 +913,8 @@ class App:
             f"{'Warped' if fungus_type == WARPED else 'Crimson'} Fungi at {(x,y)}",
             f"Foliage at {(x,y)}",
         ]
+
+
         sel_fungi_amount = np.sum(disp_des_fungi_grids, axis=(0,1))[x, y]
         sel_foliage_amount = np.sum(disp_foliage_grids, axis=(0,1))[x, y] - sel_fungi_amount
         info_values = [
@@ -967,6 +971,8 @@ class App:
 
             # Store the label in the dictionary for later use
             self.info_text_label[i] = label
+        
+        foliage_tooltip = ToolTip(self.info_text_label[1], "All other foliage generated at this position (excluding desired fungi).")
 
         # Create the labels for block info values
         for i, info_value in enumerate(info_values):
@@ -977,7 +983,6 @@ class App:
             # Store the value label in the dictionary for later use
             self.info_text_value[i] = label
         
-        foliage_tooltip = ToolTip(self.output_text_label[1], "All other foliage generated at this position (excluding desired fungi).")
         
     def set_cleared_or_blocked(self, x, y):
         """Set a dispenser to a clearing dispenser by middle clicking or nylium to a blocked block"""

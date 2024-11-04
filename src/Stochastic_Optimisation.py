@@ -12,10 +12,10 @@ ACCEPTANCE_RATE = 0.995
 REJECTION_POINT = 0.1
 UNCLEARED = 0
 CLEARED = 1
-MAX_ALL_WIDTH = 6
-MAX_ALL_LENGTH = 5
+MAX_ALL_WIDTH = 5
+MAX_ALL_LENGTH = 4
 MAX_ALL_CYCLES = 5
-ALL_RUN_TIME = 100
+ALL_RUN_TIME = 10
 MAX_ALL_AVG_NUM_DISPS = 10
 
 # Random int function shorthand
@@ -161,6 +161,8 @@ class LayoutParamters:
         best_sol = initial_sol
         max_iterations = 1000000
         for i in range(max_iterations):
+            if (i % 1000 == 0):
+                print(i)
             if temperature < min_temperature:
                 break
 
@@ -297,7 +299,7 @@ def start_optimisation(disp_coords, length, width, wb_per_fungi, fungus_type,
                                         optimise_func, cycles, blocked_coords, has_cleared
                                         )
     
-    # print("Time taken to optimise:", time.time() - start_time, "seconds")
+    print("Time taken to optimise:", time.time() - start_time, "seconds")
     # print("Optimal Solution:", optimal_solution)
 
     return optimal_solution, optimal_value, iterations
