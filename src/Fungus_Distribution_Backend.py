@@ -1,12 +1,14 @@
 """A program that helps calculate the optimal position to place n dispensers on a custom size grid of nylium"""
 
-import itertools
 import time
+import copy
+import itertools
 import numpy as np
 
 from src.Assets import constants as const
 from src.Fast_Dispenser_Distribution import fast_calc_fung_dist, fast_calc_hf_dist
 from src.Assets.heatmap_data import heatmap_array_xyz
+from src.Assets.data_classes import *
 
 DP_VAL = 5
 WARPED = 0
@@ -41,27 +43,28 @@ def selection_chance(x1, y1):
     # Need to take min of x1 and y1 to avoid index out of bounds as numpy evaluates both branches
     return np.where((x1 > 2) | (y1 > 2), 0, selection_cache[np.minimum(x1, 2), np.minimum(y1, 2)])
 
-def calculate_distribution(length, width, dispensers, disp_coords, fungi_weight,
-                           fungi, sprouts_total=0, cycles=1, blocked_blocks=[]):
+def calculate_distribution(L: PlayerlessCore) -> PlayerlessCoreDistOutput:
     """Calculates the distribution of foliage and fungi on a custom size grid of nylium"""
+    fungi_weight = const.WARP_FUNG_CHANCE if L.nylium_type == WARPED else const.CRMS_FUNG_CHANCE
+    sprouts_total = np.zeros((L.size.length, L.size.width))
     # 4D array for storing distribution of foliage for all dispensers and cycles
-    disp_foliage_grids = np.zeros((dispensers, cycles, width, length))
+    disp_foliage_grids = np.zeros((L.num_disps, L.cycles, L.size.length, L.size.width))
     # 2D array for storing distribution of all the foliage
-    total_foliage_grid = np.zeros((width, length))
+    total_foliage_grid = np.zeros((L.size.length, L.size.width))
 
     # 4D array for storing distribution of desired fungus for all dispensers and cycles
-    disp_des_fungi_grids = np.zeros((dispensers, cycles, width, length))
+    disp_des_fungi_grids = np.zeros((L.num_disps, L.cycles, L.size.length, L.size.width))
     # 2D array for storing distribution of desired fungus
-    total_des_fungi_grid = np.zeros((width, length))
-    x, y = np.ogrid[:width, :length]
+    total_des_fungi_grid = np.zeros((L.size.length, L.size.width))
+    x, y = np.ogrid[:L.size.length, :L.size.width]
 
     # 'bm_for_prod': bone meal used during 1 cycle of firing all the given dispensers
     bm_for_prod = 0.0
-    for i in range(cycles):
-        for j in range(dispensers):
-            foliage_chance, bm_for_prod = generate_foliage(disp_coords, total_foliage_grid,
+    for i in range(L.cycles):
+        for j in range(L.num_disps):
+            foliage_chance, bm_for_prod = generate_foliage(L.disp_coords, total_foliage_grid,
                                                            bm_for_prod, j, x, y)
-            for x1, y1 in blocked_blocks:
+            for x1, y1 in L.blocked_blocks:
                 foliage_chance[x1][y1] = 0
 
             des_fungi_chance = foliage_chance * fungi_weight
@@ -72,27 +75,33 @@ def calculate_distribution(length, width, dispensers, disp_coords, fungi_weight,
             total_foliage_grid += disp_foliage_grids[j][i]
             
             # If warped nylium, generate sprouts
-            if fungi == WARPED:
+            if L.nylium_type == WARPED:
                 sprouts_chance = (1 - total_foliage_grid) * foliage_chance
                 disp_foliage_grids[j][i] += sprouts_chance
                 total_foliage_grid += sprouts_chance
                 sprouts_total += sprouts_chance
         
         # Replicate triggering pistons to clear foliage on top of selected dispensers
-        for k in range(dispensers):
+        for k in range(L.num_disps):
             # Clear foliage only on top of cleared dispensers
-            if disp_coords[k][2] == 0:
+            if L.disp_coords[k][2] == 0:
                 continue
-            disp_x, disp_y, _ = disp_coords[k]
+            disp_x, disp_y, _ = L.disp_coords[k]
             total_foliage_grid[disp_x, disp_y] = 0
             total_des_fungi_grid[disp_x, disp_y] = 0
             disp_foliage_grids[:, :, disp_x, disp_y] = 0
             disp_des_fungi_grids[:, :, disp_x, disp_y] = 0
-            if fungi == WARPED:
+            if L.fungi == WARPED:
                 sprouts_total[disp_x, disp_y] = 0
-
-    return total_foliage_grid, total_des_fungi_grid, bm_for_prod, \
-        disp_foliage_grids, disp_des_fungi_grids, sprouts_total
+    
+    return PlayerlessCoreDistOutput(
+        total_foliage_grid=total_foliage_grid,
+        total_des_fungi_grid=total_des_fungi_grid,
+        disp_foliage_grids=disp_foliage_grids,
+        disp_des_fungi_grids=disp_des_fungi_grids,
+        sprouts_total=sprouts_total,
+        bm_for_prod=bm_for_prod
+    )
 
 def generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y):
     """Generates the distribution of foliage around a dispenser at a given position"""
@@ -114,58 +123,63 @@ def get_totals(des_fungi_grid, foliage_grid):
 
     return total_fungi, total_foliage, bm_for_grow
 
-def calculate_fungus_distribution(length, width, dispensers, disp_coords, fungus_type,
-                                  cycles=1, blocked_blocks=[]):
+def calculate_fungus_distribution(L: PlayerlessCore) -> PlayerlessCoreOutput:
     """Calculates the distribution of foliage and fungi on a custom size grid of nylium"""
-    fungi_weight = const.WARP_FUNG_CHANCE if fungus_type == WARPED else const.CRMS_FUNG_CHANCE
-    # Keep track of total sprouts to subtract from compost bm as they aren't collected
-    sprouts_total = 0
-    foliage_grid, des_fungi_grid, bm_for_prod, disp_foliage_grids, \
-    disp_des_fungi_grids, sprouts_total = \
-        calculate_distribution(length, width, dispensers, disp_coords, fungi_weight,
-                               fungus_type, sprouts_total, cycles, blocked_blocks)
+    L.disp_coords.sort(key=lambda d: d[2])
+    L_org_disp_coords = L.disp_coords.copy()
+    L.disp_coords = [(d[0], d[1], d[3]) for d in L.disp_coords]
 
-    total_des_fungi, total_foliage, bm_for_grow = get_totals(des_fungi_grid, foliage_grid)
+    # Keep track of total sprouts to subtract from compost bm as they aren't collected
+    out = calculate_distribution(L)
+
+    total_des_fungi, total_foliage, bm_for_grow = get_totals(out.total_des_fungi_grid, out.total_foliage_grid)
 
     # Subtract the amount of bone meal retrieved from composting the excess foliage losslessly
-    composted_foliage = total_foliage - np.sum(sprouts_total) - total_des_fungi
+    composted_foliage = total_foliage - np.sum(out.sprouts_total) - total_des_fungi
     bm_from_compost = (const.FOLIAGE_COLLECTION_EFFIC * composted_foliage) / const.FOLIAGE_PER_BM
-    bm_for_prod -= bm_from_compost
-    bm_total = bm_for_prod + bm_for_grow
-    return {
-        "total_foliage": total_foliage,
-        "total_des_fungi": total_des_fungi,
-        "bm_for_prod": bm_for_prod,
-        "bm_for_grow": bm_for_grow,
-        "bm_total": bm_total,
-        "disp_foliage_grids": disp_foliage_grids,
-        "disp_des_fungi_grids": disp_des_fungi_grids
-    }
+    
+    # Add back time values
+    L.disp_coords = L_org_disp_coords
+    return PlayerlessCoreOutput(
+        total_foliage=total_foliage,
+        total_des_fungi=total_des_fungi,
+        bm_for_prod=out.bm_for_prod - bm_from_compost,
+        bm_for_grow=bm_for_grow,
+        bm_total=out.bm_for_prod + bm_for_grow,
+        disp_foliage_grids=out.disp_foliage_grids,
+        disp_des_fungi_grids=out.disp_des_fungi_grids
+    )
 
-def calc_huge_fungus_distribution(p_length, p_width, fungus_type, disp_coords,
-                                  cycles, blocked_blocks, blast_chamber_effic=1):
-    """Approximately calculates huge fungi generation based off desired fungus distribution"""
+def calc_huge_fungus_distribution(
+    L: PlayerlessCore, 
+    dist_data: PlayerlessCoreOutput = None
+) -> Tuple[float, float]:
+    """
+    Approximately calculates huge fungi generation based off desired fungus distribution
+    """
     # Only approximately as calculating the expected wart block distribution given an expected 
     # warped fungi distribution relies on a heap of interacting variables and also that's not even
     # inclduing the fact wart blocks from some early-grown fungi can act as pre-placed wart blocks
     # and can cause VRM in later grown fungi
 
     # Return early if grid is empty
-    if len(disp_coords) == 0:
+    if len(L.disp_coords) == 0:
         return 0.0, 0.0
     # Growing after all produced, makes the same output as growing after each cycle
-    dist_data = calculate_fungus_distribution(p_width, p_length, len(disp_coords), disp_coords,
-                                                fungus_type, cycles, blocked_blocks)
+    if dist_data is None:
+        dist_data = calculate_fungus_distribution(L)
     
-    des_fungi_grid = np.sum(dist_data["disp_des_fungi_grids"], axis=(0, 1))
-    bm_for_prod = dist_data["bm_for_prod"]
+    des_fungi_grid = np.sum(dist_data.disp_des_fungi_grids, axis=(0, 1))
+    bm_for_prod = dist_data.bm_for_prod
+    p_width = L.size.width
+    p_length = L.size.length
 
-    width = const.NT_MAX_RAD + p_width + const.NT_MAX_RAD
-    length = const.NT_MAX_RAD + p_length + const.NT_MAX_RAD
+    hf_width = const.NT_MAX_RAD + p_width + const.NT_MAX_RAD
+    hf_length = const.NT_MAX_RAD + p_length + const.NT_MAX_RAD
     hf_grids = np.zeros((
         len(const.BLOCK_TYPES) + 1,
-        width,
-        length,
+        hf_width,
+        hf_length,
         const.NT_MAX_HT
     ))
 
@@ -184,7 +198,7 @@ def calc_huge_fungus_distribution(p_length, p_width, fungus_type, disp_coords,
                 hf_grids[b, nylium_z + z, nylium_x + x, y] += gen_chance
                 hf_grids[3, nylium_z + z, nylium_x + x, y] += gen_chance
 
-    total_wb = np.sum(hf_grids[2]) * float(blast_chamber_effic)
+    total_wb = np.sum(hf_grids[2]) * float(L.blast_chamber_effic.get())
     return total_wb, bm_for_prod
 
 
@@ -196,9 +210,11 @@ def remove_duplicates(nested_list):
     unique_list = [list(map(list, sublist)) for sublist in unique_set]
     return unique_list
 
-def generate_transformations(coords, l, w):
+def generate_transformations(coords, s: Dimensions):
     """Generate all reflections, rotations, and permutations of the optimal coordinates"""
     alt_coords = []
+    w = s.width
+    l = s.length
     for coord in coords:
         transformed_coords = [coord]
         # cs: cleared status
@@ -237,8 +253,7 @@ def generate_transformations(coords, l, w):
     # Remove duplicate permutations to lower computation time
     return remove_duplicates(perms)
 
-def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fungi, fungus_type,
-                         cycles, blocked_blocks):
+def output_viable_coords(L: PlayerlessCore, optimal_coords, optimal_value, wb_per_fungi):
     """Run through all reflections, rotations, and permutations of the optimal coordinates
     and record all solution within 0.1% of the best solution to a file."""
     optimal_func = fast_calc_fung_dist  # Keeping possible future functionality
@@ -247,28 +262,20 @@ def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fu
         start_time = time.time()
         worst_value = optimal_value
         coords_list_metrics = []
-        for coords in generate_transformations(optimal_coords, length, width):
+        for coords in generate_transformations(optimal_coords, L.size):
             if optimal_func == fast_calc_fung_dist:
-                dist_data = calculate_fungus_distribution(
-                    length,
-                    width,
-                    len(coords),
-                    coords,
-                    fungus_type,
-                    cycles,
-                    blocked_blocks
-                )
-                total_des_fungi = dist_data["total_des_fungi"]
-                bm_for_prod = dist_data["bm_for_prod"]
+                dist_data = calculate_fungus_distribution(L)
+                total_des_fungi = dist_data.total_des_fungi
+                bm_for_prod = dist_data.bm_for_prod
             else:
                 total_wart_blocks, bm_for_prod = \
                 fast_calc_hf_dist(
-                    length,
-                    width,
-                    fungus_type,
-                    coords,
-                    cycles,
-                    blocked_blocks,
+                    L.size.length,
+                    L.size.width,
+                    L.nylium_type,
+                    L.disp_coords,
+                    L.cycles,
+                    L.blocked_blocks,
                 )
                 # Got a headache atm
                 total_des_fungi = 0
@@ -281,13 +288,13 @@ def output_viable_coords(optimal_coords, optimal_value, length, width, wb_per_fu
 
         # Sort the list by the desired fungi value
         coords_list_metrics.sort(key=lambda x: x[0], reverse=True)
-        return export_alt_placements(length, width, coords_list_metrics, optimal_value,
-                                     worst_value, start_time, blocked_blocks)
+        return export_alt_placements(L.size, coords_list_metrics, optimal_value,
+                                     worst_value, start_time, L.blocked_blocks)
     except Exception as e:
         print("An error has occured whilst finding viable coordinates:", e)
         return e
 
-def export_alt_placements(length, width, metrics, optimal_value, worst_value, start_time,
+def export_alt_placements(size: Dimensions, metrics, optimal_value, worst_value, start_time,
                           blocked_blocks):
     """Write the sorted list to a file"""
     alt_placements = len(metrics)
@@ -303,8 +310,8 @@ def export_alt_placements(length, width, metrics, optimal_value, worst_value, st
         f.write(f"Desired Fungi: {round(total_des_fungi, 5)}\n"
                 f"Bone Meal Used: {round(bm_for_prod, 5)}\n")
         f.write(f"Coords: {coords}\n")
-        for x in range(width):
-            for y in range(length):
+        for x in range(size.width):
+            for y in range(size.length):
                 if [x, y, UNCLEARED] in placements:
                     f.write(f"[{coords.index([x, y]) + 1}]")
                 elif [x, y, CLEARED] in placements:

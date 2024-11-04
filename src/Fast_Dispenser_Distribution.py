@@ -23,9 +23,6 @@ selection_cache = np.array([
 
 def fast_calc_fung_dist(length, width, fungus_type, disp_layout, num_cycles, blocked_blocks):
     """Calculate the distribution of foliage for a given set of dispenser offsets fast"""
-    # print(f"length: {length}\n"
-    #       f"width: {width}\n"
-    #       f"disps: {disp_layout}")
     if fungus_type == WARPED:
         return warped_calc_fung_dist(length, width, disp_layout, num_cycles, blocked_blocks)
     

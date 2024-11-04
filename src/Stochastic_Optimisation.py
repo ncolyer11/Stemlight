@@ -3,33 +3,31 @@ import time
 import random
 import numpy as np
 import pandas as pd
+from numpy.random import randint as rand_s
 
 from src.Fast_Dispenser_Distribution import fast_calc_fung_dist, fast_calc_hf_dist
-import src.Assets.constants as const
+from src.Assets.constants import *
 from src.Assets.helpers import resource_path
+from src.Assets.data_classes import *
 
 ACCEPTANCE_RATE = 0.995
 REJECTION_POINT = 0.1
-UNCLEARED = 0
-CLEARED = 1
 MAX_ALL_WIDTH = 5
 MAX_ALL_LENGTH = 4
 MAX_ALL_CYCLES = 5
 ALL_RUN_TIME = 10
 MAX_ALL_AVG_NUM_DISPS = 10
-
-# Random int function shorthand
-rand_s = np.random.randint
+MAX_ITER = 1000000
 
 class LayoutParamters:
     """A class to store parameters of a playerless core nether tree farm to be optimised"""
-    def __init__(self, length, width, fungus_type, disp_layout, num_cycles):
+    def __init__(self, length, width, nylium_type, disp_coords, cycles):
         self.length = length
         self.width = width
-        self.fungus_type = fungus_type
-        self.disp_layout = disp_layout
-        self.num_disps = len(self.disp_layout)
-        self.num_cycles = num_cycles
+        self.nylium_type = nylium_type
+        self.disp_coords = disp_coords
+        self.num_disps = len(self.disp_coords)
+        self.cycles = cycles
     
     def calculate_temp_bounds(self):
         # Find the lowest energy point
@@ -54,11 +52,11 @@ class LayoutParamters:
         start_temperature = -high_energy_change / np.log(ACCEPTANCE_RATE)
         end_temperature = -high_energy_change / np.log(REJECTION_POINT)
         return start_temperature, end_temperature, lowest_energy, avg_energy
-    
+
     def generate_random_layout(self):
         length = rand_s(1, MAX_ALL_LENGTH + 1)
         width = rand_s(1, MAX_ALL_WIDTH + 1)
-        fungus_type = const.WARPED if np.random.rand() < 0.5 else const.CRIMSON
+        nylium_type = WARPED if np.random.rand() < 0.5 else CRIMSON
         is_cleared = rand_s(0,2)
 
         all_disps = [[x, y, is_cleared] for x in range(width) for y in range(length)]
@@ -67,52 +65,52 @@ class LayoutParamters:
             min(len(all_disps), rand_s(MAX_ALL_AVG_NUM_DISPS)),
             replace=False
         )
-        disp_layout = [all_disps[i] for i in coords]
+        disp_coords = [all_disps[i] for i in coords]
 
-        num_cycles = rand_s(1, MAX_ALL_CYCLES + 1)
+        cycles = rand_s(1, MAX_ALL_CYCLES + 1)
 
         return {
             'length': length,
             'width': width,
-            'fungus_type': fungus_type,
-            'disp_layout': disp_layout,
-            'num_cycles': num_cycles
+            'nylium_type': nylium_type,
+            'disp_coords': disp_coords,
+            'cycles': cycles
         }
 
     def generate_neighbour(self, current_sol):
-        disp_layout = current_sol['disp_layout']
+        disp_coords = current_sol['disp_coords']
         # Change paramter vals by -1, 0, or 1, ensuring it still remains at a valid value
         length = max(1, min(current_sol['length'] + rand_s(-1, 2), MAX_ALL_LENGTH))
         width = max(1, min(current_sol['width'] + rand_s(-1, 2), MAX_ALL_WIDTH))
-        num_cycles = max(1, min(current_sol['num_cycles'] + rand_s(-1, 2), MAX_ALL_CYCLES))
+        cycles = max(1, min(current_sol['cycles'] + rand_s(-1, 2), MAX_ALL_CYCLES))
         # Randomly chose between warped or crimson nylium
-        fungus_type = const.WARPED if np.random.rand() < 0.5 else const.CRIMSON
+        nylium_type = WARPED if np.random.rand() < 0.5 else CRIMSON
 
-        # print("Initial num disps:", len(disp_layout))
-        num_disps = max(1, min(len(disp_layout) + rand_s(-1, 2), length * width))
+        # print("Initial num disps:", len(disp_coords))
+        num_disps = max(1, min(len(disp_coords) + rand_s(-1, 2), length * width))
         # print("New num disps:", num_disps)
         # Create a copy of the current solution
-        neighbour_disp_layout = disp_layout.copy()
-        positions = [[pos[0], pos[1], UNCLEARED] for pos in disp_layout]
-        # print("Initial disp layout:", neighbour_disp_layout)
-        if num_disps < len(disp_layout):
+        neighbour_disp_coords = disp_coords.copy()
+        positions = [[pos[0], pos[1], UNCLEARED] for pos in disp_coords]
+        # print("Initial disp layout:", neighbour_disp_coords)
+        if num_disps < len(disp_coords):
             # If there's one less dispenser, then randomly remove one from the layout
-            neighbour_disp_layout.remove(random.choice(neighbour_disp_layout))
-        elif num_disps > len(disp_layout):
+            neighbour_disp_coords.remove(random.choice(neighbour_disp_coords))
+        elif num_disps > len(disp_coords):
             # If there's one more dispenser, then randomly place it at an empty spot on the platform
             new_disp = [rand_s(width), rand_s(length), UNCLEARED]
             while new_disp in positions:
                 new_disp = [rand_s(width), rand_s(length), UNCLEARED]
-            neighbour_disp_layout.append(new_disp)
+            neighbour_disp_coords.append(new_disp)
 
-        # print("Disp layout after +/- disp:", neighbour_disp_layout)
+        # print("Disp layout after +/- disp:", neighbour_disp_coords)
 
         # Just straight up remove all excess dispensers
-        for i, coords in reversed(list(enumerate(neighbour_disp_layout))):
+        for i, coords in reversed(list(enumerate(neighbour_disp_coords))):
             if coords[0] >= width or coords[1] >= length:
-                del neighbour_disp_layout[i]
+                del neighbour_disp_coords[i]
 
-        num_disps = len(neighbour_disp_layout)
+        num_disps = len(neighbour_disp_coords)
         # Allow dispenser placements to wander if axis isn't dimensionless
         step_h = 1 if width != 1 else 0
         step_v = 1 if length != 1 else 0
@@ -120,14 +118,14 @@ class LayoutParamters:
         neighbour_solution = {
             'length': length,
             'width': width,
-            'fungus_type': fungus_type,
-            'disp_layout': neighbour_disp_layout,
-            'num_cycles': num_cycles
+            'nylium_type': nylium_type,
+            'disp_coords': neighbour_disp_coords,
+            'cycles': cycles
         }
         
         # Chose a random number of dispensers to change in a random order
         indexes_to_change = np.random.choice(num_disps, rand_s(max(1, num_disps)), replace=False)
-        positions = [[pos[0], pos[1], UNCLEARED] for pos in neighbour_disp_layout]
+        positions = [[pos[0], pos[1], UNCLEARED] for pos in neighbour_disp_coords]
         for i in indexes_to_change:
             # Randomly select a small change in horizontal and vertical coord (-1, 0, or 1)
             sol_x, sol_y, _ = positions[i]
@@ -149,9 +147,9 @@ class LayoutParamters:
                 # print(positions)
                 # print("loop2", length, width)
         
-            # Update the disp_layout with the new coord and its cleared status
+            # Update the disp_coords with the new coord and its cleared status
             positions[i] = new_coords.copy()
-            neighbour_solution['disp_layout'][i] = new_coords
+            neighbour_solution['disp_coords'][i] = new_coords
 
         return neighbour_solution
 
@@ -167,15 +165,13 @@ class LayoutParamters:
                 break
 
             neighbour_sol = self.generate_neighbour(current_sol)
-            # print(i)
             # Either desired fungi produced, or potential wart blocks generated
             current_energy = fast_calc_fung_dist(**current_sol, blocked_blocks=[])[0]
             neighbour_energy, bm_for_prod = fast_calc_fung_dist(**neighbour_sol, blocked_blocks=[])
 
-            bm_for_growth = neighbour_energy * const.AVG_BM_TO_GROW_FUNG
-            # wart_blocks_prod = fast_calc_hf_dist(**neighbour_sol, blocked_blocks=[])[0]
+            bm_for_growth = neighbour_energy * AVG_BM_TO_GROW_FUNG
             wart_blocks_prod = 100
-            bm_req = wart_blocks_prod > (bm_for_prod + bm_for_growth) * const.WARTS_PER_BM
+            bm_req = wart_blocks_prod > (bm_for_prod + bm_for_growth) * WARTS_PER_BM
 
             accept_prob = self.acceptance_probability(current_energy, neighbour_energy, temperature)
             if neighbour_energy > current_energy and bm_req or \
@@ -189,29 +185,29 @@ class LayoutParamters:
         best_val = fast_calc_fung_dist(**best_sol, blocked_blocks=[])[0]
         return best_sol, best_val
 
-    def run_fast_calc_fung_dist(self, disp_layout=None):
-        if disp_layout == None:
-            disp_layout = self.disp_layout
+    def run_fast_calc_fung_dist(self, disp_coords=None):
+        if disp_coords == None:
+            disp_coords = self.disp_coords
 
         return fast_calc_fung_dist(
             self.length,
             self.width,
-            self.fungus_type,
-            disp_layout,
-            self.num_cycles,
+            self.nylium_type,
+            disp_coords,
+            self.cycles,
             []
         )
 
-    def run_fast_calc_hf_dist(self, disp_layout=None):
-        if disp_layout == None:
-            disp_layout = self.disp_layout
+    def run_fast_calc_hf_dist(self, disp_coords=None):
+        if disp_coords == None:
+            disp_coords = self.disp_coords
         
         return fast_calc_hf_dist(
             self.length,
             self.width,
-            self.fungus_type,
-            disp_layout,
-            self.num_cycles,
+            self.nylium_type,
+            disp_coords,
+            self.cycles,
             []
         )
 
@@ -220,11 +216,11 @@ class LayoutParamters:
             return 1.0
         else:
             return np.exp((neighbour_energy - current_energy) / temperature)
-    
+
     def get_lowest_energy(self):
         # Return the lowest non-zero layout: a 1-cycle 1x1 crimson platform with a cleared dispenser
         return fast_calc_fung_dist(
-            1, 1, const.CRIMSON,
+            1, 1, CRIMSON,
             [[0, 0, CLEARED]],
             1,
             []
@@ -237,9 +233,9 @@ def optimise_all():
     params = LayoutParamters(
         length=1, 
         width=1, 
-        fungus_type=const.WARPED, 
-        disp_layout=[[0, 0, UNCLEARED]],
-        num_cycles=1
+        nylium_type=WARPED, 
+        disp_coords=[[0, 0, UNCLEARED]],
+        cycles=1
     )
 
     start_temp, end_temp, *_ = params.calculate_temp_bounds()
@@ -253,9 +249,9 @@ def optimise_all():
     initial_sol = {
         'length': 1,
         'width': 1,
-        'fungus_type': const.WARPED,
-        'disp_layout': [[0, 0, UNCLEARED]],
-        'num_cycles': 1
+        'nylium_type': WARPED,
+        'disp_coords': [[0, 0, UNCLEARED]],
+        'cycles': 1
     }
 
     all_optimal_sol, all_optimal_val = params.simulated_annealing(
@@ -267,68 +263,65 @@ def optimise_all():
 
     return all_optimal_sol, all_optimal_val, iterations
 
-def start_optimisation(disp_coords, length, width, wb_per_fungi, fungus_type,
-                       run_time, cycles, blocked_coords):
+def start_optimisation(L: PlayerlessCore):
     """Start optimising the function using the simulated annealing algorithm."""
-    num_dispensers = len(disp_coords)
+    num_dispensers = len(L.disp_coords)
     if num_dispensers == 0:
         return [], 0
-    cleared_array = [d[2] for d in disp_coords]
+    cleared_array = [d[2] for d in L.disp_coords]
     has_cleared = False
     if CLEARED in cleared_array:
         has_cleared = True
     optimise_func = fast_calc_fung_dist
+    temps = calculate_temp_bounds(L, num_dispensers, optimise_func, has_cleared)
+    S = SimAnnealingParams(
+        optimise_func=optimise_func,
+        initial_solution=[[-1, -1, 0] for _ in range(num_dispensers)], # Start with all worst case
+        start_temp=temps[0],                                           # dispensers off the grid
+        end_temp=temps[1],                                             # with no clearing
+        cooling_rate=calculate_cooling_rate(temps[0], temps[1], L.run_time),
+        max_iter=MAX_ITER
+    )
+    optimise_func = fast_calc_fung_dist
     start_time = time.time()
-    # Start with all worst case dispensers off the grid with no clearing
-    initial_solution = [[-1, -1, 0] for _ in range(num_dispensers)]
-    start_temp, end_temp, *_ = calculate_temp_bounds(num_dispensers, length, width, fungus_type,
-                                                     optimise_func, cycles, blocked_coords,
-                                                     has_cleared)
-
-    cooling_rate = calculate_cooling_rate(start_temp, end_temp, run_time)
    
-    iterations = math.floor(math.log(end_temp / start_temp) / math.log(cooling_rate)) + 1
-    print(f"\nStarting temp: {start_temp}",
-          f"\nEnding temp: {end_temp}", 
-          f"\nCooling rate: {cooling_rate}",
+    iterations = math.floor(math.log(S.end_temp / S.start_temp) / math.log(S.cooling_rate)) + 1
+    print(f"\nStarting temp: {S.start_temp}",
+          f"\nEnding temp: {S.end_temp}", 
+          f"\nCooling rate: {S.cooling_rate}",
           f"\nIterations: {iterations}")
 
-    optimal_solution, optimal_value = simulated_annealing(
-                                        initial_solution, start_temp, cooling_rate, end_temp,
-                                        length, width, fungus_type, wb_per_fungi,
-                                        optimise_func, cycles, blocked_coords, has_cleared
-                                        )
+    optimal_solution, optimal_value = simulated_annealing(L, S, has_cleared)
     
     print("Time taken to optimise:", time.time() - start_time, "seconds")
     # print("Optimal Solution:", optimal_solution)
 
     return optimal_solution, optimal_value, iterations
 
-def simulated_annealing(initial_sol, temperature, cooling_rate, min_temperature,
-                        length, width, fungus_type, wb_per_fungi,
-                        optimise_func, cycles, blocked_coords, has_cleared):
+def simulated_annealing(L: PlayerlessCore, S: SimAnnealingParams, has_cleared=False):
     """Simulated annealing algorithm for discrete optimisation of fungus distribution."""
-    current_sol = initial_sol
-    best_sol = initial_sol
-    max_iterations = 100000
-    for _ in range(max_iterations):
-        if temperature < min_temperature:
+    current_sol = S.initial_sol
+    best_sol = S.initial_sol
+    for _ in range(S.max_iterations):
+        if temperature < S.min_temperature:
             break
-        neighbour_sol = generate_neighbour(current_sol, length, width, has_cleared)
+        neighbour_sol = generate_neighbour(current_sol, L.size, has_cleared)
         # Either desired fungi produced, or potential wart blocks generated
-        current_energy = optimise_func(length, width, fungus_type, current_sol, cycles, blocked_coords)[0]
-        neighbour_energy, bm_for_prod = optimise_func(length, width, fungus_type, neighbour_sol, cycles, blocked_coords)
+        current_energy = S.optimise_func(L.size.length, L.size.width, L.nylium_type, current_sol, L.cycles, 
+                                         L.blocked_coords)[0]
+        neighbour_energy, bm_for_prod = S.optimise_func(L.size.length, L.size.width, L.nylium_type, neighbour_sol,
+                                                        L.cycles, L.blocked_coords)
 
-        bm_req = bm_for_prod < wb_per_fungi / const.WARTS_PER_BM - const.AVG_BM_TO_GROW_FUNG
+        bm_req = bm_for_prod < L.warts_effic / WARTS_PER_BM - AVG_BM_TO_GROW_FUNG
         if neighbour_energy > current_energy and bm_req or \
            np.random.rand() < acceptance_probability(current_energy, neighbour_energy, temperature):
             current_sol = neighbour_sol
-            if neighbour_energy > optimise_func(length, width, fungus_type, best_sol, cycles, blocked_coords)[0] \
-               and bm_req:
+            if neighbour_energy > S.optimise_func(L.size.length, L.size.width, L.nylium_type, best_sol, L.cycles,
+                                                  L.blocked_coords)[0] and bm_req:
                 best_sol = neighbour_sol
 
-        temperature *= cooling_rate
-    return best_sol, optimise_func(length, width, fungus_type, best_sol, cycles, blocked_coords)[0]
+        temperature *= S.cooling_rate
+    return best_sol, S.optimise_func(L.size.length, L.size.width, L.nylium_type, best_sol, L.cycles, L.blocked_coords)[0]
 
 def acceptance_probability(current_energy, neighbour_energy, temperature):
     """Calculate the probability of accepting a worse solution."""
@@ -337,10 +330,10 @@ def acceptance_probability(current_energy, neighbour_energy, temperature):
     else:
         return np.exp((neighbour_energy - current_energy) / temperature)
 
-def generate_neighbour(solution, length, width, has_cleared):
+def generate_neighbour(solution: Any, size: Dimensions, has_cleared: ClearedStatus):
     """Generate a new dispenser permutation by altering 1 to all of their coords slightly"""
-    step_h = 1 if width != 1 else 0
-    step_v = 1 if length != 1 else 0
+    step_h = 1 if size.width != 1 else 0
+    step_v = 1 if size.length != 1 else 0
     rand_s = np.random.randint
     cleared_state = 1
     if has_cleared == True:
@@ -357,15 +350,15 @@ def generate_neighbour(solution, length, width, has_cleared):
         # Randomly chose between cleared and non-cleared dispenser if there's at least 1 cleared
         # dispenser in the input field already
         cleared_val = rand_s(0, cleared_state)
-        new_coords = [max(0, min(width - 1, sol_x + rand_s(-step_h, step_h + 1))),
-                      max(0, min(length - 1, sol_y + rand_s(-step_v, step_v + 1))),
+        new_coords = [max(0, min(size.width - 1, sol_x + rand_s(-step_h, step_h + 1))),
+                      max(0, min(size.length - 1, sol_y + rand_s(-step_v, step_v + 1))),
                       cleared_val]
 
         # Make sure no two coords can be the same
         else_array = positions[:i] + positions[i+1:]
         while new_coords in else_array:
-            new_coords = [max(0, min(width - 1, new_coords[0] + rand_s(-step_h, step_h + 1))), 
-                          max(0, min(length - 1, new_coords[1] + rand_s(-step_v, step_v + 1))),
+            new_coords = [max(0, min(size.width - 1, new_coords[0] + rand_s(-step_h, step_h + 1))), 
+                          max(0, min(size.length - 1, new_coords[1] + rand_s(-step_v, step_v + 1))),
                           cleared_val]
     
         # Update the solution with the new coord and its cleared status
@@ -374,23 +367,29 @@ def generate_neighbour(solution, length, width, has_cleared):
 
     return neighbour_solution
 
-def calculate_temp_bounds(N, length, width, fungus_type, optimise_func, cycles, blocked_coords, has_cleared):
+def calculate_temp_bounds(L: PlayerlessCore, optimise_func: Callable, has_cleared: ClearedStatus):
     """Calculate the starting temperature for the simulated annealing algorithm."""
     # Find the lowest energy point
     rand_s = np.random.randint
-    lowest_energy = get_lowest_energy(N, length, width, fungus_type, optimise_func, cycles, blocked_coords)
+    lowest_energy = get_lowest_energy(L)
 
     # Create a valid set of coords by passing it through generate_neighbour
     average_solutions = []
-    trials = 300*N if optimise_func == fast_calc_fung_dist else 150*N
+    trials = 300 * L.num_disps if optimise_func == fast_calc_fung_dist else 150 * L.num_disps
     for _ in range(trials):
-        coords = [[rand_s(0, width), rand_s(0, length), UNCLEARED] for _ in range(N)]
-        average_solutions.append(generate_neighbour(coords, length, width, has_cleared))
+        coords = [[
+            rand_s(0, L.size.width), rand_s(0, L.size.length), UNCLEARED
+            ] for _ in range(L.num_disps)
+        ]
+        average_solutions.append(
+            generate_neighbour(coords, L.size.length, L.size.width,has_cleared)
+        )
     
     # Calculate the average energy of the initial solution
     avg_energy = np.mean([
         optimise_func(
-            length, width, fungus_type, average_solutions[i], cycles, blocked_coords
+            L.size.length, L.size.width, L.nylium_type, average_solutions[i], L.cycles, 
+            L.blocked_coords
         )[0] for i in range(trials)
     ])
 
@@ -399,17 +398,17 @@ def calculate_temp_bounds(N, length, width, fungus_type, optimise_func, cycles, 
     end_temperature = -high_energy_change / np.log(REJECTION_POINT)
     return start_temperature, end_temperature, lowest_energy, avg_energy
 
-def get_lowest_energy(N, length, width, fungus_type, optimise_func, cycles, blocked_coords):
+def get_lowest_energy(L: PlayerlessCore, optimise_func: Callable):
     # Worst case energy with a single blocked block is every dispenser on a blocked block, 0:
-    if len(blocked_coords) > 0:
+    if len(L.blocked_coords) > 0:
         return 0
     
     # Otherwise just chuck up all the dispensers in the top left corner
     return optimise_func(
-        length, width, fungus_type,
-        [[0, 0, UNCLEARED] for _ in range(N)],
-        cycles,
-        blocked_coords
+        L.size.length, L.size.width, L.nylium_type,
+        [[0, 0, UNCLEARED] for _ in range(L.num_disps)],
+        L.cycles,
+        L.blocked_coords
     )[0]
 
 def calculate_cooling_rate(start_temp, end_temp, run_time):
@@ -424,20 +423,20 @@ def calculate_cooling_rate(start_temp, end_temp, run_time):
     except ValueError:
         # Handle the case where cpu benchmark time is corrupted/unreadable somehow
         with open(resource_path("cpu_benchmark.txt"), "w") as f:
-            f.write(str(const.BASE_CPU_ITER_TIME))
+            f.write(str(BASE_CPU_ITER_TIME))
         
         # Re-run the calculation using the default BASE_CPU_ITER_TIME as iter_time
-        cooling_rate = (end_temp / start_temp) ** (const.BASE_CPU_ITER_TIME / int(run_time))
+        cooling_rate = (end_temp / start_temp) ** (BASE_CPU_ITER_TIME / int(run_time))
 
     return cooling_rate
 
+######################################
 # Research and development functions #
-
+######################################
 def output_results(length, width, optimal_func, solution, start_time):
     """Output the results of the optimisation."""
     # print("Time taken:", time.time() - start_time)
     best_coords = np.array(solution)
-    # print("Optimal coords: \n", best_coords)
     # print("Optimal value: ", optimal_func(solution))
     # Print the location of max_rates_coords in a grid on terminal
     for row in range(length):
