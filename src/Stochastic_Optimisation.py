@@ -263,7 +263,7 @@ def optimise_all():
 
     return all_optimal_sol, all_optimal_val, iterations
 
-def start_optimisation(L: PlayerlessCore):
+def start_optimisation(L: PlayerlessCore) -> Tuple[List[Dispenser], float, int]:
     """Start optimising the function using the simulated annealing algorithm."""
     num_dispensers = len(L.disp_coords)
     if num_dispensers == 0:
@@ -298,7 +298,11 @@ def start_optimisation(L: PlayerlessCore):
 
     return optimal_solution, optimal_value, iterations
 
-def simulated_annealing(L: PlayerlessCore, S: SimAnnealingParams, has_cleared=False):
+def simulated_annealing(
+    L: PlayerlessCore,
+    S: SimAnnealingParams,
+    has_cleared=False
+) -> Tuple[List[Dispenser], float]:
     """Simulated annealing algorithm for discrete optimisation of fungus distribution."""
     current_sol = S.initial_sol
     best_sol = S.initial_sol

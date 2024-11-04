@@ -13,37 +13,25 @@ class Dimensions:
     width: int
     
 @dataclass
+class Dispenser:
+    row: int
+    col: int
+    timestamp: int
+    cleared: ClearedStatus
+ 
+@dataclass
 class PlayerlessCore:
-    nylium_type: NyliumType | tk.StringVar 
+    num_disps: int
+    disp_coords: List[Dispenser]
     size: Dimensions
+    nylium_type: NyliumType | tk.StringVar 
     cycles: int
     blocked_blocks: List[List[int]]
     warts_effic: float | tk.StringVar 
     blast_chamber_effic: float | tk.StringVar
     run_time: int
     all_optimised: bool
-    disp_coords: List[List[int]]
-    
-    # Make it impossible to provide a wrong value of num_disps
-    _num_disps: int = field(init=False, repr=False)
 
-    def __post_init__(self):
-         # Call setter to set disp_coords and num_disps
-        self.disp_coords = self.disp_coords 
-
-    @property
-    def num_disps(self) -> int:
-        return self._num_disps
-
-    @property
-    def disp_coords(self) -> List[List[int]]:
-        return self._disp_coords
-
-    @disp_coords.setter
-    def disp_coords(self, value: List[List[int]]):
-        self._disp_coords = value
-        # Update num_disps when disp_coords changes
-        self._num_disps = len(value)  
 
 @dataclass
 class PlayerlessCoreOutput:
@@ -99,10 +87,3 @@ class SimAnnealingParams:
     end_temp: float
     cooling_rate: float
     max_iter: int
-    
-@dataclass
-class Dispenser:
-    x: int
-    z: int
-    timestamp: int
-    cleared: ClearedStatus

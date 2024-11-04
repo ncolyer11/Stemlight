@@ -25,6 +25,9 @@ from src.Stochastic_Optimisation import start_optimisation, optimise_all
 # TODO:
 # Add export and import layout settings feature to file menu
 
+#################
+### CONSTANTS ###
+#################
 # Non-linear scaling 
 NLS = 1.765
 WDTH = 92
@@ -39,7 +42,13 @@ WARPED: FungusType = 0
 CRIMSON: FungusType = 1
 UNCLEARED: ClearedStatus = False
 CLEARED: ClearedStatus = True
+RUN_TIME_VALS = [1, 4, 7, 10, 15, 30, 60, 300, 1000]
+BC_EFFIC_VALS = [0.0, 0.5, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1]
 
+
+###########################
+### CLASSES & FUNCTIONS ###
+###########################
 class SlideSwitch(tk.Canvas):
     def __init__(self, parent, callback=None, *args, **kwargs):
         tk.Canvas.__init__(self, parent, *args, **kwargs)
@@ -97,7 +106,7 @@ class App:
         self.master = master
         self.grid = []
         self.L = layout_info
-        self.D = DisplayInfo({}, {}, {}, {}, ())
+        self.D = DisplayInfo({}, {}, {}, {}, ()) # Start with all empty labels and info values
         self.checkboxes = []
 
         clearing_path = resource_path("src/Images/cleared_dispenser.png")
@@ -180,7 +189,7 @@ class App:
 
         run_time_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         toolbar.add_cascade(label="Run Time", menu=run_time_menu)
-        for time in [1, 4, 7, 10, 15, 30, 60, 300, 1000]:
+        for time in RUN_TIME_VALS:
             run_time_menu.add_radiobutton(
                 label=str(time).rjust(5), 
                 variable=self.L.run_time, 
@@ -190,7 +199,7 @@ class App:
 
         bc_effic_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         toolbar.add_cascade(label="Blast Chamber Efficiency", menu=bc_effic_menu)
-        for effic in [0.0, 0.5, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1]:
+        for effic in BC_EFFIC_VALS:
             bc_effic_menu.add_radiobutton(
                 label=(str(round(100 * effic)) + "%").rjust(5), 
                 variable=self.L.blast_chamber_effic, 
@@ -211,7 +220,7 @@ class App:
     def calibrate_run_time(self):
         """Runs a benchmark optimisation test to measure user's processing speed and modify cooling rate accordingly"""
         # Run test with 4 uncleared dispensers, 3 times
-        disp_coords = [(0, 0, UNCLEARED) for _ in range(0, 4)]
+        disp_coords = [Dispenser(0, 0, t, UNCLEARED) for t in range(0, 4)]
         num_tests = 3
         des_run_time = 15
 
@@ -492,20 +501,24 @@ class App:
     def create_ordered_dispenser_array(self, rows, cols):
         """Create a 2D array of dispensers ordered by the time they were placed on the grid"""
         # Sort the dispensers list by the time data
-        sorted_dispensers = sorted(self.L.disp_coords, key=lambda dispenser: dispenser[2])
+        sorted_dispensers: List[Dispenser] = sorted(
+            self.L.disp_coords, key=lambda dispenser: dispenser.timestamp
+        )
         # Filter out only valid dispensers
-        filtered_dispensers = [d for d in sorted_dispensers if d[0] < rows and d[1] < cols]
+        filtered_dispensers: List[Dispenser] = [
+            d for d in sorted_dispensers if d.row < rows and d.col < cols
+        ]
 
         # Create a 2D array with the same dimensions as self.checkboxes, initialized with zeros
-        dispenser_array = [[0 for _ in var_row] for var_row in self.checkboxes]
+        dispenser_array = [[(0, 0, 0) for _ in cb_row] for cb_row in self.checkboxes]
 
         # Iterate over the sorted dispensers list
         for i, dispenser in enumerate(filtered_dispensers):
             # The order of the dispenser is i + 1
             # Set the corresponding element in the dispenser array to i + 1
-            x, y = dispenser[:2]
+            row, col = dispenser.row, dispenser.col
             # Preserve initial time value and cleared status
-            dispenser_array[x][y] = (i + 1, dispenser[2], dispenser[3])
+            dispenser_array[row][col] = (i + 1, dispenser.timestamp, dispenser.cleared)
 
         return dispenser_array
     
@@ -514,7 +527,7 @@ class App:
         label_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*5))
 
         # Save the states of the checkboxes
-        saved_states = [[var.get() for var in var_row] for var_row in self.checkboxes]
+        saved_states = [[cb.get() for cb in cb_row] for cb_row in self.checkboxes]
         rows = self.row_slider.get()
         cols = self.col_slider.get()
         self.L.size.length = rows
@@ -533,10 +546,10 @@ class App:
         blocked_copy = self.L.blocked_blocks.copy()
         self.L.blocked_blocks = []
 
-        for i in range(rows):
-            row = []
+        for row in range(rows):
+            cb_row = []
             var_row = []
-            for j in range(cols):
+            for col in range(cols):
                 var = tk.IntVar()
                 cb = tk.Button(
                     self.grid_frame,
@@ -545,82 +558,86 @@ class App:
                     highlightthickness=0,
                     bd=1,
                     bg=colours.phtalo_green,
-                    command=lambda x=i, y=j: self.add_dispenser(x, y)
+                    command=lambda row_l=row, col_l=col: self.add_dispenser(row_l, col_l)
                 )
-                cb.grid(row=i, column=j, padx=0, pady=0)
+                cb.grid(row=row, column=col, padx=0, pady=0)
                 # Right-click to view individual block info
-                cb.bind("<Button-3>", lambda event, x=i, y=j: self.display_block_info(x, y))
+                cb.bind("<Button-3>",
+                        lambda event, row_l=row, col_l=col: self.display_block_info(row_l, col_l))
                 # Middle-click to set to a clearing dispenser or blocked block
                 # depending on if clicked block is a dispenser or nylium block
-                cb.bind("<Button-2>", lambda event, x=i, y=j: self.set_cleared_or_blocked(x, y))
+                cb.bind("<Button-2>",
+                        lambda event, row_l=row, col_l=col: self.set_cleared_or_blocked(row_l, col_l))
                 # Accesible ctrl+right click option for users without a mouse/middle-click
-                cb.bind("<Control-Button-1>", lambda event, x=i, y=j: self.set_cleared_or_blocked(x, y))
+                cb.bind("<Control-Button-1>",
+                        lambda event, row_l=row, col_l=col: self.set_cleared_or_blocked(row_l, col_l))
 
                 var_row.append(var)
-                row.append((cb, None))
+                cb_row.append((cb, None))
                 # Restore the state of the checkbox, if it existed before
-                if i < len(saved_states) and j < len(saved_states[i]):
-                    var.set(saved_states[i][j])
-                    if saved_states[i][j] == 1:
-                        cleared = dispenser_array[i][j][2]
+                if row < len(saved_states) and col < len(saved_states[row]):
+                    var.set(saved_states[row][col])
+                    if saved_states[row][col] == 1:
+                        cleared = dispenser_array[row][col][2]
                         if cleared == CLEARED:
                             cb.config(image=self.clearing_image)
                         else:
                             cb.config(image=self.checked_image)
-                        label = tk.Label(self.grid_frame, text=str(dispenser_array[i][j][0]), font=label_font)
-                        label.grid(row=i, column=j, padx=0, pady=0, sticky='se')
-                        row[j] = (cb, label)
-                        self.L.disp_coords.append((i, j, dispenser_array[i][j][1], cleared))
-                    if (i, j) in blocked_copy:
+                        label = tk.Label(self.grid_frame, text=str(dispenser_array[row][col][0]), font=label_font)
+                        label.grid(row=row, column=col, padx=0, pady=0, sticky='se')
+                        cb_row[col] = (cb, label)
+                        self.L.disp_coords.append(Dispenser(row, col, dispenser_array[row][col][1], cleared))
+                    if (row, col) in blocked_copy:
                         cb.config(image=self.blocked_image)
-                        self.L.blocked_blocks.append((i, j))
-            self.grid.append(row)
+                        self.L.blocked_blocks.append((row, col))
+            self.grid.append(cb_row)
             self.checkboxes.append(var_row)
-
+        self.L.num_disps = len(self.L.disp_coords)
         self.calculate()
         self.display_block_info()
 
-    def add_dispenser(self, x, y, cleared=False):
+    def add_dispenser(self, row, col, cleared=False):
         """
         Add a dispenser to the nylium grid at the given coordinates
         """
         label_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*5))
 
         # Toggle the state of the checkbox
-        self.checkboxes[x][y].set(not self.checkboxes[x][y].get())
-        if (x, y) in self.L.blocked_blocks:
-            self.L.blocked_blocks.remove((x, y))
+        self.checkboxes[row][col].set(not self.checkboxes[row][col].get())
+        if (row, col) in self.L.blocked_blocks:
+            self.L.blocked_blocks.remove((row, col))
 
         # Update the image based on the state of the checkbox
-        if self.checkboxes[x][y].get() == 0:
-            self.grid[x][y][0].config(image=self.unchecked_image)
+        if self.checkboxes[row][col].get() == 0:
+            self.grid[row][col][0].config(image=self.unchecked_image)
             new_dispensers = []
             for d in self.L.disp_coords:
-                if d[:2] != (x, y):
+                if (d.row, d.col) != (row, col):
                     new_dispensers.append(d)
                     # Reorder dispensers after removing one in the middle
                     label = tk.Label(self.grid_frame, text=len(new_dispensers), font=label_font)
-                    d_x = d[0]
-                    d_y = d[1]
-                    label.grid(row=d_x, column=d_y, padx=0, pady=0, sticky='se')  
-                    self.grid[d_x][d_y][1].destroy()
+                    d_row = d.row
+                    d_col = d.col
+                    label.grid(row=d_row, column=d_col, padx=0, pady=0, sticky='se')  
+                    self.grid[d_row][d_col][1].destroy()
                     # Update the grid with the label
-                    self.grid[d_x][d_y] = (self.grid[d_x][d_y][0], label) 
+                    self.grid[d_row][d_col] = (self.grid[d_row][d_col][0], label) 
 
-            self.L.disp_coords = [d for d in self.L.disp_coords if d[:2] != (x, y)]
-            self.grid[x][y][1].destroy()
+            self.L.disp_coords = [d for d in self.L.disp_coords if (d.row, d.col) != (row, col)]
+            self.grid[row][col][1].destroy()
         else:
             if cleared == True:
-                self.grid[x][y][0].config(image=self.clearing_image)
-                self.L.disp_coords.append((x, y, time.time(), 1))
+                self.grid[row][col][0].config(image=self.clearing_image)
+                self.L.disp_coords.append(Dispenser(row, col, time.time(), CLEARED))
             else:
-                self.grid[x][y][0].config(image=self.checked_image)
-                self.L.disp_coords.append((x, y, time.time(), 0))
+                self.grid[row][col][0].config(image=self.checked_image)
+                self.L.disp_coords.append(Dispenser(row, col, time.time(), UNCLEARED))
             label = tk.Label(self.grid_frame, text=str(len(self.L.disp_coords)), font=label_font)
             # Place label in the bottom right corner
-            label.grid(row=x, column=y, padx=0, pady=0, sticky='se')  
+            label.grid(row=row, column=col, padx=0, pady=0, sticky='se')  
             # Update the grid with the label
-            self.grid[x][y] = (self.grid[x][y][0], label)  
+            self.grid[row][col] = (self.grid[row][col][0], label)  
+        self.L.num_disps = len(self.L.disp_coords)
         self.calculate()
         self.display_block_info()
 
@@ -635,10 +652,11 @@ class App:
         if remove_blocked:
             self.L.blocked_blocks = []  
         else:
-            for x, y in self.L.blocked_blocks:
-                self.grid[x][y][0].config(image=self.blocked_image)
+            for row, col in self.L.blocked_blocks:
+                self.grid[row][col][0].config(image=self.blocked_image)
 
         self.L.disp_coords = []
+        self.L.num_disps = 0
         self.calculate()
         self.display_block_info()
 
@@ -650,12 +668,12 @@ class App:
             return
 
         fungus_type = CRIMSON if self.L.nylium_type.get() == "crimson" else WARPED
-        disp_coords = [(d[0], d[1], d[3]) for d in self.L.disp_coords]
-        if len(disp_coords) == 0:
+        if self.L.num_disps == 0:
             return
         L_optimise = PlayerlessCore(
+            num_disps=self.L.num_disps,
+            disp_coords=self.L.disp_coords,
             size=(self.col_slider.get(), self.row_slider.get()),
-            disp_coords=disp_coords,
             nylium_type=fungus_type,
             cycles=self.cycles_slider.get(),
             blocked_blocks=self.L.blocked_blocks,
@@ -665,7 +683,7 @@ class App:
             all_optimised=False
         )
             
-        optimal_coords, optimal_value, _ = start_optimisation(L_optimise)
+        optimal_coords, optimal_value, iterations = start_optimisation(L_optimise)
 
         if optimal_coords == -1:
             messagebox.showwarning("Error", "Maximum runtime exceeded.")
@@ -678,9 +696,9 @@ class App:
             )
             return
         self.reset_grid(remove_blocked=False)
-        # print("optimall: ", optimal_coords, "back")
+        # print("optimal: ", optimal_coords, "back")
         for disp_coord in optimal_coords:
-            self.add_dispenser(disp_coord[0], disp_coord[1], disp_coord[2])
+            self.add_dispenser(disp_coord.row, disp_coord.col, disp_coord.cleared)
         # Generate a list of other viable coords that are as optimal or within 0.1% of the most
         # optimal found solution, storing them in an external file
         result = output_viable_coords(
@@ -694,11 +712,10 @@ class App:
             self.L.blocked_blocks
         )
         if isinstance(result, (int, float)) and not isinstance(result, BaseException):
-            n = len(disp_coords)
             # 8 transformations for a square grid, 4 for a rectangular grid
             transforms = 8 if self.col_slider.get() == self.row_slider.get() else 4
             trimmed_string = (
-                f"\n\nNote {transforms * math.factorial(n) - 8:,} possible alternate "
+                f"\n\nNote {transforms * math.factorial(self.L.num_disps) - 8:,} possible alternate "
                 "placements (permutations of firing order) were trimmed "
                 "for computational reasons."
             )    
@@ -706,7 +723,7 @@ class App:
             messagebox.showinfo(f"Success", 
                                 f"Successfully exported {result} alternate "
                                 f"placement{'s' if result != 1 else ''} to Alternate Dispenser Placements.txt."
-                                f"{trimmed_string if n > 8 else ''}")
+                                f"{trimmed_string if self.L.num_disps > 8 else ''}")
         else:
             error_message = f"An error has occurred:\n{result}"
             if not error_message.endswith(('.', '!', '?')):
@@ -728,7 +745,7 @@ class App:
         self.reset_grid(remove_blocked=True)
         
         for disp_coord in result['disp_coords']:
-            self.add_dispenser(disp_coord[1], disp_coord[0], disp_coord[2])
+            self.add_dispenser(disp_coord.row, disp_coord.col, disp_coord.cleared)
 
     def export_heatmaps(self):
         """Export custom heatmaps based on the fungus distribution of the nylium grid"""
@@ -824,13 +841,13 @@ class App:
             # Store the value label in the dictionary for later use
             self.D.output_value[i] = value_label
     
-    def display_block_info(self, x=None, y=None):
+    def display_block_info(self, row=None, col=None):
         """Display the growth statistics of a specific block and/or dispenser"""
         # Return if no block is selected
-        if not self.D.selected_block and x == None:
+        if not self.D.selected_block and row == None:
             return
         # Reset labels and deselect block if already selected
-        elif (x, y) == self.D.selected_block:
+        elif (row, col) == self.D.selected_block:
             self.D.selected_block = ()
             for label in self.D.info_label.values():
                 label.destroy()
@@ -841,43 +858,44 @@ class App:
             self.D.info_value = {}
             return
         # Calling with empty arguments simply updates the currently selected block
-        elif x is None and y is None:
-            x, y = self.D.selected_block
+        elif row is None and col is None:
+            row, col = self.D.selected_block
         # Default behaviour is to just select a new block
         else:
-            self.D.selected_block = (x, y)
+            self.D.selected_block = (row, col)
         
         dist_data = calculate_fungus_distribution(self.L)
         disp_foliage_grids = dist_data.disp_foliage_grids
         disp_des_fungi_grids = dist_data.disp_des_fungi_grids
         
         info_labels = [
-            f"{'Warped' if self.L.nylium_type == WARPED else 'Crimson'} Fungi at {(x,y)}",
-            f"Foliage at {(x,y)}",
+            f"{'Warped' if self.L.nylium_type == WARPED else 'Crimson'} Fungi at {(row, col)}",
+            f"Foliage at {(row,col)}",
         ]
 
-        sel_fungi_amount = np.sum(disp_des_fungi_grids, axis=(0,1))[x, y]
-        sel_foliage_amount = np.sum(disp_foliage_grids, axis=(0,1))[x, y] - sel_fungi_amount
+        sel_fungi_amount = np.sum(disp_des_fungi_grids, axis=(0,1))[row, col]
+        sel_foliage_amount = np.sum(disp_foliage_grids, axis=(0,1))[row, col] - sel_fungi_amount
         info_values = [
             round(sel_fungi_amount, DP),
             round(sel_foliage_amount, DP)
         ]
 
         # If selected block is a dispenser, include additional info
-        if any((x, y) == coord[:2] for coord in self.L.disp_coords):
-            index = next(i for i, coord in enumerate(self.L.disp_coords) if (x, y) == coord[:2])
+        if any((row, col) == (coord.row, coord.col) for coord in self.L.disp_coords):
+            index = next(i for i, coord in enumerate(self.L.disp_coords) \
+                         if (row, col) == (coord.row, coord.col))
             bone_meal_used = 0
-            for c in range(self.L.cycles):
+            for cycle in range(self.L.cycles):
                 # First sum only earlierly ordered dispensers affect the current one
-                if c == 0:
+                if cycle == 0:
                     if index == 0:
                         cycle_sum = np.zeros((self.row_slider.get(), self.col_slider.get()))
                     else:
-                        cycle_sum = np.sum(disp_foliage_grids[:index, c, :, :], axis=0)
+                        cycle_sum = np.sum(disp_foliage_grids[:index, cycle, :, :], axis=0)
                 else:
-                    cycle_sum = np.sum(disp_foliage_grids[:, :c, :, :], axis=(0, 1))
-                    cycle_sum += np.sum(disp_foliage_grids[:index, c, :, :], axis=0)
-                bone_meal_used += 1 - cycle_sum[x, y]
+                    cycle_sum = np.sum(disp_foliage_grids[:, :cycle, :, :], axis=(0, 1))
+                    cycle_sum += np.sum(disp_foliage_grids[:index, cycle, :, :], axis=0)
+                bone_meal_used += 1 - cycle_sum[row, col]
 
             info_labels.append(f"{'Warped' if self.L.nylium_type == WARPED else 'Crimson'} "
                                f"Fungi Produced")
@@ -891,7 +909,7 @@ class App:
             info_values.append(round(bone_meal_used, DP))
             info_values.append(round(bone_meal_used / fungi_produced, DP))
             info_values.append(f'{index + 1}')
-            info_values.append(f'{"Yes" if self.L.disp_coords[index][3] == 1 else "No"}')
+            info_values.append(f'{"Yes" if self.L.disp_coords[index].cleared == CLEARED else "No"}')
 
         label_font = font.Font(family='Segoe UI', size=int((RSF**NLS)*9))
         output_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
@@ -925,27 +943,27 @@ class App:
             self.D.info_value[i] = label
         
         
-    def set_cleared_or_blocked(self, x, y):
+    def set_cleared_or_blocked(self, row, col):
         """Set a dispenser to a clearing dispenser by middle clicking or nylium to a blocked block"""
-        if self.checkboxes[x][y].get() == 0:
+        if self.checkboxes[row][col].get() == 0:
             # Toggle block between blocked and unblocked
-            if (x, y) in self.L.blocked_blocks:
-                self.L.blocked_blocks.remove((x, y))
-                self.grid[x][y][0].config(image=self.unchecked_image)
+            if (row, col) in self.L.blocked_blocks:
+                self.L.blocked_blocks.remove((row, col))
+                self.grid[row][col][0].config(image=self.unchecked_image)
             else:
-                self.L.blocked_blocks.append((x, y))
-                self.grid[x][y][0].config(image=self.blocked_image)
+                self.L.blocked_blocks.append((row, col))
+                self.grid[row][col][0].config(image=self.blocked_image)
         else: 
             for i, dispenser in enumerate(self.L.disp_coords):
-                if dispenser[:2] == (x, y):
-                    if dispenser[3] == 1:
-                        self.L.disp_coords[i] = (x, y, dispenser[2], 0)
-                        self.grid[x][y][0].config(image=self.checked_image)
+                if (dispenser.row, dispenser.col) == (row, col):
+                    if dispenser.cleared == CLEARED:
+                        self.L.disp_coords[i] = Dispenser(row, col, dispenser.timestamp, UNCLEARED)
+                        self.grid[row][col][0].config(image=self.checked_image)
                     else:
-                        self.L.disp_coords[i] = (x, y, dispenser[2], 1)
-                        self.grid[x][y][0].config(image=self.clearing_image)
+                        self.L.disp_coords[i] = Dispenser(row, col, dispenser.timestamp, CLEARED)
+                        self.grid[row][col][0].config(image=self.clearing_image)
                     break
-
+        self.L.num_disps = len(self.L.disp_coords)
         self.calculate()
         self.display_block_info()
         return "break"
@@ -974,8 +992,9 @@ def start(root):
     # Update the window so it actually appears in the correct position
     child.update_idletasks()
     L = PlayerlessCore(
-        size=Dimensions(DEFAULT_SIDE_LEN, DEFAULT_SIDE_LEN),
+        num_disps=0,
         disp_coords=[],
+        size=Dimensions(DEFAULT_SIDE_LEN, DEFAULT_SIDE_LEN),
         nylium_type=tk.StringVar(value="warped"),
         cycles=1,
         blocked_blocks=[],

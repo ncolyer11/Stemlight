@@ -53,46 +53,49 @@ def calculate_distribution(L: PlayerlessCore) -> PlayerlessCoreDistOutput:
     total_foliage_grid = np.zeros((L.size.length, L.size.width))
 
     # 4D array for storing distribution of desired fungus for all dispensers and cycles
+    print(f"Number of dispensers: {L.num_disps}")
+    print(f"disp_coords: {L.disp_coords}")
+    print(f"len of disp_coords: {len(L.disp_coords)}")
     disp_des_fungi_grids = np.zeros((L.num_disps, L.cycles, L.size.length, L.size.width))
     # 2D array for storing distribution of desired fungus
     total_des_fungi_grid = np.zeros((L.size.length, L.size.width))
-    x, y = np.ogrid[:L.size.length, :L.size.width]
+    row, col = np.ogrid[:L.size.length, :L.size.width]
 
     # 'bm_for_prod': bone meal used during 1 cycle of firing all the given dispensers
     bm_for_prod = 0.0
-    for i in range(L.cycles):
-        for j in range(L.num_disps):
+    for cycle in range(L.cycles):
+        for disp_n in range(L.num_disps):
             foliage_chance, bm_for_prod = generate_foliage(L.disp_coords, total_foliage_grid,
-                                                           bm_for_prod, j, x, y)
-            for x1, y1 in L.blocked_blocks:
-                foliage_chance[x1][y1] = 0
+                                                           bm_for_prod, disp_n, row, col)
+            for row_b, col_b in L.blocked_blocks:
+                foliage_chance[row_b][col_b] = 0
 
             des_fungi_chance = foliage_chance * fungi_weight
-            disp_des_fungi_grids[j][i] = (1 - total_foliage_grid) * des_fungi_chance
-            total_des_fungi_grid += disp_des_fungi_grids[j][i]
+            disp_des_fungi_grids[disp_n][cycle] = (1 - total_foliage_grid) * des_fungi_chance
+            total_des_fungi_grid += disp_des_fungi_grids[disp_n][cycle]
             
-            disp_foliage_grids[j][i] = (1 - total_foliage_grid) * foliage_chance
-            total_foliage_grid += disp_foliage_grids[j][i]
+            disp_foliage_grids[disp_n][cycle] = (1 - total_foliage_grid) * foliage_chance
+            total_foliage_grid += disp_foliage_grids[disp_n][cycle]
             
             # If warped nylium, generate sprouts
             if L.nylium_type == WARPED:
                 sprouts_chance = (1 - total_foliage_grid) * foliage_chance
-                disp_foliage_grids[j][i] += sprouts_chance
+                disp_foliage_grids[disp_n][cycle] += sprouts_chance
                 total_foliage_grid += sprouts_chance
                 sprouts_total += sprouts_chance
         
         # Replicate triggering pistons to clear foliage on top of selected dispensers
-        for k in range(L.num_disps):
+        for disp_n in range(L.num_disps):
             # Clear foliage only on top of cleared dispensers
-            if L.disp_coords[k][2] == 0:
+            if L.disp_coords[disp_n].cleared == UNCLEARED:
                 continue
-            disp_x, disp_y, _ = L.disp_coords[k]
-            total_foliage_grid[disp_x, disp_y] = 0
-            total_des_fungi_grid[disp_x, disp_y] = 0
-            disp_foliage_grids[:, :, disp_x, disp_y] = 0
-            disp_des_fungi_grids[:, :, disp_x, disp_y] = 0
+            disp_row, disp_col = L.disp_coords[disp_n].row, L.disp_coords[disp_n].col
+            total_foliage_grid[disp_row, disp_col] = 0
+            total_des_fungi_grid[disp_row, disp_col] = 0
+            disp_foliage_grids[:, :, disp_row, disp_col] = 0
+            disp_des_fungi_grids[:, :, disp_row, disp_col] = 0
             if L.fungi == WARPED:
-                sprouts_total[disp_x, disp_y] = 0
+                sprouts_total[disp_row, disp_col] = 0
     
     return PlayerlessCoreDistOutput(
         total_foliage_grid=total_foliage_grid,
@@ -103,16 +106,16 @@ def calculate_distribution(L: PlayerlessCore) -> PlayerlessCoreDistOutput:
         bm_for_prod=bm_for_prod
     )
 
-def generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, x, y):
+def generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, row, col) -> Tuple[np.ndarray, float]:
     """Generates the distribution of foliage around a dispenser at a given position"""
-    disp_x, disp_y, _ = disp_coords[i]
-    disp_bm_chance = 1 - foliage_grid[disp_x, disp_y]
+    disp_row, disp_col = disp_coords[i].row, disp_coords[i].col
+    disp_bm_chance = 1 - foliage_grid[disp_row, disp_col]
     bm_for_prod += disp_bm_chance
 
-    # P(foliage at x,y) = P(Air above dispensers) * P(x,y being selected)
+    # P(foliage at row, col) = P(Air above dispensers) * P(row, col being selected)
     # Note, don't double multiply the chance of air above the position if it's at the dispenser
-    foliage_chance = np.where((x == disp_x) & (y == disp_y), 1, disp_bm_chance) \
-                     * selection_chance(x - disp_x, y - disp_y)
+    foliage_chance = np.where((row == disp_row) & (col == disp_col), 1, disp_bm_chance) \
+                     * selection_chance(row - disp_row, col - disp_col)
     return foliage_chance, bm_for_prod
 
 def get_totals(des_fungi_grid, foliage_grid):
@@ -125,9 +128,7 @@ def get_totals(des_fungi_grid, foliage_grid):
 
 def calculate_fungus_distribution(L: PlayerlessCore) -> PlayerlessCoreOutput:
     """Calculates the distribution of foliage and fungi on a custom size grid of nylium"""
-    L.disp_coords.sort(key=lambda d: d[2])
-    L_org_disp_coords = L.disp_coords.copy()
-    L.disp_coords = [(d[0], d[1], d[3]) for d in L.disp_coords]
+    L.disp_coords.sort(key=lambda d: d.timestamp)
 
     # Keep track of total sprouts to subtract from compost bm as they aren't collected
     out = calculate_distribution(L)
@@ -138,8 +139,7 @@ def calculate_fungus_distribution(L: PlayerlessCore) -> PlayerlessCoreOutput:
     composted_foliage = total_foliage - np.sum(out.sprouts_total) - total_des_fungi
     bm_from_compost = (const.FOLIAGE_COLLECTION_EFFIC * composted_foliage) / const.FOLIAGE_PER_BM
     
-    # Add back time values
-    L.disp_coords = L_org_disp_coords
+    print(f"Shape of disp_des_fungi_grids: {out.disp_des_fungi_grids.shape}")
     return PlayerlessCoreOutput(
         total_foliage=total_foliage,
         total_des_fungi=total_des_fungi,
@@ -166,6 +166,7 @@ def calc_huge_fungus_distribution(
     if len(L.disp_coords) == 0:
         return 0.0, 0.0
     # Growing after all produced, makes the same output as growing after each cycle
+    # Avoid recalculating fungus distribution if it's already been calculated
     if dist_data is None:
         dist_data = calculate_fungus_distribution(L)
     
@@ -295,11 +296,11 @@ def output_viable_coords(L: PlayerlessCore, optimal_coords, optimal_value, wb_pe
         return e
 
 def export_alt_placements(size: Dimensions, metrics, optimal_value, worst_value, start_time,
-                          blocked_blocks):
+                          blocked_blocks) -> int:
     """Write the sorted list to a file"""
-    alt_placements = len(metrics)
+    num_alt_placements = len(metrics)
     f = open("Alternate Dispenser Placements.txt", "w")
-    f.write(f"Number of alternate placements: {alt_placements}\n")
+    f.write(f"Number of alternate placements: {num_alt_placements}\n")
     lost_f = optimal_value - worst_value
     worst_loss = round(lost_f / optimal_value * 100, 5)
     lost_f = round(lost_f, 5)
@@ -324,4 +325,4 @@ def export_alt_placements(size: Dimensions, metrics, optimal_value, worst_value,
         f.write("\n")
     f.close()
     print("Alternate placements calculated in:", round(time.time() - start_time, 3), "seconds")
-    return alt_placements
+    return num_alt_placements
