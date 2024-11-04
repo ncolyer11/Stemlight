@@ -892,6 +892,8 @@ class App:
             f"{'Warped' if fungus_type == WARPED else 'Crimson'} Fungi at {(x,y)}",
             f"Foliage at {(x,y)}",
         ]
+
+
         sel_fungi_amount = np.sum(disp_des_fungi_grids, axis=(0,1))[x, y]
         sel_foliage_amount = np.sum(disp_foliage_grids, axis=(0,1))[x, y] - sel_fungi_amount
         info_values = [
@@ -948,6 +950,8 @@ class App:
 
             # Store the label in the dictionary for later use
             self.info_text_label[i] = label
+        
+        foliage_tooltip = ToolTip(self.info_text_label[1], "All other foliage generated at this position (excluding desired fungi).")
 
         # Create the labels for block info values
         for i, info_value in enumerate(info_values):
@@ -958,7 +962,6 @@ class App:
             # Store the value label in the dictionary for later use
             self.info_text_value[i] = label
         
-        foliage_tooltip = ToolTip(self.output_text_label[1], "All other foliage generated at this position (excluding desired fungi).")
         
     def set_cleared_or_blocked(self, x, y):
         """Set a dispenser to a clearing dispenser by middle clicking or nylium to a blocked block"""
