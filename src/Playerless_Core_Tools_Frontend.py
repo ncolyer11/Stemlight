@@ -52,7 +52,7 @@ class SlideSwitch(tk.Canvas):
         self.configure(width=WDTH, height=HGHT)
         self.configure(highlightthickness=0)
         self.configure(bg=colours.bg)
-        self.nylium_type = tk.StringVar(value="warped")
+        self.nylium_type = WARPED
 
         # Create an image of a rounded rectangle
         self.rect_image = self.create_squircle(WDTH, HGHT, RAD, colours.warped)
@@ -75,19 +75,19 @@ class SlideSwitch(tk.Canvas):
             self.new_image = self.create_squircle(WDTH, HGHT, RAD, colours.warped)
             self.itemconfig(self.rect, image=self.new_image)
             self.coords(self.oval, WDTH//4, HGHT//2)
-            self.nylium_type.set("warped")
+            self.nylium_type = WARPED
         else:
             self.new_image = self.create_squircle(WDTH, HGHT, RAD, colours.crimson)
             self.itemconfig(self.rect, image=self.new_image)
             self.coords(self.oval, 3 * WDTH//4, HGHT//2)
-            self.nylium_type.set("crimson")
+            self.nylium_type = CRIMSON
 
         self.state = not self.state
         if self.callback:
             self.callback()
 
     def assign(self, state):
-        if state == "warped":
+        if state == WARPED:
             self.new_image = self.create_squircle(WDTH, HGHT, RAD, colours.warped)
             self.itemconfig(self.rect, image=self.new_image)
             self.coords(self.oval, WDTH//4, HGHT//2)
@@ -175,6 +175,44 @@ class App:
         else:
             self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
+    def debug_button(self, event):
+        self.L.print_values()
+        print()
+
+    def import_layout(self):
+        """Import a layout from a yaml file"""
+        file_path = tk.filedialog.askopenfilename(
+            title="Import Layout",
+            filetypes=(("YAML files", "*.yaml"), ("All files", "*.*"))
+        )
+        if file_path:
+            self.L = PlayerlessCore.from_yaml(file_path)
+            self.L.print_values()
+            print(f"\nLayout imported from {file_path}")
+            self.update_layout()
+
+    def export_layout(self):
+        """Export the current layout to a yaml file"""
+        file_path = tk.filedialog.asksaveasfilename(
+            title="Export Layout",
+            defaultextension=".yaml",
+            filetypes=(("YAML files", "*.yaml"), ("All files", "*.*"))
+        )
+        if file_path:
+            self.L.to_yaml(file_path)
+            print(f"Layout exported to {file_path}")
+            
+    def update_layout(self, _=None):
+        self.L.size = Dimensions(self.col_slider.get(), self.row_slider.get())
+        self.L.cycles = self.cycles_slider.get()
+        self.L.wb_per_fungus = self.wb_per_fungus_slider.get()
+        self.L.nylium_type = self.nylium_switch.nylium_type
+        self.nylium_switch.assign(self.L.nylium_type)
+        self.update_grid(None)
+        
+        # self.display_block_info()
+        # self.calculate()
+
     def create_menu(self):
         """Setup the menu for the application."""
         toolbar = tk.Menu(self.master)
@@ -184,6 +222,8 @@ class App:
         toolbar.add_cascade(label="File", menu=file_menu)
         file_menu.add_command(label="Exit", command=self.master.destroy)
         file_menu.add_command(label="Export Custom Heatmaps", command=self.export_heatmaps)
+        file_menu.add_command(label="Import Layout", command=self.import_layout)
+        file_menu.add_command(label="Export Layout", command=self.export_layout)
 
         help_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         toolbar.add_cascade(label="Help", menu=help_menu)
@@ -241,8 +281,8 @@ class App:
                 nylium_type=WARPED,
                 cycles=1,
                 blocked_blocks=[],
-                warts_effic=120,
-                blast_chamber_effic=1,
+                wb_per_fungus=120,
+                blast_chamber_effic=1.0,
                 run_time=des_run_time,
                 additional_property=True
             )
@@ -261,7 +301,7 @@ class App:
 
     def set_bce(self, effic):
         """Change the blast chamber efficiency (default is 100%)"""
-        self.L.blast_chamber_effic.set(effic)
+        self.L.blast_chamber_effic = effic
         self.calculate()
         self.display_block_info()
 
@@ -360,8 +400,8 @@ class App:
         self.additional_property_button = tk.Button(self.scrollable_frame, text="Optimise", command=self.optimise,
                                          font=large_button_font, bg=colours.crimson, pady=2)
         self.additional_property_button.pack(pady=5)
-        self.additional_property_button.bind("<Button-2>", lambda event: print("Coming soon!"))
-        self.additional_property_button.bind("<Control-Button-1>", lambda event: print("Coming soon!"))
+        self.additional_property_button.bind("<Button-2>", self.debug_button)
+        self.additional_property_button.bind("<Control-Button-1>", self.debug_button)
 
 
         self.export_button = tk.Button(self.scrollable_frame, text="Export", command=self.export_heatmaps,
@@ -413,7 +453,7 @@ class App:
             from_=1, 
             to=MAX_SIDE_LEN, 
             orient=tk.HORIZONTAL, 
-            command=self.update_grid, 
+            command=self.update_layout, 
             bg=colours.bg, 
             fg=colours.fg, 
             length=250
@@ -429,7 +469,7 @@ class App:
             from_=1, 
             to=MAX_SIDE_LEN, 
             orient=tk.HORIZONTAL, 
-            command=self.update_grid, 
+            command=self.update_layout, 
             bg=colours.bg, 
             fg=colours.fg, 
             length=250
@@ -448,7 +488,7 @@ class App:
             from_=1, 
             to=7,
             orient=tk.HORIZONTAL, 
-            command=self.update_grid, 
+            command=self.update_layout, 
             bg=colours.bg, 
             fg=colours.fg, 
             length=250
@@ -457,25 +497,26 @@ class App:
         self.cycles_slider.bind("<Double-Button-1>", lambda event: self.reset_slider(event, 1))
         self.cycles_slider.grid(row=3, column=0, padx=5, pady=5, sticky="nsew")
 
-        self.wb_effic_label = tk.Label(self.slider_frame, text="Wart Blocks/Fungus:", 
+        self.wb_per_fungus_label = tk.Label(self.slider_frame, text="Wart Blocks/Fungus:", 
                                        bg=colours.bg, fg=colours.fg, font=slider_font)
-        self.wb_effic_label.grid(row=2, column=1, padx=5, pady=5, sticky="nsew")
-        wb_effic_tooltip = ToolTip(self.wb_effic_label, (
+        self.wb_per_fungus_label.grid(row=2, column=1, padx=5, pady=5, sticky="nsew")
+        wb_per_fungus_tooltip = ToolTip(self.wb_per_fungus_label, (
                                    "Restrict optimal solutions to require a certain bone meal\n"
                                    "(or ~8 composted wart blocks) per fungus produced efficiency."))
-        self.wb_effic_slider = tk.Scale(
+        self.wb_per_fungus_slider = tk.Scale(
             self.slider_frame, 
             from_=20, 
             to=120, 
             orient=tk.HORIZONTAL, 
+            command=self.update_layout,
             bg=colours.bg, 
             fg=colours.fg, 
             length=250,
             resolution=0.1
         )
-        self.wb_effic_slider.set(120)
-        self.wb_effic_slider.bind("<Double-Button-1>", lambda event: self.reset_slider(event, 120))
-        self.wb_effic_slider.grid(row=3, column=1, padx=5, pady=5, sticky="nsew")      
+        self.wb_per_fungus_slider.set(120)
+        self.wb_per_fungus_slider.bind("<Double-Button-1>", lambda event: self.reset_slider(event, 120))
+        self.wb_per_fungus_slider.grid(row=3, column=1, padx=5, pady=5, sticky="nsew")      
 
     def reset_slider(self, event, default=5):
         self.scrollable_frame.after(10, lambda: event.widget.set(default))
@@ -486,18 +527,22 @@ class App:
         Params:
             nylium_type: The nylium type to set the grid to, defaults to warped
         """
+        # Set the nylium type to the specified type
         if nylium_type == WARPED:
-            self.L.nylium_type.set("warped")
+            self.L.nylium_type = WARPED
             unchecked_path = resource_path("src/Images/warped_nylium.png")
         elif nylium_type == CRIMSON:
-            self.L.nylium_type.set("crimson")
+            self.L.nylium_type = CRIMSON
             unchecked_path = resource_path("src/Images/crimson_nylium.png")
-        elif self.L.nylium_type.get() == "warped":
-            self.L.nylium_type.set("crimson")
+        # If the nylium type is not specified, toggle the current nylium type
+        elif self.L.nylium_type == WARPED:
+            self.L.nylium_type = CRIMSON
             unchecked_path = resource_path("src/Images/crimson_nylium.png")
-        else:
-            self.L.nylium_type.set("warped")
+        elif self.L.nylium_type == CRIMSON:
+            self.L.nylium_type = WARPED
             unchecked_path = resource_path("src/Images/warped_nylium.png")
+        else:
+            raise ValueError("Layout contains an invalid nylium type")
         self.unchecked_image = tk.PhotoImage(file=unchecked_path)
         self.unchecked_image = self.unchecked_image.subsample(3, 3)
         # Update the images of the checkboxes
@@ -520,7 +565,7 @@ class App:
         ]
 
         # Create a 2D array with the same dimensions as self.checkboxes, initialized with zeros
-        dispenser_array = [[(0, 0, 0) for _ in cb_row] for cb_row in self.checkboxes]
+        dispenser_array = [[(0, 0, 0) for _ in range(cols)] for _ in range(rows)]
         # Iterate over the sorted dispensers list
         for i, dispenser in enumerate(filtered_dispensers):
             # The order of the dispenser is i + 1
@@ -534,79 +579,90 @@ class App:
     
     def update_grid(self, _):
         """Update the grid based on the slider values"""
-        label_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*5))
-
         # Save the states of the checkboxes
         saved_states = [[cb.get() for cb in cb_row] for cb_row in self.checkboxes]
-        rows = self.row_slider.get()
-        cols = self.col_slider.get()
-        self.L.size.length = rows
-        self.L.size.width = cols
+        rows = self.L.size.length
+        cols = self.L.size.width
+        # Create a 2D array of dispensers ordered by the time they were placed on the grid
+        # Excludes dispensers that are out of bounds
         dispenser_array = self.create_ordered_dispenser_array(rows, cols)
 
+        # Remove all the checkboxes and labels from the grid
         for row in self.grid:
             for cb, label in row:
                 cb.destroy()
                 if isinstance(label, tk.Label):
                     label.destroy()
-
+        
+        # Reset the grid and checkboxes
         self.grid = []
-        self.L.disp_coords = []
         self.checkboxes = []
+        # Save the blocked blocks coordinates whilst clearing them and the dispenser coords
         blocked_copy = self.L.blocked_blocks.copy()
         self.L.blocked_blocks = []
+        self.L.disp_coords = []
 
         for row in range(rows):
-            cb_row = []
-            var_row = []
+            cb_row = np.zeros(cols, dtype=object)
+            var_row = np.zeros(cols, dtype=object)
             for col in range(cols):
                 var = tk.IntVar()
                 var.set(0)
-                cb = tk.Button(
-                    self.grid_frame,
-                    image=self.unchecked_image,
-                    borderwidth=0,
-                    highlightthickness=0,
-                    bd=1,
-                    bg=colours.phtalo_green,
-                    command=lambda row_l=row, col_l=col: self.add_dispenser(row_l, col_l)
-                )
-                cb.grid(row=row, column=col, padx=0, pady=0)
-                # Right-click to view individual block info
-                cb.bind("<Button-3>",
-                        lambda event, row_l=row, col_l=col: self.display_block_info(row_l, col_l))
-                # Middle-click to set to a clearing dispenser or blocked block
-                # depending on if clicked block is a dispenser or nylium block
-                cb.bind("<Button-2>",
-                        lambda event, row_l=row, col_l=col: self.set_cleared_or_blocked(row_l, col_l))
-                # Accesible ctrl+right click option for users without a mouse/middle-click
-                cb.bind("<Control-Button-1>",
-                        lambda event, row_l=row, col_l=col: self.set_cleared_or_blocked(row_l, col_l))
+                cb = self.create_cb(row, col)
+                var_row[col] = var
+                cb_row[col] = (cb, None)
 
-                var_row.append(var)
-                cb_row.append((cb, None))
                 # Restore the state of the checkbox, if it existed before
                 if row < len(saved_states) and col < len(saved_states[row]):
-                    var.set(saved_states[row][col])
-                    if saved_states[row][col] == 1:
-                        cleared = dispenser_array[row][col][2]
-                        if cleared == CLEARED:
-                            cb.config(image=self.clearing_image)
-                        else:
-                            cb.config(image=self.checked_image)
-                        label = tk.Label(self.grid_frame, text=str(dispenser_array[row][col][0]), font=label_font)
-                        label.grid(row=row, column=col, padx=0, pady=0, sticky='se')
-                        cb_row[col] = (cb, label)
-                        self.L.disp_coords.append(Dispenser(row, col, dispenser_array[row][col][1], cleared))
-                    if (row, col) in blocked_copy:
-                        cb.config(image=self.blocked_image)
-                        self.L.blocked_blocks.append((row, col))
+                    self.restore_cb(cb, var, row, col, cb_row, saved_states, dispenser_array,
+                                    blocked_copy)
+
             self.grid.append(cb_row)
             self.checkboxes.append(var_row)
         self.L.num_disps = len(self.L.disp_coords)
         self.calculate()
         self.display_block_info()
 
+    def restore_cb(self, cb, var, row, col, cb_row, saved_states, dispenser_array, blocked_copy):
+        label_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*5))
+        var.set(saved_states[row][col])
+        if saved_states[row][col] == 1:
+            cleared = dispenser_array[row][col][2]
+            if cleared == CLEARED:
+                cb.config(image=self.clearing_image)
+            else:
+                cb.config(image=self.checked_image)
+            label = tk.Label(self.grid_frame, text=str(dispenser_array[row][col][0]), font=label_font)
+            label.grid(row=row, column=col, padx=0, pady=0, sticky='se')
+            cb_row[col] = (cb, label)
+            self.L.disp_coords.append(Dispenser(row, col, dispenser_array[row][col][1], cleared))
+        if (row, col) in blocked_copy:
+            cb.config(image=self.blocked_image)
+            self.L.blocked_blocks.append((row, col))
+
+    def create_cb(self, row, col) -> tk.Button: 
+        cb = tk.Button(
+            self.grid_frame,
+            image=self.unchecked_image,
+            borderwidth=0,
+            highlightthickness=0,
+            bd=1,
+            bg=colours.phtalo_green,
+            command=lambda row_l=row, col_l=col: self.add_dispenser(row_l, col_l)
+        )
+        cb.grid(row=row, column=col, padx=0, pady=0)
+        # Right-click to view individual block info
+        cb.bind("<Button-3>",
+                lambda event, row_l=row, col_l=col: self.display_block_info(row_l, col_l))
+        # Middle-click to set to a clearing dispenser or blocked block
+        # depending on if clicked block is a dispenser or nylium block
+        cb.bind("<Button-2>",
+                lambda event, row_l=row, col_l=col: self.set_cleared_or_blocked(row_l, col_l))
+        # Accesible ctrl+right click option for users without a mouse/middle-click
+        cb.bind("<Control-Button-1>",
+                lambda event, row_l=row, col_l=col: self.set_cleared_or_blocked(row_l, col_l))
+        return cb
+    
     def add_dispenser(self, row, col, cleared=False):
         """
         Add a dispenser to the nylium grid at the given coordinates
@@ -672,19 +728,18 @@ class App:
 
     def optimise(self):
         """Optimise the placement of dispensers on the nylium grid"""
-        fungus_type = CRIMSON if self.L.nylium_type.get() == "crimson" else WARPED
         if self.L.num_disps == 0:
             return
         L_optimise = PlayerlessCore(
             num_disps=self.L.num_disps,
             disp_coords=self.L.disp_coords,
             size=self.L.size,
-            nylium_type=fungus_type,
+            nylium_type=self.L.nylium_type,
             cycles=self.L.cycles,
             blocked_blocks=self.L.blocked_blocks,
-            warts_effic=self.L.warts_effic,
-            blast_chamber_effic=self.L.blast_chamber_effic.get(),
-            run_time=self.L.run_time.get(),
+            wb_per_fungus=self.L.wb_per_fungus,
+            blast_chamber_effic=self.L.blast_chamber_effic,
+            run_time=self.L.run_time,
             additional_property=False
         )
             
@@ -759,7 +814,7 @@ class App:
         total_wart_blocks, *_ = calc_huge_fungus_distribution(self.L, dist_data)
 
         output_labels = [
-            f"Total {'Warped' if self.L.nylium_type.get() == 'warped' else 'Crimson'} Fungi",
+            f"Total {'Warped' if self.L.nylium_type== WARPED else 'Crimson'} Fungi",
             "Bone Meal to Produce a Fungus",
             "Bone Meal for Production",
             "Bone Meal for Growth",
@@ -849,7 +904,7 @@ class App:
         disp_des_fungi_grids = dist_data.disp_des_fungi_grids
         
         info_labels = [
-            f"{'Warped' if self.L.nylium_type.get() == 'warped' else 'Crimson'} Fungi at {(row, col)}",
+            f"{'Warped' if self.L.nylium_type == WARPED else 'Crimson'} Fungi at {(row, col)}",
             f"Foliage at {(row,col)}",
         ]
 
@@ -877,7 +932,7 @@ class App:
                     cycle_sum += np.sum(disp_foliage_grids[:index, cycle, :, :], axis=0)
                 bone_meal_used += 1 - cycle_sum[row, col]
 
-            info_labels.append(f"{'Warped' if self.L.nylium_type == 'warped' else 'Crimson'} "
+            info_labels.append(f"{'Warped' if self.L.nylium_type == WARPED else 'Crimson'} "
                                f"Fungi Produced")
             info_labels.append("Bone Meal Used")
             info_labels.append("Bone Meal per Fungi")
@@ -962,7 +1017,7 @@ class App:
 
     def set_rt(self, time):
         """Set the run time of the optimisation algorithm."""
-        self.L.run_time.set(time)
+        self.L.run_time = time
 
 def start(root):
     """Start the Playerless Core Tools program."""
@@ -987,12 +1042,12 @@ def start(root):
         num_disps=0,
         disp_coords=[],
         size=Dimensions(DEFAULT_SIDE_LEN, DEFAULT_SIDE_LEN),
-        nylium_type=tk.StringVar(value="warped"),
+        nylium_type=WARPED,
         cycles=1,
         blocked_blocks=[],
-        warts_effic=120,
-        blast_chamber_effic=tk.StringVar(value="1"),
-        run_time=tk.StringVar(value=str(DEFAULT_RUN_TIME)),
+        wb_per_fungus=120,
+        blast_chamber_effic=1.0,
+        run_time=DEFAULT_RUN_TIME,
         additional_property=False
     )
     app = App(child, L)

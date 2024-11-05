@@ -45,7 +45,7 @@ def selection_chance(x1, y1):
 
 def calculate_distribution(L: PlayerlessCore) -> PlayerlessCoreDistOutput:
     """Calculates the distribution of foliage and fungi on a custom size grid of nylium"""
-    fungi_weight = WARP_FUNG_CHANCE if L.nylium_type.get() == 'warped' else CRMS_FUNG_CHANCE
+    fungi_weight = WARP_FUNG_CHANCE if L.nylium_type == WARPED else CRMS_FUNG_CHANCE
     sprouts_total = np.zeros((L.size.length, L.size.width))
     # 4D array for storing distribution of foliage for all dispensers and cycles
     disp_foliage_grids = np.zeros((L.num_disps, L.cycles, L.size.length, L.size.width))
@@ -195,7 +195,7 @@ def calc_huge_fungus_distribution(
                 hf_grids[b, nylium_z + z, nylium_x + x, y] += gen_chance
                 hf_grids[3, nylium_z + z, nylium_x + x, y] += gen_chance
 
-    total_wb = np.sum(hf_grids[2]) * float(L.blast_chamber_effic.get())
+    total_wb = np.sum(hf_grids[2]) * L.blast_chamber_effic
     return total_wb, bm_for_prod
 
 
@@ -278,7 +278,7 @@ def output_viable_coords(L: PlayerlessCore, optimal_coords, optimal_value):
             # Got a headache atm
             total_des_fungi = 0
 
-        bm_req = bm_for_prod < L.warts_effic / WARTS_PER_BM - AVG_BM_TO_GROW_FUNG
+        bm_req = bm_for_prod < L.wb_per_fungus / WARTS_PER_BM - AVG_BM_TO_GROW_FUNG
         if total_des_fungi < worst_value and bm_req:
             worst_value = total_des_fungi
         if abs(total_des_fungi - optimal_value) / optimal_value <= 0.001 and bm_req:

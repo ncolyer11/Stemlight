@@ -321,7 +321,7 @@ def schem_layout_to_efficiency_and_vrms(path: str | None) -> PlayerfulCoreOutput
 
     out.stems_effic = out.avg_stems / AVG_STEMS
     out.shrooms_effic = out.avg_shrooms / AVG_SHROOMS
-    out.warts_effic = out.avg_warts / AVG_WARTS
+    out.wb_per_fungus = out.avg_warts / AVG_WARTS
     # wart blocks max doesn't take into account vrm and the actual max warts including VRM is around 82 but that's infeasible in reality
 
     print(f"Elapsed time: {time.time() - start_time} seconds")

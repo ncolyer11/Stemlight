@@ -17,9 +17,9 @@ selection_cache = np.array([
 
 # If you've ever done assembly coding, you'd know how expensive function calls are
 
-def fast_calc_fung_dist(length, width, fungus_type, disp_layout, num_cycles, blocked_blocks):
+def fast_calc_fung_dist(length, width, nylium_type, disp_layout, num_cycles, blocked_blocks):
     """Calculate the distribution of foliage for a given set of dispenser offsets fast"""
-    if fungus_type == WARPED:
+    if nylium_type == WARPED:
         return warped_calc_fung_dist(length, width, disp_layout, num_cycles, blocked_blocks)
     
     # 2D array for storing distribution of all the foliage
@@ -109,11 +109,11 @@ def warped_calc_fung_dist(length, width, disp_layout, num_cycles, blocked_blocks
     compost = (np.sum(foliage_grid) - total_des_fungi - np.sum(sprouts_total)) / FOLIAGE_PER_BM
     return total_des_fungi, bm_for_prod - compost
 
-def fast_calc_hf_dist(length, width, fungus_type, disp_layout, num_cycles, blocked_blocks):
+def fast_calc_hf_dist(length, width, nylium_type, disp_layout, num_cycles, blocked_blocks):
     """Doesn't take into account stem occlusion (for speed), but should still optimise fine"""
     p_length = length
     p_width = width
-    if fungus_type == WARPED:
+    if nylium_type == WARPED:
         return warped_calc_hf_dist(p_length, p_width, disp_layout, num_cycles, blocked_blocks)
     
     # 2D array for storing distribution of all the foliage
