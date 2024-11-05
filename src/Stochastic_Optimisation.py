@@ -45,7 +45,7 @@ def start_optimisation(L: PlayerlessCore) -> Tuple[List[Dispenser], float, int]:
     print(f"\nStarting temp: {S.start_temp}",
           f"\nEnding temp: {S.end_temp}", 
           f"\nCooling rate: {S.cooling_rate}",
-          f"\nIterations: {iterations}")
+          f"\nIterations: {iterations}\n")
 
     out = simulated_annealing(L, S, has_cleared)
     
@@ -64,7 +64,8 @@ def simulated_annealing(
     for _ in range(S.max_iterations):
         if temperature < S.end_temp:
             break
-        neighbour_sol = generate_neighbour(S.current_solution, L.size, has_cleared)
+        neighbour_sol = generate_neighbour(S.current_solution, L.size, has_cleared,
+                                           L.blocked_blocks)
         # Either desired fungi produced, or potential wart blocks generated
         current_energy = S.optimise_func(L.size.length, L.size.width, L.nylium_type,
                                          S.current_solution, L.cycles, L.blocked_blocks)[0]
@@ -90,7 +91,8 @@ def acceptance_probability(current_energy, neighbour_energy, temperature):
     else:
         return np.exp((neighbour_energy - current_energy) / temperature)
 
-def generate_neighbour(solution: Any, size: Dimensions, has_cleared: ClearedStatus):
+def generate_neighbour(solution: Any, size: Dimensions, has_cleared: ClearedStatus, 
+                       blocked_blocks: List[Tuple[int, int]]) -> List[Dispenser]:
     """Generate a new dispenser permutation by altering 1 to all of their coords slightly"""
     step_h = 1 if size.width != 1 else 0
     step_v = 1 if size.length != 1 else 0
@@ -117,7 +119,8 @@ def generate_neighbour(solution: Any, size: Dimensions, has_cleared: ClearedStat
 
         # Make sure no two coords can be the same
         else_array = positions[:i] + positions[i+1:]
-        while any([new_coords[0], new_coords[1]] == coord[:2] for coord in else_array):
+        while any([new_coords[0], new_coords[1]] == coord[:2] for coord in else_array) or \
+              (new_coords[0], new_coords[1]) in blocked_blocks:
             new_coords = [
                 max(0, min(size.length - 1, new_coords[0] + rand_s(-step_h, step_h + 1))), 
                 max(0, min(size.width - 1, new_coords[1] + rand_s(-step_v, step_v + 1))),
@@ -150,7 +153,7 @@ def calculate_temp_bounds(
             ) for _ in range(L.num_disps)
         ]
         average_solutions.append(
-            generate_neighbour(coords, L.size, has_cleared)
+            generate_neighbour(coords, L.size, has_cleared, L.blocked_blocks)
         )
     
     # Calculate the average energy of the initial solution

@@ -23,8 +23,8 @@ def fast_calc_fung_dist(length, width, nylium_type, disp_coords, cycles, blocked
         return warped_calc_fung_dist(length, width, disp_coords, cycles, blocked_blocks)
     
     # 2D array for storing distribution of all the foliage
-    foliage_grid = np.zeros((width, length))
-    row, col = np.ogrid[:width, :length]
+    foliage_grid = np.zeros((length, width))
+    row, col = np.ogrid[:length, :width]
 
     bm_for_prod = 0.0
     for _ in range(cycles):

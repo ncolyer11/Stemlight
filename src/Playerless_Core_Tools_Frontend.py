@@ -25,10 +25,7 @@ from src.Stochastic_Optimisation import start_optimisation
 # inaccurate after optimising a bunch
 
 # TODO:
-# But optimise and heatmap button next to each other
 # Weird flash of the grid when the program starts
-# optimising with blocked blocks sometimes kills dispensers
-# also optimising with len != width causes out of bounds errors wow what's new
 
 #################
 ### CONSTANTS ###
@@ -128,7 +125,7 @@ class App:
         self.clearing_image = self.clearing_image.subsample(3, 3)
 
         # Create a Canvas and Scrollbar 1055
-        self.canvas = tk.Canvas(master, width=int(RSF*760), height=int(RSF*1000), bg=colours.bg)
+        self.canvas = tk.Canvas(master, width=int(RSF*760), height=int(RSF*997), bg=colours.bg)
         
         self.scrollbar = tk.Scrollbar(master, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
@@ -770,9 +767,7 @@ class App:
             run_time=self.L.run_time,
             additional_property=False
         )
-        print(f"size: {self.L.size.length}x{self.L.size.width}")
         optimal_coords, optimal_value, iterations = start_optimisation(L_optimise)
-        print(f"first optimal coords: {optimal_coords}")
         if optimal_coords == -1:
             messagebox.showwarning("Error", "Maximum runtime exceeded.")
             return

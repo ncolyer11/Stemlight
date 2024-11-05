@@ -106,10 +106,7 @@ def calculate_distribution(L: PlayerlessCore) -> PlayerlessCoreDistOutput:
 def generate_foliage(disp_coords, foliage_grid, bm_for_prod, disp_n, row,
                      col) -> Tuple[np.ndarray, float]:
     """Generates the distribution of foliage around a dispenser at a given position"""
-    print(f"shape of foliage_grid: {foliage_grid.shape}")
     disp_row, disp_col = disp_coords[disp_n].row, disp_coords[disp_n].col
-    print(f"disp_row: {disp_row}, disp_col: {disp_col}")
-    print(f"disp coords: {disp_coords}")
     disp_bm_chance = 1 - foliage_grid[disp_row, disp_col]
     bm_for_prod += disp_bm_chance
 
@@ -215,28 +212,28 @@ def remove_duplicates(nested_list):
 def generate_transformations(coords, s: Dimensions):
     """Generate all reflections, rotations, and permutations of the optimal coordinates"""
     alt_coords = []
-    w = s.width
     l = s.length
+    w = s.width
     coords = [[coord.row, coord.col, coord.cleared] for coord in coords]
     for coord in coords:
         transformed_coords = [coord]
         # cs: cleared status
         row, col, cs = coord
         # 180deg rotation
-        transformed_coords.append([w-1-row, l-1-col, cs])
+        transformed_coords.append([l-1-row, w-1-col, cs])
         # 90deg ccw and cw rotations are only equivalent for square grids
         if l == w:
-            transformed_coords.append([col, w-1-row, cs])
-            transformed_coords.append([l-1-col, row, cs])
+            transformed_coords.append([col, l-1-row, cs])
+            transformed_coords.append([w-1-col, row, cs])
         for i, sub_coord in enumerate(transformed_coords):
             if i > 3:
                 break
             row1 = sub_coord[0]
             col1 = sub_coord[1]
             # Up/down reflection
-            transformed_coords.append([row1, l-1-col1, cs])
+            transformed_coords.append([row1, w-1-col1, cs])
             # Right/left reflection
-            transformed_coords.append([w-1-row1, col1, cs])
+            transformed_coords.append([l-1-row1, col1, cs])
         alt_coords.append(transformed_coords)
     alt_placements = []
     # Grab equally transformed sets of coords to group into consecutive sets of alternate optimal coords
@@ -254,7 +251,6 @@ def generate_transformations(coords, s: Dimensions):
         sub_perms_list = [list(perm) for perm in sub_perms]
         perms.extend(sub_perms_list)
     # Remove duplicate permutations to lower computation time
-    print(f"\ngenered perms: {remove_duplicates(perms)}\n")
     return remove_duplicates(perms)
 
 def output_viable_coords(L: PlayerlessCore, optimal_coords, optimal_value):
@@ -266,11 +262,9 @@ def output_viable_coords(L: PlayerlessCore, optimal_coords, optimal_value):
     worst_value = optimal_value
     coords_list_metrics = []
     for coords in generate_transformations(optimal_coords, L.size):
-        print("coords:", coords)
         L.disp_coords = [
             Dispenser(coords[0], coords[1], NULL_TIME, coords[2]) for coords in coords
         ]
-        print("DDDisp_coords:", L.disp_coords)
         dist_data = calculate_fungus_distribution(L)
         total_des_fungi = dist_data.total_des_fungi
         bm_for_prod = dist_data.bm_for_prod
@@ -306,8 +300,8 @@ def export_alt_placements(size: Dimensions, metrics, optimal_value, worst_value,
         f.write(f"Desired Fungi: {round(total_des_fungi, 5)}\n"
                 f"Bone Meal Used: {round(bm_for_prod, 5)}\n")
         f.write(f"Coords: {coords}\n")
-        for row in range(size.width):
-            for col in range(size.length):
+        for row in range(size.length):
+            for col in range(size.width):
                 if [row, col, UNCLEARED] in placements:
                     f.write(f"[{coords.index([row, col]) + 1}]")
                 elif [row, col, CLEARED] in placements:
