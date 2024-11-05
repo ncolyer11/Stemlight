@@ -39,23 +39,6 @@ CRIMSON = 1
 UNCLEARED = False
 CLEARED = True
 
-class LayoutInfo:
-    def __init__(
-        self,
-        num_disps: int,
-        disp_layout: List[List[int, int, int]],
-        cycles: int,
-        blocked_blocks: List[List[int, int]],
-        run_time: int,
-        wart_block_efficiency: float
-    ):
-        self.num_disps = num_disps
-        self.disp_layout = disp_layout
-        self.cycles = cycles
-        self.blocked_blocks = blocked_blocks
-        self.run_time = run_time
-        self.wart_block_efficiency = wart_block_efficiency
-
 class SlideSwitch(tk.Canvas):
     def __init__(self, parent, callback=None, *args, **kwargs):
         tk.Canvas.__init__(self, parent, *args, **kwargs)
