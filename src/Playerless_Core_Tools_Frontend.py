@@ -21,11 +21,6 @@ from src.Stochastic_Optimisation import start_optimisation
 # Testing notes
 # - Run tests on 5x5 and 4x5 for num dispensers 1-5, cycles = 3 to see where the optimal solution
 #   does or does not include cleare dispensers
-# Keep an eye out during future patches for the wart block and bone meal calc values going
-# inaccurate after optimising a bunch
-
-# TODO:
-# Weird flash of the grid when the program starts
 
 #################
 ### CONSTANTS ###
@@ -37,13 +32,13 @@ HGHT = 46
 PAD = 5
 RAD = 26
 DP = 5
+INIT_UPDATES = 2
 MAX_SIDE_LEN = 20
 SLIDER_MAX_CYCLES = 5
 DEFAULT_SIDE_LEN = 5
 DEFAULT_RUN_TIME = 7
 RUN_TIME_VALS = [1, 4, 7, 10, 15, 30, 60, 300, 1000]
 BC_EFFIC_VALS = [0.0, 0.5, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1]
-
 
 ###########################
 ### CLASSES & FUNCTIONS ###
@@ -119,6 +114,7 @@ class App:
         self.L = layout_info
         self.D = DisplayInfo({}, {}, {}, {}, ()) # Start with all empty labels and info values
         self.checkboxes = []
+        self.loaded = False
 
         clearing_path = resource_path("src/Images/cleared_dispenser.png")
         self.clearing_image = tk.PhotoImage(file=clearing_path)
@@ -220,7 +216,10 @@ class App:
         self.L.cycles = self.cycles_slider.get()
         self.L.wb_per_fungus = self.wb_per_fungus_slider.get()
         self.L.nylium_type = self.nylium_switch.nylium_type
-        self.update_grid(None, save_dispensers=False)
+        if self.loaded == 0 or self.loaded > INIT_UPDATES:
+            self.update_grid(None, save_dispensers=False)
+        # Skip the first few times the sliders are updated
+        self.loaded += 1
         
         self.display_block_info()
         self.calculate()
@@ -643,8 +642,6 @@ class App:
             self.grid.append(cb_row)
             self.checkboxes.append(var_row)
         self.L.num_disps = len(self.L.disp_coords)
-        self.calculate()
-        self.display_block_info()
 
     def restore_cb(self, cb, var, row, col, cb_row, saved_states, dispenser_array, blocked_copy):
         label_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*5))
