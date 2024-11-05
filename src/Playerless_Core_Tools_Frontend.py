@@ -25,6 +25,7 @@ from src.Stochastic_Optimisation import start_optimisation
 # inaccurate after optimising a bunch
 
 # TODO:
+# But optimise and heatmap button next to each other
 # Weird flash of the grid when the program starts
 # optimising with blocked blocks sometimes kills dispensers
 # also optimising with len != width causes out of bounds errors wow what's new

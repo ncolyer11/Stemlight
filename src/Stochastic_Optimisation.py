@@ -64,7 +64,6 @@ def simulated_annealing(
     for _ in range(S.max_iterations):
         if temperature < S.end_temp:
             break
-        # NOTE GENERATE NEIGHBOUR IS NOT CAUSING THE ISSUE HERE
         neighbour_sol = generate_neighbour(S.current_solution, L.size, has_cleared)
         # Either desired fungi produced, or potential wart blocks generated
         current_energy = S.optimise_func(L.size.length, L.size.width, L.nylium_type,

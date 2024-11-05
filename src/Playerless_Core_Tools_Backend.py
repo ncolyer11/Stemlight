@@ -5,7 +5,7 @@ import itertools
 import numpy as np
 
 from src.Assets.constants import *
-from src.Fast_Dispenser_Distribution import fast_calc_fung_dist, fast_calc_hf_dist
+from src.Fast_Dispenser_Distribution import fast_calc_fung_dist
 from src.Assets.heatmap_data import heatmap_array_xyz
 from src.Assets.data_classes import *
 
@@ -257,11 +257,9 @@ def generate_transformations(coords, s: Dimensions):
 def output_viable_coords(L: PlayerlessCore, optimal_coords, optimal_value):
     """Run through all reflections, rotations, and permutations of the optimal coordinates
     and record all solution within 0.1% of the best solution to a file."""
-    optimal_func = fast_calc_fung_dist  # Keeping possible future functionality
-                                        # for other functions to optimise
     try:
-        org_disp_coords = L.disp_coords
         start_time = time.time()
+        org_disp_coords = L.disp_coords
         worst_value = optimal_value
         coords_list_metrics = []
         for coords in generate_transformations(optimal_coords, L.size):
@@ -309,7 +307,7 @@ def export_alt_placements(size: Dimensions, metrics, optimal_value, worst_value,
                     f.write(f"[{coords.index([row, col]) + 1}]")
                 elif [row, col, CLEARED] in placements:
                     f.write("{" + str(coords.index([row, col]) + 1) + "}")
-                elif [row, col] in blocked_blocks:
+                elif (row, col) in blocked_blocks:
                     f.write("[/]")
                 else:
                     f.write("[ ]")

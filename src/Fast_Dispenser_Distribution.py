@@ -34,8 +34,10 @@ def fast_calc_fung_dist(length, width, nylium_type, disp_coords, cycles, blocked
             row1 = np.abs(row - disp_row).astype(int)
             col1 = np.abs(col - disp_col).astype(int)
             
-            sel_chance = np.where((row1 > 2) | (col1 > 2) | ([row1, col1] in blocked_blocks), 0,
+            sel_chance = np.where((row1 > 2) | (col1 > 2), 0,
                                 selection_cache[np.minimum(row1, 2), np.minimum(col1, 2)])
+            for row2, col2 in blocked_blocks:
+                sel_chance[row2, col2] = 0
 
             disp_chance = (1 - foliage_grid[disp_row, disp_col])
 
@@ -72,8 +74,10 @@ def warped_calc_fung_dist(length, width, disp_coords, cycles, blocked_blocks):
 
             row1 = np.abs(row - disp_row).astype(int)
             col1 = np.abs(col - disp_col).astype(int)
-            sel_chance = np.where((row1 > 2) | (col1 > 2) | ([row1, col1] in blocked_blocks), 0,
+            sel_chance = np.where((row1 > 2) | (col1 > 2), 0,
                                 selection_cache[np.minimum(row1, 2), np.minimum(col1, 2)])
+            for row2, col2 in blocked_blocks:
+                sel_chance[row2, col2] = 0
             
             disp_chance = (1 - foliage_grid[disp_row, disp_col])
             bm_for_prod += disp_chance
@@ -118,9 +122,11 @@ def fast_calc_hf_dist(length, width, nylium_type, disp_coords, cycles, blocked_b
             row1 = np.abs(row - disp_row).astype(int)
             col1 = np.abs(col - disp_col).astype(int)
             
-            sel_chance = np.where((row1 > 2) | (col1 > 2) | ([row1, col1] in blocked_blocks), 0,
+            sel_chance = np.where((row1 > 2) | (col1 > 2), 0,
                                 selection_cache[np.minimum(row1, 2), np.minimum(col1, 2)])
-
+            for row2, col2 in blocked_blocks:
+                sel_chance[row2, col2] = 0
+            
             disp_chance = (1 - foliage_grid[disp_row, disp_col])
             bm_for_prod += disp_chance
             foliage_grid += (1 - foliage_grid) * np.where(row1 + col1 == 0, 1, disp_chance) \
@@ -181,8 +187,10 @@ def warped_calc_hf_dist(p_length, p_width, disp_coords, cycles, blocked_blocks):
 
             row1 = np.abs(x - disp_row).astype(int)
             col1 = np.abs(y - disp_col).astype(int)
-            sel_chance = np.where((row1 > 2) | (col1 > 2) | ([row1, col1] in blocked_blocks), 0,
+            sel_chance = np.where((row1 > 2) | (col1 > 2), 0,
                                 selection_cache[np.minimum(row1, 2), np.minimum(col1, 2)])
+            for row2, col2 in blocked_blocks:
+                sel_chance[row2, col2] = 0
 
             disp_chance = (1 - foliage_grid[disp_row, disp_col])
             bm_for_prod += disp_chance
