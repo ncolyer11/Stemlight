@@ -1,0 +1,28 @@
+additional_property: false
+blast_chamber_effic: 1.0
+blocked_blocks: []
+cycles: 3
+disp_coords:
+- cleared: 1
+  col: 3
+  row: 3
+  timestamp: 1730827703.0524788
+- cleared: 0
+  col: 3
+  row: 0
+  timestamp: 1730827703.1614788
+- cleared: 0
+  col: 0
+  row: 4
+  timestamp: 1730827703.2744777
+- cleared: 0
+  col: 1
+  row: 1
+  timestamp: 1730827703.3894784
+num_disps: 4
+nylium_type: 1
+run_time: 10
+size:
+  length: 5
+  width: 4
+wb_per_fungus: 120.0

@@ -25,57 +25,6 @@ class Program:
         self.label = label
         self.description = program.__doc__
 
-def run_python_code(root, python_file):
-    python_file.start(root)
-
-def show_help_message():
-    messagebox.showinfo(
-        "Help",
-        "If you're experiencing a ModuleNotFoundError, try using VSCode and ensure that the following is in settings.json:\n\n"
-        "\"terminal.integrated.env.windows\": {\n"
-        "  \"PYTHONPATH\": \"${workspaceFolder}\"\n"
-        "}",
-        icon='question'
-    )
-
-def create_gradient(root, start_color, end_color, width, height, rows, cols):
-    # Create a canvas and grid it into the root window
-    canvas = tk.Canvas(root, width=width, height=height, borderwidth=0, highlightthickness=0)
-    canvas.grid(row=0, column=0, rowspan=rows, columnspan=cols, sticky="nsew")
-
-    # Configure grid weights to make the canvas fill the window
-    root.grid_rowconfigure(0, weight=1)
-    root.grid_columnconfigure(0, weight=1)
-
-    # Create a vertical gradient from start_color to end_color
-    for y in range(height):
-        r = int(int(start_color[1:3], 16) * (height - y) / height + int(end_color[1:3], 16) * y / height)
-        g = int(int(start_color[3:5], 16) * (height - y) / height + int(end_color[3:5], 16) * y / height)
-        b = int(int(start_color[5:], 16) * (height - y) / height + int(end_color[5:], 16) * y / height)
-        color = "#{:02x}{:02x}{:02x}".format(r, g, b)
-        canvas.create_rectangle(0, y, width, y + 1, fill=color, outline="")
-
-    # Bind the <Configure> event to the root window and add a function to handle it
-    root.bind("<Configure>", lambda event: resize_canvas(event, canvas, start_color, end_color))
-
-def resize_canvas(event, canvas, start_color, end_color):
-    # Get the new size of the window
-    width = event.width
-    height = event.height
-
-    # Update the size of the canvas
-    canvas.config(width=width, height=height)
-    # Delete the existing gradient
-    canvas.delete("gradient")
-
-    # Create a new gradient with the new size
-    for y in range(height):
-        r = int(int(start_color[1:3], 16) * (height - y) / height + int(end_color[1:3], 16) * y / height)
-        g = int(int(start_color[3:5], 16) * (height - y) / height + int(end_color[3:5], 16) * y / height)
-        b = int(int(start_color[5:], 16) * (height - y) / height + int(end_color[5:], 16) * y / height)
-        color = "#{:02x}{:02x}{:02x}".format(r, g, b)
-        canvas.create_rectangle(0, y, width, y + 1, fill=color, outline="", tags="gradient")
-
 def main():
     # Create main window
     root = tk.Tk()
@@ -154,6 +103,60 @@ def main():
     # except:
     #     pass
     root.mainloop()
+
+#########################
+### HELPERS & DISPLAY ###
+#########################
+def run_python_code(root, python_file):
+    python_file.start(root)
+
+def show_help_message():
+    messagebox.showinfo(
+        "Help",
+        "If you're experiencing a ModuleNotFoundError, try using VSCode and ensure that the following is in settings.json:\n\n"
+        "\"terminal.integrated.env.windows\": {\n"
+        "  \"PYTHONPATH\": \"${workspaceFolder}\"\n"
+        "}",
+        icon='question'
+    )
+
+def create_gradient(root, start_color, end_color, width, height, rows, cols):
+    # Create a canvas and grid it into the root window
+    canvas = tk.Canvas(root, width=width, height=height, borderwidth=0, highlightthickness=0)
+    canvas.grid(row=0, column=0, rowspan=rows, columnspan=cols, sticky="nsew")
+
+    # Configure grid weights to make the canvas fill the window
+    root.grid_rowconfigure(0, weight=1)
+    root.grid_columnconfigure(0, weight=1)
+
+    # Create a vertical gradient from start_color to end_color
+    for y in range(height):
+        r = int(int(start_color[1:3], 16) * (height - y) / height + int(end_color[1:3], 16) * y / height)
+        g = int(int(start_color[3:5], 16) * (height - y) / height + int(end_color[3:5], 16) * y / height)
+        b = int(int(start_color[5:], 16) * (height - y) / height + int(end_color[5:], 16) * y / height)
+        color = "#{:02x}{:02x}{:02x}".format(r, g, b)
+        canvas.create_rectangle(0, y, width, y + 1, fill=color, outline="")
+
+    # Bind the <Configure> event to the root window and add a function to handle it
+    root.bind("<Configure>", lambda event: resize_canvas(event, canvas, start_color, end_color))
+
+def resize_canvas(event, canvas, start_color, end_color):
+    # Get the new size of the window
+    width = event.width
+    height = event.height
+
+    # Update the size of the canvas
+    canvas.config(width=width, height=height)
+    # Delete the existing gradient
+    canvas.delete("gradient")
+
+    # Create a new gradient with the new size
+    for y in range(height):
+        r = int(int(start_color[1:3], 16) * (height - y) / height + int(end_color[1:3], 16) * y / height)
+        g = int(int(start_color[3:5], 16) * (height - y) / height + int(end_color[3:5], 16) * y / height)
+        b = int(int(start_color[5:], 16) * (height - y) / height + int(end_color[5:], 16) * y / height)
+        color = "#{:02x}{:02x}{:02x}".format(r, g, b)
+        canvas.create_rectangle(0, y, width, y + 1, fill=color, outline="", tags="gradient")
 
 if __name__ == "__main__":
     main()

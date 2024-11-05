@@ -1,11 +1,15 @@
+from src.Assets.data_classes import *
+
 ### Program/GUI
 YES_OPTIONS = {"y", "yes", "on", "1", "yeah", "true", "sure", "yup",
                "ja", "si", "sí", "haan", "हाँ", "oui", "はい", "da"}
 WARP_OPTIONS = {"blue", "b", "warped", "w", "warp"}
 CRMS_OPTIONS = {"red", "r", "crimson", "c", "crim"}
 BASE_CPU_ITER_TIME = 5.5e-4
-WARPED = 0
-CRIMSON = 1
+WARPED: NyliumType = 0
+CRIMSON: NyliumType = 1
+UNCLEARED: ClearedStatus = 0
+CLEARED: ClearedStatus = 1
 
 # def get_dpi_scale_factor():
 #     """Get the resolution scale factor based on monitor DPI."""

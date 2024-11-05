@@ -1,15 +1,14 @@
 """A program that outputs the efficiency and VRM count information \nfor a given encoded ntf layout schematic file"""
 
+import os
+import threading
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import font
-import os
-import threading
 
 from src.Assets import colours
 from src.Assets.constants import RSF
-from src.Assets.version import version
-from src.Assets.helpers import resource_path, set_title_and_icon
+from src.Assets.helpers import set_title_and_icon
 from src.Assets.helpers import schem_layout_to_efficiency_and_vrms
 
 def start(root):
