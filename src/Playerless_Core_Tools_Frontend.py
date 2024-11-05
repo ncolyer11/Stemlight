@@ -733,19 +733,17 @@ class App:
     
     def randomise_layout(self):
         """Optimise all paramters relating to a playerless nether tree farm core using simulated annealing"""
-        self.reset_grid(remove_blocked=True)
-        self.L = generate_random_layout()
-        rand_disp_coords = self.L.disp_coords
-        self.cycles_slider.set(self.L.cycles)
-        self.col_slider.set(self.L.size.width)
-        self.row_slider.set(self.L.size.length)
-        self.update_nylium_type(self.L.nylium_type)
-        self.L.disp_coords = rand_disp_coords
+        L_Rand: PlayerlessCore = generate_random_layout()
+        self.cycles_slider.set(L_Rand.cycles)
+        self.col_slider.set(L_Rand.size.width)
+        self.row_slider.set(L_Rand.size.length)
+        self.update_nylium_type(L_Rand.nylium_type)
+        self.nylium_switch.assign(L_Rand.nylium_type.get())
         self.update_grid(None)
-        self.nylium_switch.assign(self.L.nylium_type.get())
+        self.reset_grid(remove_blocked=True)
 
-        for disp_coord in self.L.disp_coords:
-            self.add_dispenser(disp_coord.row, disp_coord.col, disp_coord.cleared)
+        for disp_coord in L_Rand.disp_coords:
+            self.add_dispenser(disp_coord.col, disp_coord.row, disp_coord.cleared)
 
     def export_heatmaps(self):
         """Export custom heatmaps based on the fungus distribution of the nylium grid"""

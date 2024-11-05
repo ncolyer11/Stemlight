@@ -353,14 +353,14 @@ def generate_random_layout() -> PlayerlessCore:
     S_rand.disp_coords = [Dispenser(all_disps[t][0], all_disps[t][1], t, rand_s(2)) for t in coords]
     S_rand.run_time *= S_rand.num_disps
     # Generate a random spread of blocked blocks
-    S_rand.blocked_blocks = [
-        [rand_s(0, S_rand.size.length), rand_s(0, S_rand.size.width)]
-        for _ in range(rand_s(0, max(2, S_rand.size.width * S_rand.size.length // 4)))
-    ]
+    # S_rand.blocked_blocks = [
+    #     [rand_s(0, S_rand.size.length), rand_s(0, S_rand.size.width)]
+    #     for _ in range(rand_s(0, max(2, S_rand.size.width * S_rand.size.length // 4)))
+    # ]
     # Only keep the blocked blocks that don't overlap with dispenser coords
-    S_rand.blocked_blocks = [
-        bb for bb in S_rand.blocked_blocks if bb not in [[d.row, d.col] for d in S_rand.disp_coords]
-    ]
+    # S_rand.blocked_blocks = [
+    #     bb for bb in S_rand.blocked_blocks if bb not in [[d.row, d.col] for d in S_rand.disp_coords]
+    # ]
     print("rand coords:", S_rand.disp_coords)
     # print("Generated random layout:", S_rand.num_disps, "layout:", S_rand.disp_coords, "size:", S_rand.size)    
     return S_rand
