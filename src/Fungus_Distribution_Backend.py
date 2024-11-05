@@ -3,6 +3,7 @@
 import time
 import itertools
 import numpy as np
+from numpy.random import randint as rand_s
 
 from src.Assets.constants import *
 from src.Fast_Dispenser_Distribution import fast_calc_fung_dist, fast_calc_hf_dist
@@ -10,6 +11,11 @@ from src.Assets.heatmap_data import heatmap_array_xyz
 from src.Assets.data_classes import *
 
 DP_VAL = 5
+MAX_ALL_WIDTH = 10
+MAX_ALL_LENGTH = 10
+MAX_ALL_CYCLES = 5
+ALL_RUN_TIME = 10
+MAX_ALL_AVG_NUM_DISPS = 15
 
 def selection_chance(x1, y1):
     """Calculates the probability of a block being selected for 
@@ -86,7 +92,7 @@ def calculate_distribution(L: PlayerlessCore) -> PlayerlessCoreDistOutput:
             total_des_fungi_grid[disp_row, disp_col] = 0
             disp_foliage_grids[:, :, disp_row, disp_col] = 0
             disp_des_fungi_grids[:, :, disp_row, disp_col] = 0
-            if L.fungi == WARPED:
+            if L.nylium_type == WARPED:
                 sprouts_total[disp_row, disp_col] = 0
     
     return PlayerlessCoreDistOutput(
@@ -318,3 +324,43 @@ def export_alt_placements(size: Dimensions, metrics, optimal_value, worst_value,
     f.close()
     print("Alternate placements calculated in:", round(time.time() - start_time, 3), "seconds")
     return num_alt_placements
+
+def generate_random_layout() -> PlayerlessCore:
+    """
+    Generates a random layout of dispensers, blocked blocks, and nylium type.
+    """
+    S_rand = PlayerlessCore(
+        num_disps=rand_s(1, MAX_ALL_AVG_NUM_DISPS),
+        size=Dimensions(rand_s(1, MAX_ALL_LENGTH + 1), rand_s(1, MAX_ALL_WIDTH + 1)),
+        nylium_type=tk.StringVar(value="warped") if np.random.rand() < 0.5 else tk.StringVar(value="crimson"),
+        disp_coords=[],
+        cycles=rand_s(1, MAX_ALL_CYCLES + 1),
+        blocked_blocks=[],
+        warts_effic=tk.StringVar(value=str(rand_s(30, 120))),
+        blast_chamber_effic=tk.StringVar(value=str(1.0)),
+        run_time=ALL_RUN_TIME,
+        randomised=True
+    )
+    all_disps = [
+        [row, col] for row in range(S_rand.size.length) for col in range(S_rand.size.width)
+    ]
+    coords = np.random.choice(
+        len(all_disps),
+        min(len(all_disps), rand_s(MAX_ALL_AVG_NUM_DISPS)),
+        replace=False
+    )
+    S_rand.num_disps = len(coords)
+    S_rand.disp_coords = [Dispenser(all_disps[t][0], all_disps[t][1], t, rand_s(2)) for t in coords]
+    S_rand.run_time *= S_rand.num_disps
+    # Generate a random spread of blocked blocks
+    S_rand.blocked_blocks = [
+        [rand_s(0, S_rand.size.length), rand_s(0, S_rand.size.width)]
+        for _ in range(rand_s(0, max(2, S_rand.size.width * S_rand.size.length // 4)))
+    ]
+    # Only keep the blocked blocks that don't overlap with dispenser coords
+    S_rand.blocked_blocks = [
+        bb for bb in S_rand.blocked_blocks if bb not in [[d.row, d.col] for d in S_rand.disp_coords]
+    ]
+    print("rand coords:", S_rand.disp_coords)
+    # print("Generated random layout:", S_rand.num_disps, "layout:", S_rand.disp_coords, "size:", S_rand.size)    
+    return S_rand

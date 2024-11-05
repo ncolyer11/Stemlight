@@ -13,8 +13,8 @@ from src.Assets.constants import *
 from src.Assets.data_classes import *
 from src.Assets.helpers import ToolTip, set_title_and_icon, export_custom_heatmaps, resource_path
 from src.Fungus_Distribution_Backend import calc_huge_fungus_distribution, \
-    calculate_fungus_distribution, output_viable_coords
-from src.Stochastic_Optimisation import start_optimisation, optimise_all
+    calculate_fungus_distribution, output_viable_coords, generate_random_layout
+from src.Stochastic_Optimisation import start_optimisation
 
 # Testing notes
 # - Run tests on 5x5 and 4x5 for num dispensers 1-5, cycles = 3 to see where the optimal solution
@@ -70,7 +70,7 @@ class SlideSwitch(tk.Canvas):
         self.state = False
         self.callback = callback
 
-    def toggle(self, event):
+    def toggle(self, event=None):
         if self.state:
             self.new_image = self.create_squircle(WDTH, HGHT, RAD, colours.warped)
             self.itemconfig(self.rect, image=self.new_image)
@@ -85,6 +85,18 @@ class SlideSwitch(tk.Canvas):
         self.state = not self.state
         if self.callback:
             self.callback()
+
+    def assign(self, state):
+        if state == "warped":
+            self.new_image = self.create_squircle(WDTH, HGHT, RAD, colours.warped)
+            self.itemconfig(self.rect, image=self.new_image)
+            self.coords(self.oval, WDTH//4, HGHT//2)
+            self.state = False
+        else:
+            self.new_image = self.create_squircle(WDTH, HGHT, RAD, colours.crimson)
+            self.itemconfig(self.rect, image=self.new_image)
+            self.coords(self.oval, 3 * WDTH//4, HGHT//2)
+            self.state = True
     
     def create_squircle(self, width, height, radius, fill):
         # Create a new image with transparent background
@@ -232,7 +244,7 @@ class App:
                 warts_effic=120,
                 blast_chamber_effic=1,
                 run_time=des_run_time,
-                all_optimised=False
+                randomised=True
             )
             _, _, iterations = start_optimisation(L_calibrate)
 
@@ -348,8 +360,8 @@ class App:
         self.optimise_button = tk.Button(self.scrollable_frame, text="Optimise", command=self.optimise,
                                          font=large_button_font, bg=colours.crimson, pady=2)
         self.optimise_button.pack(pady=5)
-        self.optimise_button.bind("<Button-2>", lambda event: self.fe_optimise_all())
-        self.optimise_button.bind("<Control-Button-1>", lambda event: self.fe_optimise_all())
+        self.optimise_button.bind("<Button-2>", lambda event: self.randomise_layout())
+        self.optimise_button.bind("<Control-Button-1>", lambda event: self.randomise_layout())
 
 
         self.export_button = tk.Button(self.scrollable_frame, text="Export", command=self.export_heatmaps,
@@ -509,13 +521,13 @@ class App:
 
         # Create a 2D array with the same dimensions as self.checkboxes, initialized with zeros
         dispenser_array = [[(0, 0, 0) for _ in cb_row] for cb_row in self.checkboxes]
-
         # Iterate over the sorted dispensers list
         for i, dispenser in enumerate(filtered_dispensers):
             # The order of the dispenser is i + 1
             # Set the corresponding element in the dispenser array to i + 1
             row, col = dispenser.row, dispenser.col
             # Preserve initial time value and cleared status
+            print(f"Row: {row}, Col: {col}")
             dispenser_array[row][col] = (i + 1, dispenser.timestamp, dispenser.cleared)
 
         return dispenser_array
@@ -599,7 +611,6 @@ class App:
         Add a dispenser to the nylium grid at the given coordinates
         """
         label_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*5))
-
         # Toggle the state of the checkbox
         self.checkboxes[row][col].set(not self.checkboxes[row][col].get())
         if (row, col) in self.L.blocked_blocks:
@@ -660,9 +671,9 @@ class App:
 
     def optimise(self):
         """Optimise the placement of dispensers on the nylium grid"""
-        # Ignore button press if it was special clicked for optimising all parameters
-        if (self.L.all_optimised == True):
-            self.L.all_optimised = False
+        # Ignore button press if it was special clicked for randomising all parameters
+        if (self.L.randomised == True):
+            self.L.randomised = False
             return
 
         fungus_type = CRIMSON if self.L.nylium_type.get() == "crimson" else WARPED
@@ -678,7 +689,7 @@ class App:
             warts_effic=self.L.warts_effic,
             blast_chamber_effic=self.L.blast_chamber_effic.get(),
             run_time=self.L.run_time.get(),
-            all_optimised=False
+            randomised=False
         )
             
         optimal_coords, optimal_value, iterations = start_optimisation(L_optimise)
@@ -719,22 +730,21 @@ class App:
                 error_message += '.'
             messagebox.showwarning("Export Error", error_message)      
     
-    def fe_optimise_all(self):
+    def randomise_layout(self):
         """Optimise all paramters relating to a playerless nether tree farm core using simulated annealing"""
-        self.L.all_optimised = True
-        result, optimal_value, iterations = optimise_all()
-        print("All optimised results:", result)
-        print("Optimal value:", optimal_value)
-        print("Iterations:", iterations)
-        self.cycles_slider.set(result['num_cycles'])
-        self.col_slider.set(result['width'])
-        self.row_slider.set(result['length'])
-        self.update_nylium_type(result['fungus_type'])
-        self.update_grid(iterations)
+        self.L = generate_random_layout()
+        rand_disp_coords = self.L.disp_coords
+        self.cycles_slider.set(self.L.cycles)
+        self.col_slider.set(self.L.size.width)
+        self.row_slider.set(self.L.size.length)
+        self.update_nylium_type(self.L.nylium_type)
+        self.update_grid(None)
         self.reset_grid(remove_blocked=True)
-        
-        for disp_coord in result['disp_coords']:
-            self.add_dispenser(disp_coord.row, disp_coord.col, disp_coord.cleared)
+        self.nylium_switch.assign(self.L.nylium_type.get())
+
+        self.L.disp_coords = rand_disp_coords
+        for disp_coord in self.L.disp_coords:
+            self.add_dispenser(disp_coord.col, disp_coord.row, disp_coord.cleared)
 
     def export_heatmaps(self):
         """Export custom heatmaps based on the fungus distribution of the nylium grid"""
@@ -974,7 +984,6 @@ class App:
         """Set the run time of the optimisation algorithm."""
         self.L.run_time.set(time)
 
-
 def start(root):
     """Start the Playerless Core Tools program."""
     
@@ -1004,7 +1013,7 @@ def start(root):
         warts_effic=120,
         blast_chamber_effic=tk.StringVar(value="1"),
         run_time=tk.StringVar(value=str(DEFAULT_RUN_TIME)),
-        all_optimised=False
+        randomised=False
     )
     app = App(child, L)
     child.mainloop()

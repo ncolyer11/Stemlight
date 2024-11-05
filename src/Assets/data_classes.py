@@ -33,8 +33,7 @@ class PlayerlessCore:
     warts_effic: float | tk.StringVar 
     blast_chamber_effic: float | tk.StringVar
     run_time: int
-    all_optimised: bool
-
+    randomised: bool
 
 @dataclass
 class PlayerlessCoreOutput:
