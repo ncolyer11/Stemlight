@@ -266,8 +266,7 @@ def output_viable_coords(L: PlayerlessCore, optimal_coords, optimal_value):
             total_des_fungi = dist_data.total_des_fungi
             bm_for_prod = dist_data.bm_for_prod
         else:
-            total_wart_blocks, bm_for_prod = \
-            fast_calc_hf_dist(
+            total_wart_blocks, bm_for_prod = fast_calc_hf_dist(
                 L.size.length,
                 L.size.width,
                 L.nylium_type,
