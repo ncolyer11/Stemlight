@@ -561,6 +561,7 @@ class App:
             var_row = []
             for col in range(cols):
                 var = tk.IntVar()
+                var.set(0)
                 cb = tk.Button(
                     self.grid_frame,
                     image=self.unchecked_image,
@@ -732,19 +733,19 @@ class App:
     
     def randomise_layout(self):
         """Optimise all paramters relating to a playerless nether tree farm core using simulated annealing"""
+        self.reset_grid(remove_blocked=True)
         self.L = generate_random_layout()
         rand_disp_coords = self.L.disp_coords
         self.cycles_slider.set(self.L.cycles)
         self.col_slider.set(self.L.size.width)
         self.row_slider.set(self.L.size.length)
         self.update_nylium_type(self.L.nylium_type)
+        self.L.disp_coords = rand_disp_coords
         self.update_grid(None)
-        self.reset_grid(remove_blocked=True)
         self.nylium_switch.assign(self.L.nylium_type.get())
 
-        self.L.disp_coords = rand_disp_coords
         for disp_coord in self.L.disp_coords:
-            self.add_dispenser(disp_coord.col, disp_coord.row, disp_coord.cleared)
+            self.add_dispenser(disp_coord.row, disp_coord.col, disp_coord.cleared)
 
     def export_heatmaps(self):
         """Export custom heatmaps based on the fungus distribution of the nylium grid"""
