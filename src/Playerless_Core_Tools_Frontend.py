@@ -128,7 +128,7 @@ class App:
         self.clearing_image = self.clearing_image.subsample(3, 3)
 
         # Create a Canvas and Scrollbar 1055
-        self.canvas = tk.Canvas(master, width=int(RSF*760), height=int(RSF*1055), bg=colours.bg)
+        self.canvas = tk.Canvas(master, width=int(RSF*760), height=int(RSF*1000), bg=colours.bg)
         
         self.scrollbar = tk.Scrollbar(master, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
@@ -412,17 +412,19 @@ class App:
         self.grid_frame = tk.Frame(self.scrollable_frame, bg=colours.bg)
         self.grid_frame.pack(pady=5)
 
-        self.additional_property_button = tk.Button(self.scrollable_frame, text="Optimise", command=self.optimise,
-                                         font=large_button_font, bg=colours.crimson, pady=2)
-        self.additional_property_button.pack(pady=5)
+        # Create a new frame to contain the buttons
+        button_frame = tk.Frame(self.scrollable_frame, bg=colours.bg)
+        button_frame.pack(pady=5)
+
+        self.additional_property_button = tk.Button(button_frame, text="Optimise", command=self.optimise,
+                                                    font=large_button_font, bg=colours.crimson, pady=2)
+        self.additional_property_button.pack(side=tk.LEFT, padx=5)
         self.additional_property_button.bind("<Button-2>", self.debug_button)
         self.additional_property_button.bind("<Control-Button-1>", self.debug_button)
 
-
-        self.heatmap_button = tk.Button(self.scrollable_frame, text="Heatmap", command=self.export_heatmaps,
-                                         font=large_button_font, bg=colours.aqua_green,
-                                         pady=2)
-        self.heatmap_button.pack(pady=5)
+        self.heatmap_button = tk.Button(button_frame, text="Heatmap", command=self.export_heatmaps,
+                                        font=large_button_font, bg=colours.aqua_green, pady=2)
+        self.heatmap_button.pack(side=tk.LEFT, padx=5)
 
         self.master_frame = tk.Frame(self.scrollable_frame)
         self.master_frame.pack(pady=5)
@@ -768,9 +770,9 @@ class App:
             run_time=self.L.run_time,
             additional_property=False
         )
-            
+        print(f"size: {self.L.size.length}x{self.L.size.width}")
         optimal_coords, optimal_value, iterations = start_optimisation(L_optimise)
-
+        print(f"first optimal coords: {optimal_coords}")
         if optimal_coords == -1:
             messagebox.showwarning("Error", "Maximum runtime exceeded.")
             return

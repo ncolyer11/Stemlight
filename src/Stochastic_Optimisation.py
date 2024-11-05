@@ -110,8 +110,8 @@ def generate_neighbour(solution: Any, size: Dimensions, has_cleared: ClearedStat
         # dispenser in the input field already
         cleared_val = rand_s(0, cleared_state)
         new_coords = [
-            max(0, min(size.width - 1, sol_row + rand_s(-step_h, step_h + 1))),
-            max(0, min(size.length - 1, sol_col + rand_s(-step_v, step_v + 1))),
+            max(0, min(size.length - 1, sol_row + rand_s(-step_h, step_h + 1))),
+            max(0, min(size.width - 1, sol_col + rand_s(-step_v, step_v + 1))),
             NULL_TIME, cleared_val
         ]
 
@@ -119,8 +119,8 @@ def generate_neighbour(solution: Any, size: Dimensions, has_cleared: ClearedStat
         else_array = positions[:i] + positions[i+1:]
         while any([new_coords[0], new_coords[1]] == coord[:2] for coord in else_array):
             new_coords = [
-                max(0, min(size.width - 1, new_coords[0] + rand_s(-step_h, step_h + 1))), 
-                max(0, min(size.length - 1, new_coords[1] + rand_s(-step_v, step_v + 1))),
+                max(0, min(size.length - 1, new_coords[0] + rand_s(-step_h, step_h + 1))), 
+                max(0, min(size.width - 1, new_coords[1] + rand_s(-step_v, step_v + 1))),
                 NULL_TIME, cleared_val
             ]
     

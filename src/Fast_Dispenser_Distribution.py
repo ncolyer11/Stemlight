@@ -59,15 +59,15 @@ def fast_calc_fung_dist(length, width, nylium_type, disp_coords, cycles, blocked
 def warped_calc_fung_dist(length, width, disp_coords, cycles, blocked_blocks):
     """Calculate the distribution of foliage for warped separately to crimson as it's slower"""
     # 2D array for storing distribution of all the foliage
-    foliage_grid = np.zeros((width, length))
+    foliage_grid = np.zeros((length, width))
 
     # 2D array for storing distribution of desired fungus
-    des_fungi_grid = np.zeros((width, length))
+    des_fungi_grid = np.zeros((length, width))
     # 'bm_for_prod': bone meal used during 1 cycle of firing all the given dispensers
     bm_for_prod = 0.0
     # Keep track of sprouts to deduct later from foliage compost total
-    sprouts_grid = np.zeros((width, length))
-    row, col = np.ogrid[:width, :length]
+    sprouts_grid = np.zeros((length, width))
+    row, col = np.ogrid[:length, :width]
     for _ in range(cycles):
         for disp in disp_coords:
             disp_row, disp_col = disp.row, disp.col
@@ -112,8 +112,8 @@ def fast_calc_hf_dist(length, width, nylium_type, disp_coords, cycles, blocked_b
         return warped_calc_hf_dist(p_length, p_width, disp_coords, cycles, blocked_blocks)
     
     # 2D array for storing distribution of all the foliage
-    foliage_grid = np.zeros((p_width, p_length))
-    row, col = np.ogrid[:p_width, :p_length]
+    foliage_grid = np.zeros((p_length, p_width))
+    row, col = np.ogrid[:p_length, :p_width]
     bm_for_prod = 0.0
     for _ in range(cycles):
         for disp in disp_coords:
@@ -171,22 +171,22 @@ def fast_calc_hf_dist(length, width, nylium_type, disp_coords, cycles, blocked_b
 def warped_calc_hf_dist(p_length, p_width, disp_coords, cycles, blocked_blocks):
     """Calculate the distribution of foliage and wart blocks for warped separately to crimson"""
     # 2D array for storing distribution of all the foliage
-    foliage_grid = np.zeros((p_width, p_length))
+    foliage_grid = np.zeros((p_length, p_width))
 
     # 2D array for storing distribution of desired fungus
-    des_fungi_grid = np.zeros((p_width, p_length))
+    des_fungi_grid = np.zeros((p_length, p_width))
     # 'bm_for_prod': bone meal used during 1 cycle of firing all the given dispensers
     bm_for_prod = 0.0
     # Keep track of sprouts to deduct later from foliage compost total
-    sprouts_grid = np.zeros((p_width, p_length))
+    sprouts_grid = np.zeros((p_length, p_width))
 
-    x, y = np.ogrid[:p_width, :p_length]
+    row, col = np.ogrid[:p_length, :p_width]
     for _ in range(cycles):
         for disp in disp_coords:
             disp_row, disp_col = disp.row, disp.col
 
-            row1 = np.abs(x - disp_row).astype(int)
-            col1 = np.abs(y - disp_col).astype(int)
+            row1 = np.abs(row - disp_row).astype(int)
+            col1 = np.abs(col - disp_col).astype(int)
             sel_chance = np.where((row1 > 2) | (col1 > 2), 0,
                                 selection_cache[np.minimum(row1, 2), np.minimum(col1, 2)])
             for row2, col2 in blocked_blocks:
