@@ -43,6 +43,7 @@ BC_EFFIC_VALS = [0.0, 0.5, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1]
 ###########################
 ### CLASSES & FUNCTIONS ###
 ###########################
+
 class SlideSwitch(tk.Canvas):
     def __init__(self, parent, callback=None, *args, **kwargs):
         tk.Canvas.__init__(self, parent, *args, **kwargs)
