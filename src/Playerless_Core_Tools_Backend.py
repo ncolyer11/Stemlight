@@ -10,6 +10,7 @@ from src.Assets.heatmap_data import heatmap_array_xyz
 from src.Assets.data_classes import *
 
 DP_VAL = 5
+NULL_TIME = 0
 MAX_ALL_WIDTH = 10
 MAX_ALL_LENGTH = 10
 MAX_ALL_CYCLES = 5
@@ -259,25 +260,17 @@ def output_viable_coords(L: PlayerlessCore, optimal_coords, optimal_value):
     optimal_func = fast_calc_fung_dist  # Keeping possible future functionality
                                         # for other functions to optimise
     try:
+        org_disp_coords = L.disp_coords
         start_time = time.time()
         worst_value = optimal_value
         coords_list_metrics = []
         for coords in generate_transformations(optimal_coords, L.size):
-            if optimal_func == fast_calc_fung_dist:
-                dist_data = calculate_fungus_distribution(L)
-                total_des_fungi = dist_data.total_des_fungi
-                bm_for_prod = dist_data.bm_for_prod
-            else:
-                total_wart_blocks, bm_for_prod = fast_calc_hf_dist(
-                    L.size.length,
-                    L.size.width,
-                    L.nylium_type,
-                    L.disp_coords,
-                    L.cycles,
-                    L.blocked_blocks,
-                )
-                # Got a headache atm
-                total_des_fungi = 0
+            L.disp_coords = [
+                Dispenser(coords[0], coords[1], NULL_TIME, coords[2]) for coords in coords
+            ]
+            dist_data = calculate_fungus_distribution(L)
+            total_des_fungi = dist_data.total_des_fungi
+            bm_for_prod = dist_data.bm_for_prod
 
             bm_req = bm_for_prod < L.wb_per_fungus / WARTS_PER_BM - AVG_BM_TO_GROW_FUNG
             if total_des_fungi < worst_value and bm_req:
@@ -287,6 +280,7 @@ def output_viable_coords(L: PlayerlessCore, optimal_coords, optimal_value):
 
         # Sort the list by the desired fungi value
         coords_list_metrics.sort(key=lambda row: row[0], reverse=True)
+        L.disp_coords = org_disp_coords
         return export_alt_placements(L.size, coords_list_metrics, optimal_value,
                                         worst_value, start_time, L.blocked_blocks)
     except Exception as e:
