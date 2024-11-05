@@ -402,6 +402,8 @@ class App:
 
         self.reset_button = tk.Button(self.button_slider_frame, text="Reset", command=self.reset_grid, font=small_button_font, bg=colours.warped)
         self.reset_button.pack(side=tk.RIGHT, padx=5)
+        self.reset_button.bind("<Shift-Button-1>", self.reset_all)
+
 
         self.nylium_switch = SlideSwitch(self.button_slider_frame, callback=self.update_nylium_type)
         self.nylium_switch.pack(side=tk.LEFT, padx=5, pady=5)
@@ -748,6 +750,17 @@ class App:
         self.L.num_disps = 0
         self.calculate()
         self.display_block_info()
+
+    def reset_all(self, event):
+        """Reset the grid and sliders to their default values"""
+        self.reset_grid()
+        self.row_slider.set(DEFAULT_SIDE_LEN)
+        self.col_slider.set(DEFAULT_SIDE_LEN)
+        self.cycles_slider.set(1)
+        self.wb_per_fungus_slider.set(120)
+        self.update_nylium_type(WARPED)
+        self.nylium_switch.assign(WARPED)
+        self.calculate()
 
     def optimise(self):
         """Optimise the placement of dispensers on the nylium grid"""
