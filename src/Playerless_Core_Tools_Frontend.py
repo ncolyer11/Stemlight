@@ -13,7 +13,7 @@ from src.Assets.constants import *
 from src.Assets.data_classes import *
 from src.Assets.helpers import ToolTip, set_title_and_icon, export_custom_heatmaps, resource_path
 from src.Fungus_Distribution_Backend import calc_huge_fungus_distribution, \
-    calculate_fungus_distribution, output_viable_coords, generate_random_layout
+    calculate_fungus_distribution, output_viable_coords
 from src.Stochastic_Optimisation import start_optimisation
 
 # Testing notes
@@ -244,7 +244,7 @@ class App:
                 warts_effic=120,
                 blast_chamber_effic=1,
                 run_time=des_run_time,
-                randomised=True
+                additional_property=True
             )
             _, _, iterations = start_optimisation(L_calibrate)
 
@@ -357,11 +357,11 @@ class App:
         self.grid_frame = tk.Frame(self.scrollable_frame, bg=colours.bg)
         self.grid_frame.pack(pady=5)
 
-        self.optimise_button = tk.Button(self.scrollable_frame, text="Optimise", command=self.optimise,
+        self.additional_property_button = tk.Button(self.scrollable_frame, text="Optimise", command=self.optimise,
                                          font=large_button_font, bg=colours.crimson, pady=2)
-        self.optimise_button.pack(pady=5)
-        self.optimise_button.bind("<Button-2>", lambda event: self.randomise_layout())
-        self.optimise_button.bind("<Control-Button-1>", lambda event: self.randomise_layout())
+        self.additional_property_button.pack(pady=5)
+        self.additional_property_button.bind("<Button-2>", lambda event: print("Coming soon!"))
+        self.additional_property_button.bind("<Control-Button-1>", lambda event: print("Coming soon!"))
 
 
         self.export_button = tk.Button(self.scrollable_frame, text="Export", command=self.export_heatmaps,
@@ -672,11 +672,6 @@ class App:
 
     def optimise(self):
         """Optimise the placement of dispensers on the nylium grid"""
-        # Ignore button press if it was special clicked for randomising all parameters
-        if (self.L.randomised == True):
-            self.L.randomised = False
-            return
-
         fungus_type = CRIMSON if self.L.nylium_type.get() == "crimson" else WARPED
         if self.L.num_disps == 0:
             return
@@ -690,7 +685,7 @@ class App:
             warts_effic=self.L.warts_effic,
             blast_chamber_effic=self.L.blast_chamber_effic.get(),
             run_time=self.L.run_time.get(),
-            randomised=False
+            additional_property=False
         )
             
         optimal_coords, optimal_value, iterations = start_optimisation(L_optimise)
@@ -731,20 +726,6 @@ class App:
                 error_message += '.'
             messagebox.showwarning("Export Error", error_message)      
     
-    def randomise_layout(self):
-        """Optimise all paramters relating to a playerless nether tree farm core using simulated annealing"""
-        L_Rand: PlayerlessCore = generate_random_layout()
-        self.cycles_slider.set(L_Rand.cycles)
-        self.col_slider.set(L_Rand.size.width)
-        self.row_slider.set(L_Rand.size.length)
-        self.update_nylium_type(L_Rand.nylium_type)
-        self.nylium_switch.assign(L_Rand.nylium_type.get())
-        self.update_grid(None)
-        self.reset_grid(remove_blocked=True)
-
-        for disp_coord in L_Rand.disp_coords:
-            self.add_dispenser(disp_coord.col, disp_coord.row, disp_coord.cleared)
-
     def export_heatmaps(self):
         """Export custom heatmaps based on the fungus distribution of the nylium grid"""
         # Calculate fungus distribution     
@@ -1012,7 +993,7 @@ def start(root):
         warts_effic=120,
         blast_chamber_effic=tk.StringVar(value="1"),
         run_time=tk.StringVar(value=str(DEFAULT_RUN_TIME)),
-        randomised=False
+        additional_property=False
     )
     app = App(child, L)
     child.mainloop()
