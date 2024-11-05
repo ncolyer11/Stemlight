@@ -44,7 +44,8 @@ def fast_calc_fung_dist(length, width, fungus_type, disp_layout, num_cycles, blo
 
                 bm_for_prod += disp_chance
                 # Again, don't double multiply the air chance above a selected dispenser
-                foliage_grid += (1 - foliage_grid) * np.where(row1 + col1 == 0, 1, disp_chance) * sel_chance
+                foliage_grid += (1 - foliage_grid) * np.where(row1 + col1 == 0, 1, disp_chance) \
+                                * sel_chance
     
         # Replicate triggering pistons to clear foliage on top of selected dispensers
         for disp in disp_layout:

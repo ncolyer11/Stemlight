@@ -85,6 +85,7 @@ class DisplayInfo:
 @dataclass
 class SimAnnealingParams:
     optimise_func: Callable
+    optimal_value: float
     initial_solution: Any
     current_solution: Any
     best_solution: Any

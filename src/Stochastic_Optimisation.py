@@ -3,7 +3,6 @@ import time
 import random
 import numpy as np
 import pandas as pd
-from numpy.random import randint as rand_s
 
 from src.Fast_Dispenser_Distribution import fast_calc_fung_dist, fast_calc_hf_dist
 from src.Assets.constants import *
@@ -19,6 +18,7 @@ ALL_RUN_TIME = 10
 MAX_ALL_AVG_NUM_DISPS = 10
 MAX_ITERATIONS = 1000000
 NULL_TIME = 0
+rand_s = np.random.randint
 
 class LayoutParamters:
     """A class to store parameters of a playerless core nether tree farm to be optimised"""
@@ -221,12 +221,7 @@ class LayoutParamters:
 
     def get_lowest_energy(self):
         # Return the lowest non-zero layout: a 1-cycle 1x1 crimson platform with a cleared dispenser
-        return fast_calc_fung_dist(
-            1, 1, CRIMSON,
-            [[0, 0, CLEARED]],
-            1,
-            []
-        )[0]
+        return fast_calc_fung_dist(1, 1, CRIMSON, [[0, 0, CLEARED]], 1, [])[0]
     
 def optimise_all():
     """Simulated annealing with all paramters as inputs,
@@ -278,6 +273,7 @@ def start_optimisation(L: PlayerlessCore) -> Tuple[List[Dispenser], float, int]:
     init_sol = [Dispenser(-1, -1, NULL_TIME, UNCLEARED) for _ in range(L.num_disps)]
     S = SimAnnealingParams(
         optimise_func=optimise_func,
+        optimal_value=0,
         initial_solution=init_sol,
         current_solution=None,
         best_solution=None,
@@ -297,47 +293,45 @@ def start_optimisation(L: PlayerlessCore) -> Tuple[List[Dispenser], float, int]:
           f"\nCooling rate: {S.cooling_rate}",
           f"\nIterations: {iterations}")
 
-    optimal_solution, optimal_value = simulated_annealing(L, S, has_cleared)
+    out = simulated_annealing(L, S, has_cleared)
     
     print("Time taken to optimise:", time.time() - start_time, "seconds")
-    # print("Optimal Solution:", optimal_solution)
 
-    return optimal_solution, optimal_value, iterations
+    return out.best_solution, out.optimal_value, iterations
 
 def simulated_annealing(
     L: PlayerlessCore,
     S: SimAnnealingParams,
     has_cleared=False
-) -> Tuple[List[Dispenser], float]:
+) -> SimAnnealingParams:
     """Simulated annealing algorithm for discrete optimisation of fungus distribution."""
     temperature = S.start_temp
+    print("wart blocks eff:", L.warts_effic)
+    S.optimal_value = 0
     for _ in range(S.max_iterations):
         if temperature < S.end_temp:
-            break # save
+            break
+        # NOTE GENERATE NEIGHBOUR IS NOT CAUSING THE ISSUE HERE
         neighbour_sol = generate_neighbour(S.current_solution, L.size, has_cleared)
-        print(neighbour_sol)
         # Either desired fungi produced, or potential wart blocks generated
         current_energy = S.optimise_func(L.size.length, L.size.width, L.nylium_type,
                                          S.current_solution, L.cycles, L.blocked_blocks)[0]
         neighbour_energy, bm_for_prod = S.optimise_func(L.size.length, L.size.width, L.nylium_type,
                                                         neighbour_sol, L.cycles, L.blocked_blocks)
-
         bm_req = bm_for_prod < L.warts_effic / WARTS_PER_BM - AVG_BM_TO_GROW_FUNG
         if neighbour_energy > current_energy and bm_req or \
            np.random.rand() < acceptance_probability(current_energy, neighbour_energy, temperature):
-            S.current_sol = neighbour_sol
-            if bm_req and neighbour_energy > S.optimise_func(L.size.length, L.size.width,
-                                                             L.nylium_type, S.best_solution,
-                                                             L.cycles, L.blocked_blocks)[0]:
+            S.current_solution = neighbour_sol
+            if bm_req and neighbour_energy > S.optimal_value:
                 S.best_solution = neighbour_sol
+                S.optimal_value = S.optimise_func(L.size.length, L.size.width, L.nylium_type,
+                                                  S.best_solution, L.cycles, L.blocked_blocks)[0]
 
         temperature *= S.cooling_rate
-    optimal_value = S.optimise_func(
-        L.size.length, L.size.width, L.nylium_type, S.best_solution, L.cycles, L.blocked_blocks
-    )[0]
-    print("Optimal value:", optimal_value)
+    S.optimal_value
+    print("Optimal value:", S.optimal_value)
     print(S.best_solution)
-    return S.best_solution, optimal_value
+    return S
 
 def acceptance_probability(current_energy, neighbour_energy, temperature):
     """Calculate the probability of accepting a worse solution."""

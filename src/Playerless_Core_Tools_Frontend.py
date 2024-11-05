@@ -972,7 +972,7 @@ class App:
 
     def set_rt(self, time):
         """Set the run time of the optimisation algorithm."""
-        self.run_time.set(time)
+        self.L.run_time.set(time)
 
 
 def start(root):
