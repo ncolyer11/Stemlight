@@ -17,49 +17,44 @@ selection_cache = np.array([
 
 # If you've ever done assembly coding, you'd know how expensive function calls are
 
-def fast_calc_fung_dist(length, width, nylium_type, disp_layout, num_cycles, blocked_blocks):
+def fast_calc_fung_dist(length, width, nylium_type, disp_coords, cycles, blocked_blocks):
     """Calculate the distribution of foliage for a given set of dispenser offsets fast"""
     if nylium_type == WARPED:
-        return warped_calc_fung_dist(length, width, disp_layout, num_cycles, blocked_blocks)
+        return warped_calc_fung_dist(length, width, disp_coords, cycles, blocked_blocks)
     
     # 2D array for storing distribution of all the foliage
     foliage_grid = np.zeros((width, length))
     row, col = np.ogrid[:width, :length]
 
     bm_for_prod = 0.0
-    for _ in range(num_cycles):
-        for disp in disp_layout:
+    for _ in range(cycles):
+        for disp in disp_coords:
             disp_row, disp_col = disp.row, disp.col
-            # Dispensers placed on blocked blocks don't do shit bud
-            if (disp_row, disp_col) not in blocked_blocks:
-                row1 = np.abs(row - disp_row).astype(int)
-                col1 = np.abs(col - disp_col).astype(int)
-                
-                sel_chance = np.where((row1 > 2) | (col1 > 2), 0,
-                                    selection_cache[np.minimum(row1, 2), np.minimum(col1, 2)])
-                for row2, col2 in blocked_blocks:
-                    sel_chance[row2, col2] = 0
+            
+            row1 = np.abs(row - disp_row).astype(int)
+            col1 = np.abs(col - disp_col).astype(int)
+            
+            sel_chance = np.where((row1 > 2) | (col1 > 2) | ([row1, col1] in blocked_blocks), 0,
+                                selection_cache[np.minimum(row1, 2), np.minimum(col1, 2)])
 
-                disp_chance = (1 - foliage_grid[disp_row, disp_col])
+            disp_chance = (1 - foliage_grid[disp_row, disp_col])
 
-                bm_for_prod += disp_chance
-                # Again, don't double multiply the air chance above a selected dispenser
-                foliage_grid += (1 - foliage_grid) * np.where(row1 + col1 == 0, 1, disp_chance) \
-                                * sel_chance
+            bm_for_prod += disp_chance
+            # Again, don't double multiply the air chance above a selected dispenser
+            foliage_grid += (1 - foliage_grid) * np.where(row1 + col1 == 0, 1, disp_chance) \
+                            * sel_chance
     
         # Replicate triggering pistons to clear foliage on top of selected dispensers
-        for disp in disp_layout:
-            # Clear foliage only on top of cleared dispensers except
+        for disp in disp_coords:
             if disp.cleared == CLEARED:
-                disp_row, disp_col = disp.row, disp.col
-                foliage_grid[disp_row, disp_col] = 0
+                foliage_grid[disp.row, disp.col] = 0
 
 
     total_folige = np.sum(foliage_grid)
     compost = (8 / 9 * np.sum(foliage_grid)) / FOLIAGE_PER_BM
     return total_folige / 9, bm_for_prod - compost
 
-def warped_calc_fung_dist(length, width, disp_layout, num_cycles, blocked_blocks):
+def warped_calc_fung_dist(length, width, disp_coords, cycles, blocked_blocks):
     """Calculate the distribution of foliage for warped separately to crimson as it's slower"""
     # 2D array for storing distribution of all the foliage
     foliage_grid = np.zeros((width, length))
@@ -69,80 +64,73 @@ def warped_calc_fung_dist(length, width, disp_layout, num_cycles, blocked_blocks
     # 'bm_for_prod': bone meal used during 1 cycle of firing all the given dispensers
     bm_for_prod = 0.0
     # Keep track of sprouts to deduct later from foliage compost total
-    sprouts_total = 0.0
+    sprouts_grid = np.zeros((width, length))
     row, col = np.ogrid[:width, :length]
-    for _ in range(num_cycles):
-        for disp in disp_layout:
+    for _ in range(cycles):
+        for disp in disp_coords:
             disp_row, disp_col = disp.row, disp.col
-            if (disp_row, disp_col) not in blocked_blocks:
-                row1 = np.abs(row - disp_row).astype(int)
-                col1 = np.abs(col - disp_col).astype(int)
-                sel_chance = np.where((row1 > 2) | (col1 > 2), 0,
-                                      selection_cache[np.minimum(row1, 2), np.minimum(col1, 2)])
-                
-                for row2, col2 in blocked_blocks:
-                    sel_chance[row2, col2] = 0
-                
-                disp_chance = (1 - foliage_grid[disp_row, disp_col])
-                bm_for_prod += disp_chance
-                # Again, again, don't double multiply the air chance above a selected dispenser
-                foliage_chance = sel_chance * np.where(row1 + col1 == 0, 1, disp_chance)
 
-                des_fungi_grid += (1 - foliage_grid) * foliage_chance * WARP_FUNG_CHANCE
-                
-                foliage_grid += (1 - foliage_grid) * foliage_chance
-                
-                # As it's warped nylium, generate sprouts
-                sprouts_chance = (1 - foliage_grid) * foliage_chance
-                foliage_grid += sprouts_chance
-                sprouts_total += sprouts_chance
+            row1 = np.abs(row - disp_row).astype(int)
+            col1 = np.abs(col - disp_col).astype(int)
+            sel_chance = np.where((row1 > 2) | (col1 > 2) | ([row1, col1] in blocked_blocks), 0,
+                                selection_cache[np.minimum(row1, 2), np.minimum(col1, 2)])
+            
+            disp_chance = (1 - foliage_grid[disp_row, disp_col])
+            bm_for_prod += disp_chance
+            # Again, again, don't double multiply the air chance above a selected dispenser
+            foliage_chance = sel_chance * np.where(row1 + col1 == 0, 1, disp_chance)
+
+            des_fungi_grid += (1 - foliage_grid) * foliage_chance * WARP_FUNG_CHANCE
+            
+            foliage_grid += (1 - foliage_grid) * foliage_chance
+            
+            # As it's warped nylium, generate sprouts
+            sprouts_chance = (1 - foliage_grid) * foliage_chance
+            foliage_grid += sprouts_chance
+            sprouts_grid += sprouts_chance
 
         # Replicate triggering pistons to clear foliage on top of selected dispensers
-        for disp in disp_layout:
-            # Clear foliage only on top of cleared dispensers except
+        for disp in disp_coords:
             if disp.cleared == CLEARED:
-                disp_row, disp_col = disp.row, disp.col
-                foliage_grid[disp_row, disp_col] = 0
-                des_fungi_grid[disp_row, disp_col] = 0
+                foliage_grid[disp.row, disp.col] = 0
+                des_fungi_grid[disp.row, disp.col] = 0
+                sprouts_grid[disp.row, disp.col] = 0
     
     total_des_fungi = np.sum(des_fungi_grid)
-    compost = (np.sum(foliage_grid) - total_des_fungi - np.sum(sprouts_total)) / FOLIAGE_PER_BM
+    compost = (np.sum(foliage_grid) - total_des_fungi - np.sum(sprouts_grid)) / FOLIAGE_PER_BM
     return total_des_fungi, bm_for_prod - compost
 
-def fast_calc_hf_dist(length, width, nylium_type, disp_layout, num_cycles, blocked_blocks):
+def fast_calc_hf_dist(length, width, nylium_type, disp_coords, cycles, blocked_blocks):
     """Doesn't take into account stem occlusion (for speed), but should still optimise fine"""
     p_length = length
     p_width = width
     if nylium_type == WARPED:
-        return warped_calc_hf_dist(p_length, p_width, disp_layout, num_cycles, blocked_blocks)
+        return warped_calc_hf_dist(p_length, p_width, disp_coords, cycles, blocked_blocks)
     
     # 2D array for storing distribution of all the foliage
     foliage_grid = np.zeros((p_width, p_length))
     row, col = np.ogrid[:p_width, :p_length]
     bm_for_prod = 0.0
-    for _ in range(num_cycles):
-        for disp in disp_layout:
+    for _ in range(cycles):
+        for disp in disp_coords:
             disp_row, disp_col = disp.row, disp.col
-            if (disp_row, disp_col) not in blocked_blocks:
-                row1 = np.abs(row - disp_row).astype(int)
-                col1 = np.abs(col - disp_col).astype(int)
-                
-                sel_chance = np.where((row1 > 2) | (col1 > 2), 0,
-                                    selection_cache[np.minimum(row1, 2), np.minimum(col1, 2)])
-                for row2, col2 in blocked_blocks:
-                    sel_chance[row2, col2] = 0
-                disp_chance = (1 - foliage_grid[disp_row, disp_col])
+            
+            row1 = np.abs(row - disp_row).astype(int)
+            col1 = np.abs(col - disp_col).astype(int)
+            
+            sel_chance = np.where((row1 > 2) | (col1 > 2) | ([row1, col1] in blocked_blocks), 0,
+                                selection_cache[np.minimum(row1, 2), np.minimum(col1, 2)])
 
-                bm_for_prod += disp_chance
-                foliage_grid += (1 - foliage_grid) * np.where(row1 + col1 == 0, 1, disp_chance) \
-                                * sel_chance
+            disp_chance = (1 - foliage_grid[disp_row, disp_col])
+            bm_for_prod += disp_chance
+            foliage_grid += (1 - foliage_grid) * np.where(row1 + col1 == 0, 1, disp_chance) \
+                            * sel_chance
 
         # Replicate triggering pistons to clear foliage on top of selected dispensers
-        for disp in disp_layout:
+        for disp in disp_coords:
             # Clear foliage only on top of cleared dispensers except
             if disp.cleared == CLEARED:
-                disp_row, disp_col = disp.row, disp.col
-                foliage_grid[disp_row, disp_col] = 0
+                foliage_grid[disp.row, disp.col] = 0
     
     compost_from_foliage = (8 / 9 * np.sum(foliage_grid)) / FOLIAGE_PER_BM
     bm_for_prod -= compost_from_foliage
@@ -174,7 +162,7 @@ def fast_calc_hf_dist(length, width, nylium_type, disp_layout, num_cycles, block
     total_wb = np.sum(hf_grid)
     return total_wb, bm_for_prod
 
-def warped_calc_hf_dist(p_length, p_width, disp_layout, num_cycles, blocked_blocks):
+def warped_calc_hf_dist(p_length, p_width, disp_coords, cycles, blocked_blocks):
     """Calculate the distribution of foliage and wart blocks for warped separately to crimson"""
     # 2D array for storing distribution of all the foliage
     foliage_grid = np.zeros((p_width, p_length))
@@ -184,44 +172,41 @@ def warped_calc_hf_dist(p_length, p_width, disp_layout, num_cycles, blocked_bloc
     # 'bm_for_prod': bone meal used during 1 cycle of firing all the given dispensers
     bm_for_prod = 0.0
     # Keep track of sprouts to deduct later from foliage compost total
-    sprouts_total = 0.0
+    sprouts_grid = np.zeros((p_width, p_length))
 
     x, y = np.ogrid[:p_width, :p_length]
-    for _ in range(num_cycles):
-        for disp in disp_layout:
+    for _ in range(cycles):
+        for disp in disp_coords:
             disp_row, disp_col = disp.row, disp.col
-            if (disp_row, disp_col) not in blocked_blocks:
-                row1 = np.abs(x - disp_row).astype(int)
-                col1 = np.abs(y - disp_col).astype(int)
-                sel_chance = np.where((row1 > 2) | (col1 > 2), 0,
-                                    selection_cache[np.minimum(row1, 2), np.minimum(col1, 2)])
-                for row2, col2 in blocked_blocks:
-                    sel_chance[row2, col2] = 0
 
-                disp_chance = (1 - foliage_grid[disp_row, disp_col])
-                bm_for_prod += disp_chance
-                foliage_chance = sel_chance * np.where(row1 + col1 == 0, 1, disp_chance)
+            row1 = np.abs(x - disp_row).astype(int)
+            col1 = np.abs(y - disp_col).astype(int)
+            sel_chance = np.where((row1 > 2) | (col1 > 2) | ([row1, col1] in blocked_blocks), 0,
+                                selection_cache[np.minimum(row1, 2), np.minimum(col1, 2)])
 
-                des_fungi_grid += (1 - foliage_grid) * foliage_chance * WARP_FUNG_CHANCE
-                
-                foliage_grid += (1 - foliage_grid) * foliage_chance
-                
-                # As it's warped nylium, generate sprouts
-                sprouts_chance = (1 - foliage_grid) * foliage_chance
-                foliage_grid += sprouts_chance
-                sprouts_total += sprouts_chance
+            disp_chance = (1 - foliage_grid[disp_row, disp_col])
+            bm_for_prod += disp_chance
+            foliage_chance = sel_chance * np.where(row1 + col1 == 0, 1, disp_chance)
+
+            des_fungi_grid += (1 - foliage_grid) * foliage_chance * WARP_FUNG_CHANCE
+            
+            foliage_grid += (1 - foliage_grid) * foliage_chance
+            
+            # As it's warped nylium, generate sprouts
+            sprouts_chance = (1 - foliage_grid) * foliage_chance
+            foliage_grid += sprouts_chance
+            sprouts_grid += sprouts_chance
 
         # Replicate triggering pistons to clear foliage on top of selected dispensers
-        for disp in disp_layout:
+        for disp in disp_coords:
             # Clear foliage only on top of cleared dispensers
             if disp.cleared == CLEARED:
-                disp_row, disp_col = disp.row, disp.col
-                foliage_grid[disp_row, disp_col] = 0
-                des_fungi_grid[disp_row, disp_col] = 0
-                sprouts_total[disp_row, disp_col] = 0
+                foliage_grid[disp.row, disp.col] = 0
+                des_fungi_grid[disp.row, disp.col] = 0
+                sprouts_grid[disp.row, disp.col] = 0
    
     total_des_fungi = np.sum(des_fungi_grid)
-    compost = (np.sum(foliage_grid) - total_des_fungi - np.sum(sprouts_total)) / FOLIAGE_PER_BM
+    compost = (np.sum(foliage_grid) - total_des_fungi - np.sum(sprouts_grid)) / FOLIAGE_PER_BM
 
     width = NT_MAX_RAD + p_width + NT_MAX_RAD
     length = NT_MAX_RAD + p_length + NT_MAX_RAD
@@ -235,8 +220,7 @@ def warped_calc_hf_dist(p_length, p_width, disp_layout, num_cycles, blocked_bloc
     for nylium_x_idx, nylium_z_idx in np.ndindex(nylium_x.shape):
         nylium_x_curr = nylium_x[nylium_x_idx, nylium_z_idx]
         nylium_z_curr = nylium_z[nylium_x_idx, nylium_z_idx]
-        # @TODO code bugs here, not sure if it's this code or new optimisation shit
-        # *breaks when calculating wart blocks for optimise all feature
+
         heatmap_weighting_curr = des_fungi_grid[nylium_x_idx, nylium_z_idx]
 
         # Calculate weighted chance for all y,z,x coordinates

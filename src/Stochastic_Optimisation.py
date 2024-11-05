@@ -60,7 +60,6 @@ def simulated_annealing(
 ) -> SimAnnealingParams:
     """Simulated annealing algorithm for discrete optimisation of fungus distribution."""
     temperature = S.start_temp
-    print("wart blocks eff:", L.wb_per_fungus)
     S.optimal_value = 0
     for _ in range(S.max_iterations):
         if temperature < S.end_temp:
@@ -83,8 +82,6 @@ def simulated_annealing(
 
         temperature *= S.cooling_rate
     S.optimal_value
-    print("Optimal value:", S.optimal_value)
-    print(S.best_solution)
     return S
 
 def acceptance_probability(current_energy, neighbour_energy, temperature):

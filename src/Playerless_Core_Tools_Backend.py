@@ -46,7 +46,7 @@ def selection_chance(x1, y1):
 def calculate_distribution(L: PlayerlessCore) -> PlayerlessCoreDistOutput:
     """Calculates the distribution of foliage and fungi on a custom size grid of nylium"""
     fungi_weight = WARP_FUNG_CHANCE if L.nylium_type == WARPED else CRMS_FUNG_CHANCE
-    sprouts_total = np.zeros((L.size.length, L.size.width))
+    sprouts_grid = np.zeros((L.size.length, L.size.width))
     # 4D array for storing distribution of foliage for all dispensers and cycles
     disp_foliage_grids = np.zeros((L.num_disps, L.cycles, L.size.length, L.size.width))
     # 2D array for storing distribution of all the foliage
@@ -79,33 +79,33 @@ def calculate_distribution(L: PlayerlessCore) -> PlayerlessCoreDistOutput:
                 sprouts_chance = (1 - total_foliage_grid) * foliage_chance
                 disp_foliage_grids[disp_n][cycle] += sprouts_chance
                 total_foliage_grid += sprouts_chance
-                sprouts_total += sprouts_chance
+                sprouts_grid += sprouts_chance
         
         # Replicate triggering pistons to clear foliage on top of selected dispensers
-        for disp_n in range(L.num_disps):
+        for disp in L.disp_coords:
             # Clear foliage only on top of cleared dispensers
-            if L.disp_coords[disp_n].cleared == UNCLEARED:
-                continue
-            disp_row, disp_col = L.disp_coords[disp_n].row, L.disp_coords[disp_n].col
-            total_foliage_grid[disp_row, disp_col] = 0
-            total_des_fungi_grid[disp_row, disp_col] = 0
-            disp_foliage_grids[:, :, disp_row, disp_col] = 0
-            disp_des_fungi_grids[:, :, disp_row, disp_col] = 0
-            if L.nylium_type == WARPED:
-                sprouts_total[disp_row, disp_col] = 0
+            if disp.cleared == CLEARED:
+                disp_row, disp_col = disp.row, disp.col
+                total_foliage_grid[disp_row, disp_col] = 0
+                total_des_fungi_grid[disp_row, disp_col] = 0
+                disp_foliage_grids[:, :, disp_row, disp_col] = 0
+                disp_des_fungi_grids[:, :, disp_row, disp_col] = 0
+                if L.nylium_type == WARPED:
+                    sprouts_grid[disp_row, disp_col] = 0
     
     return PlayerlessCoreDistOutput(
         total_foliage_grid=total_foliage_grid,
         total_des_fungi_grid=total_des_fungi_grid,
         disp_foliage_grids=disp_foliage_grids,
         disp_des_fungi_grids=disp_des_fungi_grids,
-        sprouts_total=sprouts_total,
+        sprouts_grid=sprouts_grid,
         bm_for_prod=bm_for_prod
     )
 
-def generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, row, col) -> Tuple[np.ndarray, float]:
+def generate_foliage(disp_coords, foliage_grid, bm_for_prod, disp_n, row,
+                     col) -> Tuple[np.ndarray, float]:
     """Generates the distribution of foliage around a dispenser at a given position"""
-    disp_row, disp_col = disp_coords[i].row, disp_coords[i].col
+    disp_row, disp_col = disp_coords[disp_n].row, disp_coords[disp_n].col
     disp_bm_chance = 1 - foliage_grid[disp_row, disp_col]
     bm_for_prod += disp_bm_chance
 
@@ -115,10 +115,11 @@ def generate_foliage(disp_coords, foliage_grid, bm_for_prod, i, row, col) -> Tup
                      * selection_chance(row - disp_row, col - disp_col)
     return foliage_chance, bm_for_prod
 
-def get_totals(des_fungi_grid, foliage_grid):
+def get_totals(des_fungi_grid, foliage_grid, sprouts_grid):
     """Calculates the total amount of foliage, fungi and bone meal required to grow the fungi"""
     total_fungi = np.sum(des_fungi_grid)
-    total_foliage = np.sum(foliage_grid)
+    # Total foliage EXCLUDES desired fungi and sprouts
+    total_foliage = np.sum(foliage_grid) - total_fungi - np.sum(sprouts_grid)
     bm_for_grow = AVG_BM_TO_GROW_FUNG * total_fungi
 
     return total_fungi, total_foliage, bm_for_grow
@@ -127,13 +128,14 @@ def calculate_fungus_distribution(L: PlayerlessCore) -> PlayerlessCoreOutput:
     """Calculates the distribution of foliage and fungi on a custom size grid of nylium"""
     L.disp_coords.sort(key=lambda d: d.timestamp)
 
-    # Keep track of total sprouts to subtract from compost bm as they aren't collected
     out = calculate_distribution(L)
+    # Total foliage EXCLUDES desired fungi and sprouts
+    total_des_fungi, total_foliage, bm_for_grow = get_totals(out.total_des_fungi_grid, 
+                                                             out.total_foliage_grid,
+                                                             out.sprouts_grid)
 
-    total_des_fungi, total_foliage, bm_for_grow = get_totals(out.total_des_fungi_grid, out.total_foliage_grid)
-
-    # Subtract the amount of bone meal retrieved from composting the excess foliage losslessly
-    composted_foliage = total_foliage - np.sum(out.sprouts_total) - total_des_fungi
+    # Subtract the bit of bone meal retrieved from composting the excess foliage at 75% efficiency
+    composted_foliage = total_foliage
     bm_from_compost = (FOLIAGE_COLLECTION_EFFIC * composted_foliage) / FOLIAGE_PER_BM
     
     return PlayerlessCoreOutput(
@@ -256,40 +258,40 @@ def output_viable_coords(L: PlayerlessCore, optimal_coords, optimal_value):
     and record all solution within 0.1% of the best solution to a file."""
     optimal_func = fast_calc_fung_dist  # Keeping possible future functionality
                                         # for other functions to optimise
-    # try:
-    start_time = time.time()
-    worst_value = optimal_value
-    coords_list_metrics = []
-    for coords in generate_transformations(optimal_coords, L.size):
-        if optimal_func == fast_calc_fung_dist:
-            dist_data = calculate_fungus_distribution(L)
-            total_des_fungi = dist_data.total_des_fungi
-            bm_for_prod = dist_data.bm_for_prod
-        else:
-            total_wart_blocks, bm_for_prod = fast_calc_hf_dist(
-                L.size.length,
-                L.size.width,
-                L.nylium_type,
-                L.disp_coords,
-                L.cycles,
-                L.blocked_blocks,
-            )
-            # Got a headache atm
-            total_des_fungi = 0
+    try:
+        start_time = time.time()
+        worst_value = optimal_value
+        coords_list_metrics = []
+        for coords in generate_transformations(optimal_coords, L.size):
+            if optimal_func == fast_calc_fung_dist:
+                dist_data = calculate_fungus_distribution(L)
+                total_des_fungi = dist_data.total_des_fungi
+                bm_for_prod = dist_data.bm_for_prod
+            else:
+                total_wart_blocks, bm_for_prod = fast_calc_hf_dist(
+                    L.size.length,
+                    L.size.width,
+                    L.nylium_type,
+                    L.disp_coords,
+                    L.cycles,
+                    L.blocked_blocks,
+                )
+                # Got a headache atm
+                total_des_fungi = 0
 
-        bm_req = bm_for_prod < L.wb_per_fungus / WARTS_PER_BM - AVG_BM_TO_GROW_FUNG
-        if total_des_fungi < worst_value and bm_req:
-            worst_value = total_des_fungi
-        if abs(total_des_fungi - optimal_value) / optimal_value <= 0.001 and bm_req:
-            coords_list_metrics.append((total_des_fungi, bm_for_prod, coords))
+            bm_req = bm_for_prod < L.wb_per_fungus / WARTS_PER_BM - AVG_BM_TO_GROW_FUNG
+            if total_des_fungi < worst_value and bm_req:
+                worst_value = total_des_fungi
+            if abs(total_des_fungi - optimal_value) / optimal_value <= 0.001 and bm_req:
+                coords_list_metrics.append((total_des_fungi, bm_for_prod, coords))
 
-    # Sort the list by the desired fungi value
-    coords_list_metrics.sort(key=lambda row: row[0], reverse=True)
-    return export_alt_placements(L.size, coords_list_metrics, optimal_value,
-                                    worst_value, start_time, L.blocked_blocks)
-    # except Exception as e:
-    #     print("An error has occured whilst finding viable coordinates:", e)
-    #     return e
+        # Sort the list by the desired fungi value
+        coords_list_metrics.sort(key=lambda row: row[0], reverse=True)
+        return export_alt_placements(L.size, coords_list_metrics, optimal_value,
+                                        worst_value, start_time, L.blocked_blocks)
+    except Exception as e:
+        print("An error has occured whilst finding viable coordinates:", e)
+        return e
 
 def export_alt_placements(size: Dimensions, metrics, optimal_value, worst_value, start_time,
                           blocked_blocks) -> int:

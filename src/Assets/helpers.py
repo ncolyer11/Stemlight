@@ -77,9 +77,11 @@ def resource_path(relative_path):
 
     return os.path.join(base_path, relative_path)
 
-def set_title_and_icon(root, program_name):
+def set_title_and_icon(root, program_name, skip_prg_name=False):
     """Set the title and icon of the tkinter window"""
-    root.title(f"Stemlight{version}: {program_name}")
+    version_string = f"Stemlight{version}: "
+    root.title(f"{'' if skip_prg_name else version_string}"
+               f"{program_name}")
     try:
         # Try to use the .ico file
         icon_path = resource_path('src/Assets/icon.ico')
@@ -91,6 +93,49 @@ def set_title_and_icon(root, program_name):
             root.iconbitmap('@' + icon_path)
         except:
             pass  # If that also fails, don't bother setting an icon
+
+def show_custom_message(title, message, file_path, open_button_colour, close_button_colour,
+                        bg_colour, fg_colour, fg_button_colour):
+    def open_file():
+        os.startfile(file_path)
+        dialog.destroy()
+
+    dialog = tk.Toplevel()
+    dialog.title(title)
+    set_title_and_icon(dialog, title, skip_prg_name=True)
+    
+    dialog.configure(bg=bg_colour)
+    
+    # Create a label to measure the required size
+    label = tk.Label(dialog, text=message, wraplength=350, bg=bg_colour, fg=fg_colour)
+    label.pack(pady=10)
+    
+    # Update the dialog to get the required size
+    dialog.update_idletasks()
+    width = max(400, label.winfo_reqwidth() + 20)  # Add some padding
+    height = max(200, label.winfo_reqheight() + 100)  # Add some padding for buttons
+    x = (dialog.winfo_screenwidth() // 2) - (width // 2)
+    y = (dialog.winfo_screenheight() // 2) - (height // 2)
+    dialog.geometry(f'{width}x{height}+{x}+{y}')
+    
+    # Repack the label to adjust to the new size
+    label.pack_forget()
+    label.pack(pady=10)
+
+    button_frame = tk.Frame(dialog, bg=bg_colour)
+    button_frame.pack(pady=10)
+
+    open_button = tk.Button(button_frame, text="Open File", command=open_file,
+                            bg=open_button_colour, fg=fg_button_colour)
+    open_button.pack(side=tk.LEFT, padx=5)
+
+    close_button = tk.Button(button_frame, text="Close", command=dialog.destroy,
+                             bg=close_button_colour, fg=fg_button_colour)
+    close_button.pack(side=tk.LEFT, padx=5)
+
+    dialog.transient()  # Make the dialog a transient window
+    dialog.grab_set()  # Require the user to answer the message box before continuing
+    dialog.wait_window(dialog)  # Wait for the dialog to close
 
 def get_cell_value(sheet_name, row_number, column_number):
     """Return the value of the cell at the given row and column in the given sheet."""

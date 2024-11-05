@@ -1,5 +1,6 @@
 """Calculates distribution of fungus, and bone meal usage, \nfor a given grid of nylium, and placement and fire order of dispensers"""
 
+import os
 import math
 import time
 import numpy as np
@@ -11,8 +12,9 @@ from PIL import Image, ImageDraw, ImageTk
 from src.Assets import colours
 from src.Assets.constants import *
 from src.Assets.data_classes import *
-from src.Assets.helpers import ToolTip, set_title_and_icon, export_custom_heatmaps, resource_path
-from src.Fungus_Distribution_Backend import calc_huge_fungus_distribution, \
+from src.Assets.helpers import ToolTip, set_title_and_icon, export_custom_heatmaps, resource_path, \
+    show_custom_message
+from src.Playerless_Core_Tools_Backend import calc_huge_fungus_distribution, \
     calculate_fungus_distribution, output_viable_coords
 from src.Stochastic_Optimisation import start_optimisation
 
@@ -23,7 +25,9 @@ from src.Stochastic_Optimisation import start_optimisation
 # inaccurate after optimising a bunch
 
 # TODO:
-# Add export and import layout settings feature to file menu
+# Weird flash of the grid when the program starts
+# optimising with blocked blocks sometimes kills dispensers
+# also optimising with len != width causes out of bounds errors wow what's new
 
 #################
 ### CONSTANTS ###
@@ -36,6 +40,7 @@ PAD = 5
 RAD = 26
 DP = 5
 MAX_SIDE_LEN = 20
+SLIDER_MAX_CYCLES = 5
 DEFAULT_SIDE_LEN = 5
 DEFAULT_RUN_TIME = 7
 RUN_TIME_VALS = [1, 4, 7, 10, 15, 30, 60, 300, 1000]
@@ -183,35 +188,44 @@ class App:
         """Import a layout from a yaml file"""
         file_path = tk.filedialog.askopenfilename(
             title="Import Layout",
+            initialdir="layouts",
             filetypes=(("YAML files", "*.yaml"), ("All files", "*.*"))
         )
         if file_path:
             self.L = PlayerlessCore.from_yaml(file_path)
-            self.L.print_values()
             print(f"\nLayout imported from {file_path}")
-            self.update_layout()
+            self.update_ui_elements()
+            self.update_layout_vals()
 
     def export_layout(self):
         """Export the current layout to a yaml file"""
         file_path = tk.filedialog.asksaveasfilename(
             title="Export Layout",
+            initialdir="layouts",
             defaultextension=".yaml",
             filetypes=(("YAML files", "*.yaml"), ("All files", "*.*"))
         )
         if file_path:
             self.L.to_yaml(file_path)
             print(f"Layout exported to {file_path}")
-            
-    def update_layout(self, _=None):
-        self.L.size = Dimensions(self.col_slider.get(), self.row_slider.get())
+
+    def update_ui_elements(self):
+        self.row_slider.set(self.L.size.length)
+        self.col_slider.set(self.L.size.width)
+        self.cycles_slider.set(self.L.cycles)
+        self.wb_per_fungus_slider.set(self.L.wb_per_fungus)
+        self.update_nylium_type(self.L.nylium_type, skip_calc=True)
+        self.nylium_switch.assign(self.L.nylium_type)
+         
+    def update_layout_vals(self, _=None):
+        self.L.size = Dimensions(self.row_slider.get(), self.col_slider.get())
         self.L.cycles = self.cycles_slider.get()
         self.L.wb_per_fungus = self.wb_per_fungus_slider.get()
         self.L.nylium_type = self.nylium_switch.nylium_type
-        self.nylium_switch.assign(self.L.nylium_type)
-        self.update_grid(None)
+        self.update_grid(None, save_dispensers=False)
         
-        # self.display_block_info()
-        # self.calculate()
+        self.display_block_info()
+        self.calculate()
 
     def create_menu(self):
         """Setup the menu for the application."""
@@ -221,9 +235,9 @@ class App:
         file_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         toolbar.add_cascade(label="File", menu=file_menu)
         file_menu.add_command(label="Exit", command=self.master.destroy)
-        file_menu.add_command(label="Export Custom Heatmaps", command=self.export_heatmaps)
         file_menu.add_command(label="Import Layout", command=self.import_layout)
         file_menu.add_command(label="Export Layout", command=self.export_layout)
+        file_menu.add_command(label="Export Custom Heatmaps", command=self.export_heatmaps)
 
         help_menu = tk.Menu(toolbar, tearoff=0, font=("Segoe UI", int((RSF**0.7)*12)))
         toolbar.add_cascade(label="Help", menu=help_menu)
@@ -404,10 +418,10 @@ class App:
         self.additional_property_button.bind("<Control-Button-1>", self.debug_button)
 
 
-        self.export_button = tk.Button(self.scrollable_frame, text="Export", command=self.export_heatmaps,
+        self.heatmap_button = tk.Button(self.scrollable_frame, text="Heatmap", command=self.export_heatmaps,
                                          font=large_button_font, bg=colours.aqua_green,
-                                         pady=2, padx=16)
-        self.export_button.pack(pady=5)
+                                         pady=2)
+        self.heatmap_button.pack(pady=5)
 
         self.master_frame = tk.Frame(self.scrollable_frame)
         self.master_frame.pack(pady=5)
@@ -453,7 +467,7 @@ class App:
             from_=1, 
             to=MAX_SIDE_LEN, 
             orient=tk.HORIZONTAL, 
-            command=self.update_layout, 
+            command=self.update_layout_vals, 
             bg=colours.bg, 
             fg=colours.fg, 
             length=250
@@ -469,7 +483,7 @@ class App:
             from_=1, 
             to=MAX_SIDE_LEN, 
             orient=tk.HORIZONTAL, 
-            command=self.update_layout, 
+            command=self.update_layout_vals, 
             bg=colours.bg, 
             fg=colours.fg, 
             length=250
@@ -486,9 +500,9 @@ class App:
         self.cycles_slider = tk.Scale(
             self.slider_frame, 
             from_=1, 
-            to=7,
+            to=SLIDER_MAX_CYCLES,
             orient=tk.HORIZONTAL, 
-            command=self.update_layout, 
+            command=self.update_layout_vals, 
             bg=colours.bg, 
             fg=colours.fg, 
             length=250
@@ -508,7 +522,7 @@ class App:
             from_=20, 
             to=120, 
             orient=tk.HORIZONTAL, 
-            command=self.update_layout,
+            command=self.update_layout_vals,
             bg=colours.bg, 
             fg=colours.fg, 
             length=250,
@@ -521,7 +535,7 @@ class App:
     def reset_slider(self, event, default=5):
         self.scrollable_frame.after(10, lambda: event.widget.set(default))
     
-    def update_nylium_type(self, nylium_type: NyliumType | None = None):
+    def update_nylium_type(self, nylium_type: NyliumType | None = None, skip_calc: bool = False):
         """
         Update the nylium type and the images of the checkboxes.\n
         Params:
@@ -550,8 +564,9 @@ class App:
             for j, tile in enumerate(row):
                 if self.checkboxes[i][j].get() == 0 and (i, j) not in self.L.blocked_blocks:
                     tile[0].config(image=self.unchecked_image)
-        self.calculate()
-        self.display_block_info()
+        if not skip_calc:
+            self.calculate()
+            self.display_block_info()
 
     def create_ordered_dispenser_array(self, rows, cols):
         """Create a 2D array of dispensers ordered by the time they were placed on the grid"""
@@ -572,15 +587,22 @@ class App:
             # Set the corresponding element in the dispenser array to i + 1
             row, col = dispenser.row, dispenser.col
             # Preserve initial time value and cleared status
-            print(f"Row: {row}, Col: {col}")
             dispenser_array[row][col] = (i + 1, dispenser.timestamp, dispenser.cleared)
 
         return dispenser_array
     
-    def update_grid(self, _):
+    def update_grid(self, _, save_dispensers=True):
         """Update the grid based on the slider values"""
         # Save the states of the checkboxes
-        saved_states = [[cb.get() for cb in cb_row] for cb_row in self.checkboxes]
+        if save_dispensers:
+            saved_states = [[cb.get() for cb in cb_row] for cb_row in self.checkboxes]
+        else:
+            coords = [(disp.row, disp.col) for disp in self.L.disp_coords]
+            saved_states = [
+                    [1 if (i, j) in coords else 0
+                    for j in range(self.L.size.width)]
+                for i in range(self.L.size.length)
+            ]
         rows = self.L.size.length
         cols = self.L.size.width
         # Create a 2D array of dispensers ordered by the time they were placed on the grid
@@ -613,6 +635,7 @@ class App:
                 cb_row[col] = (cb, None)
 
                 # Restore the state of the checkbox, if it existed before
+                # or fill in a new dispenser array
                 if row < len(saved_states) and col < len(saved_states[row]):
                     self.restore_cb(cb, var, row, col, cb_row, saved_states, dispenser_array,
                                     blocked_copy)
@@ -632,10 +655,12 @@ class App:
                 cb.config(image=self.clearing_image)
             else:
                 cb.config(image=self.checked_image)
+
             label = tk.Label(self.grid_frame, text=str(dispenser_array[row][col][0]), font=label_font)
             label.grid(row=row, column=col, padx=0, pady=0, sticky='se')
             cb_row[col] = (cb, label)
             self.L.disp_coords.append(Dispenser(row, col, dispenser_array[row][col][1], cleared))
+        
         if (row, col) in blocked_copy:
             cb.config(image=self.blocked_image)
             self.L.blocked_blocks.append((row, col))
@@ -761,26 +786,9 @@ class App:
             self.add_dispenser(disp_coord.row, disp_coord.col, disp_coord.cleared)
         # Generate a list of other viable coords that are as optimal or within 0.1% of the most
         # optimal found solution, storing them in an external file
-        result = output_viable_coords(self.L, optimal_coords, optimal_value)
-        if isinstance(result, (int, float)) and not isinstance(result, BaseException):
-            # 8 transformations for a square grid, 4 for a rectangular grid
-            transforms = 8 if self.col_slider.get() == self.row_slider.get() else 4
-            trimmed_string = (
-                f"\n\nNote {transforms * math.factorial(self.L.num_disps) - 8:,} possible alternate "
-                "placements (permutations of firing order) were trimmed "
-                "for computational reasons."
-            )    
-            # @TODO add an option button to open the file then and there        
-            messagebox.showinfo(f"Success", 
-                                f"Successfully exported {result} alternate "
-                                f"placement{'s' if result != 1 else ''} to Alternate Dispenser Placements.txt."
-                                f"{trimmed_string if self.L.num_disps > 8 else ''}")
-        else:
-            error_message = f"An error has occurred:\n{result}"
-            if not error_message.endswith(('.', '!', '?')):
-                error_message += '.'
-            messagebox.showwarning("Export Error", error_message)      
+        self.print_viable_coords(output_viable_coords(self.L, optimal_coords, optimal_value))
     
+   
     def export_heatmaps(self):
         """Export custom heatmaps based on the fungus distribution of the nylium grid"""
         # Calculate fungus distribution     
@@ -854,14 +862,18 @@ class App:
             # Store the label in the dictionary for later use
             self.D.output_label[i] = label
         
-        bm_for_prod_tooltip = ToolTip(self.D.output_label[2], (
+        ToolTip(self.D.output_label[2], (
                         "Bone meal spent by the nylium dispensers that creates the fungi.\n"
                         "Factors in 75% of bone meal retrieved from composting excess foliage."))
         
-        bm_for_growth_tooltip = ToolTip(self.D.output_label[3],(
-                        "Bone meal spent on growing already produced fungi."))
+        ToolTip(self.D.output_label[2], (
+                        "Bone meal spent by the nylium dispensers that creates the fungi.\n"
+                        "Factors in 75% of bone meal retrieved from composting excess foliage."))
+
+        ToolTip(self.D.output_label[4],(
+                        "Total foliage produced excluding sprouts and desired fungi."))
         
-        net_bm_tooltip = ToolTip(self.D.output_label[6],(
+        ToolTip(self.D.output_label[6],(
                         "Surplus bone meal after 1 global cycle of the core and subsequent harvest.\n"
                         "Takes bone meal from composted wart blocks minus production and growth bm."))
         
@@ -977,7 +989,6 @@ class App:
             # Store the value label in the dictionary for later use
             self.D.info_value[i] = label
         
-        
     def set_cleared_or_blocked(self, row, col):
         """Set a dispenser to a clearing dispenser by middle clicking or nylium to a blocked block"""
         if self.checkboxes[row][col].get() == 0:
@@ -1002,6 +1013,37 @@ class App:
         self.calculate()
         self.display_block_info()
         return "break"
+
+    def print_viable_coords(self, result) -> int | float | BaseException:
+        if isinstance(result, (int, float)) and not isinstance(result, BaseException):
+            # 8 transformations for a square grid, 4 for a rectangular grid
+            transforms = 8 if self.col_slider.get() == self.row_slider.get() else 4
+            trimmed_string = (
+                f"\n\nNote {transforms * math.factorial(self.L.num_disps) - 8:,} possible alternate "
+                "placements (permutations of firing order) were trimmed "
+                "for computational reasons."
+            )
+            file_path = "Alternate Dispenser Placements.txt"
+            message = (
+                f"Successfully exported {result} alternate "
+                f"placement{'s' if result != 1 else ''} to {file_path}."
+                f"{trimmed_string if self.L.num_disps > 8 else ''}"
+            )
+            show_custom_message(
+                title="Success",
+                message=message,
+                file_path=file_path,
+                open_button_colour=colours.aqua_green,
+                close_button_colour=colours.crimson,
+                bg_colour=colours.bg,
+                fg_colour=colours.fg,
+                fg_button_colour=None
+            )
+        else:
+            error_message = f"An error has occurred:\n{result}"
+            if not error_message.endswith(('.', '!', '?')):
+                error_message += '.'
+            messagebox.showwarning("Export Error", error_message) 
 
     def remove_selected_block(self):
         """Remove the currently selected block"""

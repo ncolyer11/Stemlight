@@ -1,0 +1,66 @@
+additional_property: false
+blast_chamber_effic: 1.0
+blocked_blocks:
+- !!python/tuple
+  - 0
+  - 0
+- !!python/tuple
+  - 1
+  - 1
+- !!python/tuple
+  - 2
+  - 2
+- !!python/tuple
+  - 3
+  - 3
+- !!python/tuple
+  - 3
+  - 4
+- !!python/tuple
+  - 4
+  - 5
+- !!python/tuple
+  - 5
+  - 6
+- !!python/tuple
+  - 5
+  - 7
+- !!python/tuple
+  - 5
+  - 8
+- !!python/tuple
+  - 6
+  - 8
+cycles: 2
+disp_coords:
+- cleared: 1
+  col: 4
+  row: 1
+  timestamp: 1730815935.050396
+- cleared: 0
+  col: 1
+  row: 4
+  timestamp: 1730817020.0057585
+- cleared: 0
+  col: 4
+  row: 5
+  timestamp: 1730817020.530756
+- cleared: 0
+  col: 8
+  row: 2
+  timestamp: 1730817021.8577583
+- cleared: 0
+  col: 7
+  row: 3
+  timestamp: 1730817022.366758
+- cleared: 0
+  col: 0
+  row: 1
+  timestamp: 1730817031.0067565
+num_disps: 6
+nylium_type: 1
+run_time: 7
+size:
+  length: 7
+  width: 9
+wb_per_fungus: 25.0

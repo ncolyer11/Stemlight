@@ -4,10 +4,25 @@ import yaml
 from dataclasses import dataclass, field, asdict
 from typing import TypeAlias, Any, List, Dict, Tuple, Callable
 
+
+# Custom representer for tuples
+def represent_tuple(dumper, data):
+    return dumper.represent_sequence("tag:yaml.org,2002:python/tuple", data)
+
+# Custom constructor for tuples
+def construct_tuple(loader, node):
+    return tuple(loader.construct_sequence(node))
+
+# Register the custom representer and constructor with PyYAML
+yaml.add_representer(tuple, represent_tuple)
+yaml.add_constructor("tag:yaml.org,2002:python/tuple", construct_tuple)
+
+
 FungusType: TypeAlias = int
 NyliumType: TypeAlias = int
 ClearedStatus: TypeAlias = bool
-    
+
+
 @dataclass
 class Dimensions:
     length: int
@@ -30,7 +45,7 @@ class PlayerlessCore:
     size: Dimensions
     nylium_type: NyliumType
     cycles: int
-    blocked_blocks: List[List[int]]
+    blocked_blocks: List[Tuple[int, int]]
     wb_per_fungus: float
     blast_chamber_effic: float
     run_time: int
@@ -43,7 +58,7 @@ class PlayerlessCore:
     @classmethod
     def from_yaml(cls, file_path: str):
         with open(file_path, 'r') as file:
-            data = yaml.safe_load(file)
+            data = yaml.load(file, Loader=yaml.FullLoader)
             # Convert the dictionary to the original dataclass format
             return cls.from_dict(data)
     @classmethod
@@ -93,7 +108,7 @@ class PlayerlessCoreDistOutput:
     total_des_fungi_grid: np.ndarray
     disp_foliage_grids: np.ndarray
     disp_des_fungi_grids: np.ndarray
-    sprouts_total: np.ndarray
+    sprouts_grid: np.ndarray
     bm_for_prod: float
 
 @dataclass
