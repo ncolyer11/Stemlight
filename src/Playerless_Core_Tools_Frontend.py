@@ -760,6 +760,8 @@ class App:
         self.wb_per_fungus_slider.set(120)
         self.update_nylium_type(WARPED)
         self.nylium_switch.assign(WARPED)
+        self.update_layout_vals()
+        self.display_block_info()
         self.calculate()
 
     def optimise(self):
