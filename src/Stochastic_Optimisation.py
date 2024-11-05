@@ -313,7 +313,7 @@ def simulated_annealing(
     temperature = S.start_temp
     for _ in range(S.max_iterations):
         if temperature < S.end_temp:
-            break
+            break # save
         neighbour_sol = generate_neighbour(S.current_solution, L.size, has_cleared)
         print(neighbour_sol)
         # Either desired fungi produced, or potential wart blocks generated
