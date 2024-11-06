@@ -1,6 +1,0 @@
-xlsxwriter
-litemapy
-openpyxl
-pillow
-questionary
-pyinstaller
