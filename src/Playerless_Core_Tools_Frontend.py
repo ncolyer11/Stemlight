@@ -1072,9 +1072,9 @@ class App:
                         self.grid[row][col][0].config(image=self.clearing_image)
                     break
         self.L.num_disps = len(self.L.disp_coords)
-        dist_data = self.display_block_info()
-        self.calculate(dist_data)
-        return "break"
+
+        self.schedule_layout_calcs_and_grid_update(update_grid=False)
+        return "break" # Prevents the default behaviour of the middle click apparently
 
     def print_viable_coords(self, result) -> int | float | BaseException:
         if isinstance(result, (int, float)) and not isinstance(result, BaseException):
