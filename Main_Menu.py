@@ -34,6 +34,7 @@ def main():
     root.minsize(int(RSF*450), int(RSF*200))
     # Place the menu just offset from the top left corner
     root.geometry(f"+50+50")
+    root.update_idletasks()
 
     main_font = font.Font(family='Segoe UI Semibold', size=int((RSF**1.765)*11))
 

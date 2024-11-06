@@ -212,9 +212,9 @@ class App:
         self.L.cycles = self.cycles_slider.get()
         self.L.wb_per_fungus = self.wb_per_fungus_slider.get()
         self.L.nylium_type = self.nylium_switch.nylium_type
+        # Skip the first few times the sliders are updated
         if self.loaded == 0 or self.loaded > INIT_UPDATES:
             self.update_grid(None, save_dispensers=False)
-        # Skip the first few times the sliders are updated
         self.loaded += 1
         
         self.display_block_info()
@@ -459,7 +459,7 @@ class App:
 
         slider_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
         row_label = tk.Label(self.slider_frame, text="Length:", bg=colours.bg, fg=colours.fg, font=slider_font)
-        row_label.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+        row_label.grid(row=0, column=0, padx=5, pady=0, sticky="nsew")
         self.row_slider = tk.Scale(
             self.slider_frame, 
             from_=1, 
@@ -475,7 +475,7 @@ class App:
         self.row_slider.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
 
         col_label = tk.Label(self.slider_frame, text="Width:", bg=colours.bg, fg=colours.fg, font=slider_font)
-        col_label.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
+        col_label.grid(row=0, column=1, padx=5, pady=0, sticky="nsew")
         self.col_slider = tk.Scale(
             self.slider_frame, 
             from_=1, 
