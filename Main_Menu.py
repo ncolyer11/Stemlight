@@ -3,6 +3,10 @@ import tkinter as tk
 import tkinter.font as font
 from tkinter import messagebox
 
+from src.Assets import colours
+from src.Assets.constants import RSF
+from src.Assets.helpers import ToolTip, set_title_and_icon
+
 from src import (
     Nether_Tree_Farm_Rates_Calculator,
     Chart_Display,
@@ -11,10 +15,6 @@ from src import (
     Trunk_Distribution_Calculator,
     Credits,
 )
-
-from src.Assets import colours
-from src.Assets.constants import RSF
-from src.Assets.helpers import ToolTip, set_title_and_icon
 
 # Program class to cleanly store program data
 class Program:

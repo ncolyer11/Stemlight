@@ -2,6 +2,7 @@
 n dispensers on a custom size grid of nylium as fast as possible"""
 
 import numpy as np
+
 from src.Assets.constants import *
 from src.Assets.heatmap_data import heatmap_array_xyz
 

@@ -2,10 +2,10 @@
 
 import time
 import itertools
+
 import numpy as np
 
 from src.Assets.constants import *
-from src.Fast_Dispenser_Distribution import fast_calc_fung_dist
 from src.Assets.heatmap_data import heatmap_array_xyz
 from src.Assets.data_classes import *
 

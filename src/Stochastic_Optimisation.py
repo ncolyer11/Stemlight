@@ -1,13 +1,18 @@
+"""
+Simulated annealing algorithm for optimising the distribution of dispensers on a nylium platform.
+"""
 import math
 import time
+
 import pandas as pd
 import numpy as np
 from numpy.random import randint as rand_s
 
-from src.Fast_Dispenser_Distribution import fast_calc_fung_dist
 from src.Assets.constants import *
 from src.Assets.helpers import resource_path
 from src.Assets.data_classes import *
+from src.Fast_Dispenser_Distribution import fast_calc_fung_dist
+
 
 ACCEPTANCE_RATE = 0.995
 REJECTION_POINT = 0.1

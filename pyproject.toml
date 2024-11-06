@@ -19,7 +19,7 @@ matplotlib = "^3.9.2"
 questionary = "^2.0.1"
 openpyxl = "^3.1.5"
 XlsxWriter = "^3.2.0"
-
+psutil = "^6.1.0"
 
 [build-system]
 requires = ["poetry-core"]

@@ -1,7 +1,7 @@
 @echo off
 
 :: Activate the Anaconda environment
-CALL conda activate Stemlight
+CALL conda activate stemlight
 
 :: Build with PyInstaller
 pyinstaller ^
@@ -14,6 +14,3 @@ Main_Menu.py
 
 :: Compress the output folder
 powershell Compress-Archive -Path 'dist\\Stemlight for Windows\\*' -Force -DestinationPath 'Stemlight for Windows.zip'
-
-:: Deactivate the environment
-CALL conda deactivate

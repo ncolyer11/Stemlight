@@ -2,10 +2,12 @@ import os
 import sys
 import time
 import itertools
+
 import xlsxwriter
 import numpy as np
 import tkinter as tk
 from tkinter import font
+
 from litemapy import Schematic
 
 from src.Assets import heatmap_data
@@ -18,6 +20,7 @@ try:
     windll.shcore.SetProcessDpiAwareness(1)
 except:
     pass
+
 
 VALID_ENCODING_BLOCKS = {'minecraft:red_concrete', 'minecraft:blue_concrete',
                          'minecraft:cyan_concrete','minecraft:light_blue_concrete'}
