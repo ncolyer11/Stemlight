@@ -122,39 +122,34 @@ class App:
         self.clearing_image = self.clearing_image.subsample(3, 3)
 
         # Create a Canvas and Scrollbar 1055
-        self.canvas = tk.Canvas(master, width=int(RSF*760), height=int(RSF*997), bg=colours.bg)
-        
+        self.canvas = tk.Canvas(master, height=int(RSF*997), bg=colours.bg)
         self.scrollbar = tk.Scrollbar(master, orient="vertical", command=self.canvas.yview)
-        self.canvas.configure(yscrollcommand=self.scrollbar.set)
-        
-        # Create the scrollable frame inside the canvas
         self.scrollable_frame = tk.Frame(self.canvas, bg=colours.bg)
-        self.scrollable_frame_id = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
-
         # Bind the scrollable region update to the frame configuration changes
         self.scrollable_frame.bind("<Configure>", self.update_scroll_region)
-        self.canvas.bind("<Configure>", self.resize_frame)
-
+        # Create the scrollable frame inside the canvas
+        self.scrollable_frame_id = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+        # Bind mouse wheel scrolling
+        self.canvas.bind_all("<MouseWheel>", self._on_mouse_wheel)
+        
+        self.create_widgets()
+        self.create_menu()
+        
         # Pack the canvas and scrollbar
         self.canvas.pack(side="left", fill="both", expand=True)
         self.scrollbar.pack(side="right", fill="y")
 
-        # Bind mouse wheel scrolling
-        self.canvas.bind_all("<MouseWheel>", self._on_mouse_wheel)
-
-        # Now, call your method to create widgets within the scrollable_frame
-        self.create_widgets()
-
-        # Create menu
-        self.create_menu()
-
     def update_scroll_region(self, event):
         """Update the scrollable region based on the contents of the frame."""
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"), width=event.width)
 
     def resize_frame(self, event):
         """Make sure the frame size matches the canvas width."""
-        self.canvas.itemconfig(self.scrollable_frame_id, width=event.width)
+        # Get the width of the canvas
+        canvas_width = event.width if event else self.canvas.winfo_width()
+        # Set the scrollable frame width to match the canvas width
+        self.canvas.itemconfig(self.scrollable_frame_id, width=canvas_width)
 
     def _on_mouse_wheel(self, event):
         # Get the current scroll position
@@ -398,12 +393,13 @@ class App:
         self.create_sliders()
 
         self.button_slider_frame = tk.Frame(self.scrollable_frame, bg=colours.bg)
-        self.button_slider_frame.pack(pady=10)  
+        self.button_slider_frame.pack(pady=5)  
 
-        self.reset_button = tk.Button(self.button_slider_frame, text="Reset", command=self.reset_grid, font=small_button_font, bg=colours.warped)
+        self.reset_button = tk.Button(self.button_slider_frame, text="Reset",
+                                      command=self.reset_grid, font=small_button_font,
+                                      bg=colours.dark_orange, padx=10, pady=5)
         self.reset_button.pack(side=tk.RIGHT, padx=5)
         self.reset_button.bind("<Shift-Button-1>", self.reset_all)
-
 
         self.nylium_switch = SlideSwitch(self.button_slider_frame, callback=self.update_nylium_type)
         self.nylium_switch.pack(side=tk.LEFT, padx=5, pady=5)
@@ -413,7 +409,7 @@ class App:
 
         # Create a new frame to contain the buttons
         button_frame = tk.Frame(self.scrollable_frame, bg=colours.bg)
-        button_frame.pack(pady=5)
+        button_frame.pack()
 
         self.additional_property_button = tk.Button(button_frame, text="Optimise", command=self.optimise,
                                                     font=large_button_font, bg=colours.crimson, pady=2)
@@ -423,10 +419,10 @@ class App:
 
         self.heatmap_button = tk.Button(button_frame, text="Heatmap", command=self.export_heatmaps,
                                         font=large_button_font, bg=colours.aqua_green, pady=2)
-        self.heatmap_button.pack(side=tk.LEFT, padx=5)
+        self.heatmap_button.pack(side=tk.LEFT, padx=5, pady=10)
 
         self.master_frame = tk.Frame(self.scrollable_frame)
-        self.master_frame.pack(pady=5)
+        self.master_frame.pack()
 
         # Create a new frame for the output results
         self.output_frame = tk.Frame(self.master_frame, bg=colours.bg,
@@ -511,12 +507,12 @@ class App:
         )
         self.cycles_slider.set(1)
         self.cycles_slider.bind("<Double-Button-1>", lambda event: self.reset_slider(event, 1))
-        self.cycles_slider.grid(row=3, column=0, padx=5, pady=5, sticky="nsew")
+        self.cycles_slider.grid(row=3, column=0, padx=5, sticky="nsew")
 
         self.wb_per_fungus_label = tk.Label(self.slider_frame, text="Wart Blocks/Fungus:", 
                                        bg=colours.bg, fg=colours.fg, font=slider_font)
         self.wb_per_fungus_label.grid(row=2, column=1, padx=5, pady=5, sticky="nsew")
-        wb_per_fungus_tooltip = ToolTip(self.wb_per_fungus_label, (
+        ToolTip(self.wb_per_fungus_label, (
                                    "Restrict optimal solutions to require a certain bone meal\n"
                                    "(or ~8 composted wart blocks) per fungus produced efficiency."))
         self.wb_per_fungus_slider = tk.Scale(
@@ -532,7 +528,7 @@ class App:
         )
         self.wb_per_fungus_slider.set(120)
         self.wb_per_fungus_slider.bind("<Double-Button-1>", lambda event: self.reset_slider(event, 120))
-        self.wb_per_fungus_slider.grid(row=3, column=1, padx=5, pady=5, sticky="nsew")      
+        self.wb_per_fungus_slider.grid(row=3, column=1, padx=5, sticky="nsew")      
 
     def reset_slider(self, event, default=5):
         self.scrollable_frame.after(10, lambda: event.widget.set(default))

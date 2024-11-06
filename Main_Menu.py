@@ -32,6 +32,8 @@ def main():
 
     root.configure(bg=colours.bg)
     root.minsize(int(RSF*450), int(RSF*200))
+    # Place the menu just offset from the top left corner
+    root.geometry(f"+50+50")
 
     main_font = font.Font(family='Segoe UI Semibold', size=int((RSF**1.765)*11))
 
@@ -81,10 +83,6 @@ def main():
 
         # Create a tooltip for the button
         tooltip = ToolTip(button, program.description)
-        # button.bind("<Enter>", lambda event, 
-        #             prog=program: tooltip.show_tip(prog.description, 
-        #                                         event.x_root, event.y_root))
-        # button.bind("<Leave>", lambda event: tooltip.hide_tip())
 
 
         # If it's the last button and it's the only one in its row, span it across all columns
@@ -97,11 +95,6 @@ def main():
     for i in range(len(programs) // 2):
         root.grid_rowconfigure(i, weight=1)
 
-    # try:
-    #     from ctypes import windll
-    #     windll.shcore.SetProcessDpiAwareness(1)
-    # except:
-    #     pass
     root.mainloop()
 
 #########################
