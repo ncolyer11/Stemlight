@@ -29,7 +29,9 @@ from src.Stochastic_Optimisation import start_optimisation
 # TODO:
 # - move nylium switch and reset button to be on the same level as the optimise and heatmap button
 # - fix bug where scrolling in playerless tool only works in the most recently opened window
-# - fix bug where layout values aren't accurate after importing a layout (they're slightly lower?)
+# - run time and blast effic labels dont show upon start and after importing
+#  - this doesn't matter too much though as these will become message boxes in the future probs
+# and also move calibrate run time into the file menu and maybe consider a new algo for it
 
 #################
 ### CONSTANTS ###
@@ -908,6 +910,7 @@ class App:
         self.wb_per_fungus_slider.set(self.L.wb_per_fungus)
         self.update_nylium_type(self.L.nylium_type, skip_calc=True)
         self.nylium_switch.assign(self.L.nylium_type)
+        self.nylium_switch.nylium_type = self.L.nylium_type
 
     def update_layout_vals(self, _=None):
         """Update layout values and schedule update_grid if not loaded."""
