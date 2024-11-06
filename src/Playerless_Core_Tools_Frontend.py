@@ -26,6 +26,11 @@ from src.Stochastic_Optimisation import start_optimisation
 # - Run tests on 5x5 and 4x5 for num dispensers 1-5, cycles = 3 to see where the optimal solution
 #   does or does not include cleare dispensers
 
+# TODO:
+# - move nylium switch and reset button to be on the same level as the optimise and heatmap button
+# - fix bug where scrolling in playerless tool only works in the most recently opened window
+# - fix bug where layout values aren't accurate after importing a layout (they're slightly lower?)
+
 #################
 ### CONSTANTS ###
 #################
