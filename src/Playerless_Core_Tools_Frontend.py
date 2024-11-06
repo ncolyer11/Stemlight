@@ -1,4 +1,6 @@
-"""Calculates distribution of fungus, and bone meal usage, \nfor a given grid of nylium, and placement and fire order of dispensers"""
+"""
+Calculates distribution of fungus, and bone meal usage, \nfor a given grid of nylium, and placement and fire order of dispensers
+"""
 
 import math
 import time
@@ -36,12 +38,12 @@ RAD = 26
 DP = 5
 INIT_UPDATES = 2
 MAX_SIDE_LEN = 20
-BASELINE_CLK_SPEED = 2000 # 2 GHz
+BASELINE_CLK_SPEED = 2000
 SLIDER_MAX_CYCLES = 5
 DEFAULT_SIDE_LEN = 5
 DEFAULT_RUN_TIME = 7
 SCREEN_HEIGHT = 997
-MAX_UPDATE_SCHEDULE_DELAY = 500
+MAX_UPDATE_SCHEDULE_DELAY = 750
 RUN_TIME_VALS = [1, 4, 7, 10, 15, 30, 60, 300, 1000]
 BC_EFFIC_VALS = [0.0, 0.5, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1]
 
@@ -67,7 +69,7 @@ class SlideSwitch(tk.Canvas):
         circle_path = resource_path("src/Images/netherrack_circle.png")
         self.switch_image = tk.PhotoImage(file=circle_path)
         self.switch_image = self.switch_image.subsample(4, 4)
-        self.oval = self.create_image(WDTH // 4, HGHT // 2, image=self.switch_image)
+        self.oval = self.create_image(WDTH//4, HGHT//2, image=self.switch_image)
 
         self.bind("<Button-1>", self.toggle)
 
@@ -78,12 +80,12 @@ class SlideSwitch(tk.Canvas):
         if self.state:
             self.new_image = self.create_squircle(WDTH, HGHT, RAD, colours.warped)
             self.itemconfig(self.rect, image=self.new_image)
-            self.coords(self.oval, WDTH // 4, HGHT // 2)
+            self.coords(self.oval, WDTH//4, HGHT//2)
             self.nylium_type = WARPED
         else:
             self.new_image = self.create_squircle(WDTH, HGHT, RAD, colours.crimson)
             self.itemconfig(self.rect, image=self.new_image)
-            self.coords(self.oval, 3 * WDTH // 4, HGHT // 2)
+            self.coords(self.oval, 3 * WDTH//4, HGHT//2)
             self.nylium_type = CRIMSON
 
         self.state = not self.state
@@ -94,12 +96,12 @@ class SlideSwitch(tk.Canvas):
         if state == WARPED:
             self.new_image = self.create_squircle(WDTH, HGHT, RAD, colours.warped)
             self.itemconfig(self.rect, image=self.new_image)
-            self.coords(self.oval, WDTH // 4, HGHT // 2)
+            self.coords(self.oval, WDTH//4, HGHT//2)
             self.state = False
         else:
             self.new_image = self.create_squircle(WDTH, HGHT, RAD, colours.crimson)
             self.itemconfig(self.rect, image=self.new_image)
-            self.coords(self.oval, 3 * WDTH // 4, HGHT // 2)
+            self.coords(self.oval, 3 * WDTH//4, HGHT//2)
             self.state = True
     
     def create_squircle(self, width, height, radius, fill):
@@ -223,7 +225,7 @@ class App:
         if self.update_job is not None:
             self.master.after_cancel(self.update_job)
 
-        # Schedule delay depends on layout complexity and processor speed
+        # Schedule update_grid to run in 1 second
         schedule_delay = self.get_update_schedule_delay()
         self.update_job = self.master.after(schedule_delay, self.run_update_job, update_grid)
 
@@ -249,7 +251,6 @@ class App:
         """Updates """
         if update_grid:
             self.update_grid(None, save_dispensers=False)
-            
         dist_data = self.display_block_info()
         self.calculate(dist_data)
 
@@ -260,8 +261,8 @@ class App:
         Also adjusts the delay based on the CPU speed or number of cores.
         """
         delay_time = self.L.cycles * self.L.size.length * self.L.size.width * self.L.num_disps
-        # Crimson runs quicker
-        fungi_multiplier = 1.0 if self.L.nylium_type == CRIMSON else 1.15
+        
+        fungi_multiplier = 1.0 if self.L.nylium_type == CRIMSON else 1.15  # Crimson runs quicker
         delay_time *= fungi_multiplier
 
         # Get some system performance factor
