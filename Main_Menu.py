@@ -82,9 +82,11 @@ def main():
             padx=5,
             pady=5,
             width=int((RSF**0.5)*22),
-            height=int((RSF**0.7)*2)
+            height=int((RSF**0.7)*2),
+            justify="center",
+            # state="disabled" # cool good to know
         )
-        button.config(activebackground=button.cget('bg'))
+        button.config(activebackground=button.cget("bg"))
 
         # Create a tooltip for the button
         tooltip = ToolTip(button, program.description)
@@ -97,7 +99,9 @@ def main():
             button.grid(row=i // cols, column=i % cols, padx=8, pady=5)
 
     # Set equal weights to all rows in the grid
-    for i in range(len(programs) // 2):
+    for j in range(cols):
+        root.grid_columnconfigure(j, weight=1)
+    for i in range((len(programs) + cols - 1) // cols):
         root.grid_rowconfigure(i, weight=1)
 
     root.mainloop()
