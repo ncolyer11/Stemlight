@@ -24,12 +24,11 @@ from src.Stochastic_Optimisation import start_optimisation
 #   does or does not include cleare dispensers
 
 # TODO:
-# - move nylium switch and reset button to be on the same level as the optimise and heatmap button
-# - fix bug where worst case without caring about order takes into account all layouts, not strictly different orderings
-# - fix bug where scrolling in playerless tool only works in the most recently opened window
-# - run time and blast effic labels dont show upon start and after importing
-#  - this doesn't matter too much though as these will become message boxes in the future probs
-# and also move calibrate run time into the file menu and maybe consider a new algo for it
+# fix bug where worst case without caring about order takes into account all layouts, not strictly different orderings
+# move nylium switch and reset button to be on the same level as the optimise and heatmap button
+# move calibrate run time into the file menu and maybe consider a new algo for it
+# run time and blast effic labels dont show upon start and after importing
+#   - this doesn't matter too much though as these will become message boxes in the future probs
 
 #################
 ### CONSTANTS ###

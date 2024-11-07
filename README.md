@@ -1,7 +1,7 @@
 # Stemlight
 A collection of huge fungi/nether tree farm related calculators and simulators combined under the alias 'Stemlight'.
 
-To get started, simply download the latest .zip file containing the executable program in [Releases](https://github.com/ncolyer11/Stemlight/releases) or if you'd like to build it yourself then run the build.bat (or .sh for Linux) script after installing the required packages using `poetry install` or similiar
+To get started, simply download the latest .zip file containing the executable program in [Releases](https://github.com/ncolyer11/Stemlight/releases) or if you'd like to build it yourself then run the build.bat (or .sh for Linux) script after installing the required packages using `poetry install` or similiar.
 
 Windows will have the latest release as I'll be updating Linux on a much slower cycle.
 
