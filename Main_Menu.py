@@ -83,7 +83,6 @@ def main():
             pady=5,
             width=int((RSF**0.5)*22),
             height=int((RSF**0.7)*2),
-            justify="center",
             # state="disabled" # cool good to know
         )
         button.config(activebackground=button.cget("bg"))

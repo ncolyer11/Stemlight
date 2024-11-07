@@ -323,84 +323,28 @@ class App:
         self.master_frame = tk.Frame(self.scrollable_frame)
         self.master_frame.pack(pady=5)
 
-        # Create a new frame for the output results
         self.slider_frame = tk.Frame(self.master_frame, bg=colours.bg)
         self.slider_frame.grid(row=0, column=0, sticky='nsew')
 
-        slider_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
-        row_label = tk.Label(self.slider_frame, text="Length:", bg=colours.bg, fg=colours.fg,
-                             font=slider_font)
-        row_label.grid(row=0, column=0, padx=5, pady=0, sticky="nsew")
-        self.row_slider = tk.Scale(
-            self.slider_frame, 
-            from_=1, 
-            to=MAX_SIDE_LEN, 
-            orient=tk.HORIZONTAL, 
-            command=self.update_layout_vals, 
-            bg=colours.bg, 
-            fg=colours.fg, 
-            length=250
+        self.row_slider = self.create_slider(
+            self.slider_frame, "Length:", 0, 0, 1, MAX_SIDE_LEN, 5
         )
-        self.row_slider.set(5)
-        self.row_slider.bind("<Double-Button-1>", self.reset_slider)
-        self.row_slider.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
 
-        col_label = tk.Label(self.slider_frame, text="Width:", bg=colours.bg, fg=colours.fg,
-                             font=slider_font)
-        col_label.grid(row=0, column=1, padx=5, pady=0, sticky="nsew")
-        self.col_slider = tk.Scale(
-            self.slider_frame, 
-            from_=1, 
-            to=MAX_SIDE_LEN, 
-            orient=tk.HORIZONTAL, 
-            command=self.update_layout_vals, 
-            bg=colours.bg, 
-            fg=colours.fg, 
-            length=250
+        self.col_slider = self.create_slider(
+            self.slider_frame, "Width:", 0, 1, 1, MAX_SIDE_LEN, 5
         )
-        self.col_slider.set(5)
-        self.col_slider.bind("<Double-Button-1>", self.reset_slider)
-        self.col_slider.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
-        
-        self.cycles_label = tk.Label(self.slider_frame, text="No. Cycles:", bg=colours.bg, 
-                                     fg=colours.fg, font=slider_font)
-        self.cycles_label.grid(row=2, column=0, padx=5, pady=5, sticky="nsew")
-        ToolTip(self.cycles_label, ("Set how many times the dispensers are activated."))
-        self.cycles_slider = tk.Scale(
-            self.slider_frame, 
-            from_=1, 
-            to=SLIDER_MAX_CYCLES,
-            orient=tk.HORIZONTAL, 
-            command=self.update_layout_vals, 
-            bg=colours.bg, 
-            fg=colours.fg, 
-            length=250
-        )
-        self.cycles_slider.set(1)
-        self.cycles_slider.bind("<Double-Button-1>", lambda event: self.reset_slider(event, 1))
-        self.cycles_slider.grid(row=3, column=0, padx=5, sticky="nsew")
 
-        self.wb_per_fungus_label = tk.Label(self.slider_frame, text="Wart Blocks/Fungus:", 
-                                       bg=colours.bg, fg=colours.fg, font=slider_font)
-        self.wb_per_fungus_label.grid(row=2, column=1, padx=5, pady=5, sticky="nsew")
-        ToolTip(self.wb_per_fungus_label, (
-                                   "Restrict optimal solutions to require a certain bone meal\n"
-                                   "(or ~8 composted wart blocks) per fungus produced efficiency."))
-        self.wb_per_fungus_slider = tk.Scale(
-            self.slider_frame, 
-            from_=20, 
-            to=120, 
-            orient=tk.HORIZONTAL, 
-            command=self.update_layout_vals,
-            bg=colours.bg, 
-            fg=colours.fg, 
-            length=250,
+        self.cycles_slider = self.create_slider(
+            self.slider_frame, "No. Cycles:", 2, 0, 1, SLIDER_MAX_CYCLES, 1, 
+            "Set how many times the dispensers are activated."
+        )
+
+        self.wb_per_fungus_slider = self.create_slider(
+            self.slider_frame, "Wart Blocks/Fungus:", 2, 1, 20, 120, 120, 
+            "Restrict optimal solutions to require a certain bone meal\n(or ~8 composted wart blocks) "
+            "per fungus produced efficiency.",
             resolution=0.1
         )
-        self.wb_per_fungus_slider.set(120)
-        self.wb_per_fungus_slider.bind("<Double-Button-1>",
-                                       lambda event: self.reset_slider(event, 120))
-        self.wb_per_fungus_slider.grid(row=3, column=1, padx=5, sticky="nsew")
 
     ################
     ### FEATURES ###
@@ -513,16 +457,12 @@ class App:
                 "Surplus bone meal after 1 global cycle of the core and subsequent harvest.\n"
                 "Takes bone meal from composted wart blocks minus production and growth bm."))
         
-        # Create the labels for output values
         for i, output_value in enumerate(output_values):
-            # Create a label for the output value
             value_label = tk.Label(self.output_frame, text=output_value, bg=colours.bg,
                                    fg=colours.fg, font=output_font)
             value_label.grid(row=i + 2, column=1, padx=PAD, pady=PAD, sticky="WE")
-            # Ensure the label fills the cell horizontally
             value_label.grid_columnconfigure(0, weight=1)
 
-            # Store the value label in the dictionary for later use
             self.D.output_value[i] = value_label
     
     def set_cleared_or_blocked(self, row, col):
@@ -710,7 +650,6 @@ class App:
         label_font = font.Font(family='Segoe UI', size=int((RSF**NLS)*9))
         output_font = font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9))
 
-        # Clear existing labels
         for label in self.D.info_label.values():
             label.destroy()
         self.D.info_label = {}
@@ -719,26 +658,22 @@ class App:
             value_label.destroy()
         self.D.info_value = {}
 
-        # Create the labels for info labels
         for i, label_text in enumerate(info_labels):
             label = tk.Label(self.output_frame, text=label_text, bg=colours.bg, fg=colours.fg, 
                              font=label_font)
             label.grid(row=i + 2, column=2, padx=PAD, pady=PAD, sticky="W")
 
-            # Store the label in the dictionary for later use
             self.D.info_label[i] = label
         
         ToolTip(self.D.info_label[1],
                 "All other foliage generated at this position (excluding desired fungi).")
 
-        # Create the labels for block info values
         for i, info_value in enumerate(info_values):
             label = tk.Label(self.output_frame, text=info_value, bg=colours.bg, fg=colours.fg, 
                              font=output_font)
             label.grid(row=i + 2, column=3, padx=PAD, pady=PAD, sticky="WE")
             label.grid_columnconfigure(0, weight=1)  # Ensure the label fills the cell horizontally
 
-            # Store the value label in the dictionary for later use
             self.D.info_value[i] = label
             
         return dist_data
@@ -892,8 +827,8 @@ class App:
             current_scroll_position = instance.canvas.yview()
 
             # Limit values, e.g., preventing the upper scroll to be less than 0.1 (10% down from top)
-            min_scroll = 0   # Set your desired upper limit
-            max_scroll = 1.0   # Maximum scroll value corresponds to the bottom-most position
+            min_scroll = 0
+            max_scroll = 1.0
 
             # Calculate the new scroll position based on mouse wheel delta
             new_scroll_position = current_scroll_position[0] + (-1 * (event.delta / 120) / 10)
@@ -1159,6 +1094,26 @@ class App:
         cb.bind("<Control-Button-1>",
                 lambda event, row_l=row, col_l=col: self.set_cleared_or_blocked(row_l, col_l))
         return cb
+
+    def create_slider(self, parent, label_text, row, col, from_value, to_value, default_value,
+                    tooltip_text=None, resolution=1):
+        """Creates a slider widget with a label and binds it to the callback function."""
+        label = tk.Label(parent, text=label_text, bg=colours.bg, fg=colours.fg, font=font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9)))
+        label.grid(row=row, column=col, padx=5, pady=0, sticky="nsew")
+        
+        if tooltip_text:
+            ToolTip(label, tooltip_text)
+        
+        slider = tk.Scale(
+            parent, from_=from_value, to=to_value, orient=tk.HORIZONTAL, 
+            command=self.update_layout_vals, bg=colours.bg, fg=colours.fg, 
+            length=250, resolution=resolution
+        )
+        slider.set(default_value)
+        slider.bind("<Double-Button-1>", lambda event: self.reset_slider(event, default_value))
+        slider.grid(row=row + 1, column=col, padx=5, pady=5, sticky="nsew")
+        
+        return slider
 
     def create_ordered_dispenser_array(self, rows, cols):
         """Create a 2D array of dispensers ordered by the time they were placed on the grid"""
