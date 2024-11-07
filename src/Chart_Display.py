@@ -10,8 +10,7 @@ import ctypes
 from Main_Menu import ToolTip
 from src.Assets import colours
 from src.Assets.constants import RSF
-from src.Assets.helpers import resource_path, set_title_and_icon, program_window_counter, \
-    all_program_instances
+from src.Assets.helpers import resource_path, set_title_and_icon
 
 MAX_COL = 9
 
@@ -74,7 +73,6 @@ def start(root):
         new_window.resizable(0, 0)
     
     child = tk.Toplevel(root)
-    all_program_instances[program_window_counter] = child  # Track the instance
     set_title_and_icon(child, "Chart Viewer")
     child.configure(bg=colours.bg)
     child.state('zoomed')
@@ -105,8 +103,7 @@ def start(root):
 
     def _on_mouse_wheel(event):
         # Check if the current window has focus
-        # Using the walrus operator to assign and check the value of the current focused instance
-        if child == event.widget.winfo_toplevel(): # instance here is our canvas
+        if child == event.widget.winfo_toplevel():
             # Check if the focused widget is the canvas
             # Get the current scroll position
             current_scroll_position = canvas.yview()

@@ -16,8 +16,9 @@ from src import (
     Credits,
 )
 
-program_window_counter = 0
-all_program_instances = {}
+# TODO:
+# Convert *all* programs to use classes for their program structure and also ahh do more
+# refactoring using dataclasses like you done already with the playerless core tools frontend
 
 # Program class to cleanly store program data
 class Program:
