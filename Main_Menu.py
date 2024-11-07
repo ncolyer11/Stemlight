@@ -16,6 +16,9 @@ from src import (
     Credits,
 )
 
+program_window_counter = 0
+all_program_instances = {}
+
 # Program class to cleanly store program data
 class Program:
     """A class to store program data."""

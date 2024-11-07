@@ -10,7 +10,8 @@ import ctypes
 from Main_Menu import ToolTip
 from src.Assets import colours
 from src.Assets.constants import RSF
-from src.Assets.helpers import resource_path, set_title_and_icon
+from src.Assets.helpers import resource_path, set_title_and_icon, program_window_counter, \
+    all_program_instances
 
 MAX_COL = 9
 
@@ -71,8 +72,9 @@ def start(root):
         # Set the window size to the resized image size
         new_window.geometry(f"{new_width}x{new_height}+25+25")
         new_window.resizable(0, 0)
-
+    
     child = tk.Toplevel(root)
+    all_program_instances[program_window_counter] = child  # Track the instance
     set_title_and_icon(child, "Chart Viewer")
     child.configure(bg=colours.bg)
     child.state('zoomed')
@@ -102,11 +104,29 @@ def start(root):
     scrollbar.pack(side="right", fill="y")
 
     def _on_mouse_wheel(event):
-        canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        # Check if the current window has focus
+        # Using the walrus operator to assign and check the value of the current focused instance
+        if child == event.widget.winfo_toplevel(): # instance here is our canvas
+            # Check if the focused widget is the canvas
+            # Get the current scroll position
+            current_scroll_position = canvas.yview()
 
-    canvas.bind_all("<MouseWheel>", _on_mouse_wheel)
-    canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
-    canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
+            # Limit values, e.g., preventing the upper scroll to be less than 0.1 (10% down from top)
+            min_scroll = 0   # Set your desired upper limit
+            max_scroll = 1.0   # Maximum scroll value corresponds to the bottom-most position
+
+            # Calculate the new scroll position based on mouse wheel delta
+            new_scroll_position = current_scroll_position[0] + (-1 * (event.delta / 120) / 10)
+
+            # Check and enforce the scroll limits
+            if new_scroll_position < min_scroll:
+                canvas.yview_moveto(min_scroll)
+            elif new_scroll_position > max_scroll:
+                canvas.yview_moveto(max_scroll)
+            else:
+                canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+    
+    child.bind("<MouseWheel>", _on_mouse_wheel)
 
     image_files = {
         "7 different regions.png": {
@@ -235,7 +255,7 @@ def start(root):
         tooltips.append(tooltip)
 
     update_grid()
-
+    
     child.mainloop()
 
 

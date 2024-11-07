@@ -1,6 +1,4 @@
-"""
-Calculates distribution of fungus, and bone meal usage, \nfor a given grid of nylium, and placement and fire order of dispensers
-"""
+"""Calculates distribution of fungus, and bone meal usage, \nfor a given grid of nylium, and placement and fire order of dispensers"""
 
 import math
 import time
@@ -16,11 +14,10 @@ from src.Assets import colours
 from src.Assets.constants import *
 from src.Assets.data_classes import *
 from src.Assets.helpers import ToolTip, set_title_and_icon, export_custom_heatmaps, resource_path, \
-    show_custom_message
+    show_custom_message, program_window_counter, all_program_instances
 from src.Playerless_Core_Tools_Backend import calc_huge_fungus_distribution, \
     calculate_fungus_distribution, output_viable_coords
 from src.Stochastic_Optimisation import start_optimisation
-
 
 # Testing notes
 # - Run tests on 5x5 and 4x5 for num dispensers 1-5, cycles = 3 to see where the optimal solution
@@ -28,6 +25,7 @@ from src.Stochastic_Optimisation import start_optimisation
 
 # TODO:
 # - move nylium switch and reset button to be on the same level as the optimise and heatmap button
+# - fix bug where worst case without caring about order takes into account all layouts, not strictly different orderings
 # - fix bug where scrolling in playerless tool only works in the most recently opened window
 # - run time and blast effic labels dont show upon start and after importing
 #  - this doesn't matter too much though as these will become message boxes in the future probs
@@ -134,8 +132,9 @@ class App:
     ######################
     ### INITIALISATION ###
     ######################
-    def __init__(self, master, layout_info: PlayerlessCore):
+    def __init__(self, master, window_id, layout_info: PlayerlessCore):
         self.master = master                        # The TopLevel window
+        self.window_id = window_id
         self.L = layout_info                        # All properties of the playerless core itself
         self.D = DisplayInfo({}, {}, {}, {}, ())    # Start with all empty labels and info values
         
@@ -145,16 +144,25 @@ class App:
         self.update_job = None  # Track the latest scheduled layout/grid update/calculation job
 
         self.init_gui()
-
+    
     def init_gui(self):
-        clearing_path = resource_path("src/Images/cleared_dispenser.png")
-        self.clearing_image = tk.PhotoImage(file=clearing_path)
+        self.clearing_image = tk.PhotoImage(file=resource_path("src/Images/cleared_dispenser.png"))
         self.clearing_image = self.clearing_image.subsample(3, 3)
 
-        # Create a Canvas and Scrollbar
+        # Add main GUI elements
         self.canvas = tk.Canvas(self.master, height=int(RSF * WINDOW_HEIGHT), bg=colours.bg)
+        self.create_scroll_bar()
+        self.create_widgets()
+        self.create_menu()
+        
+        # Pack the canvas and scrollbar
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.scrollbar.pack(side="right", fill="y")
+
+    def create_scroll_bar(self):
         self.scrollbar = tk.Scrollbar(self.master, orient="vertical", command=self.canvas.yview)
         self.scrollable_frame = tk.Frame(self.canvas, bg=colours.bg)
+
         # Bind the scrollable region update to the frame configuration changes
         self.scrollable_frame.bind("<Configure>", self.update_scroll_region)
         # Create the scrollable frame inside the canvas
@@ -162,14 +170,7 @@ class App:
                                                              anchor="nw")
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
         # Bind mouse wheel scrolling
-        self.canvas.bind_all("<MouseWheel>", self._on_mouse_wheel)
-        
-        self.create_widgets()
-        self.create_menu()
-        
-        # Pack the canvas and scrollbar
-        self.canvas.pack(side="left", fill="both", expand=True)
-        self.scrollbar.pack(side="right", fill="y")
+        self.master.bind_all("<MouseWheel>", self._on_mouse_wheel)
 
     def create_menu(self):
         """Setup the menu for the application."""
@@ -884,25 +885,35 @@ class App:
         self.canvas.itemconfig(self.scrollable_frame_id, width=canvas_width)
 
     def _on_mouse_wheel(self, event):
-        # Get the current scroll position
-        current_scroll_position = self.canvas.yview()
-        
-        # Limit values, e.g., preventing the upper scroll to be less than 0.1 (10% down from top)
-        min_scroll = 0   # Set your desired upper limit
-        max_scroll = 1.0   # Maximum scroll value corresponds to the bottom-most position
+        # Check if the current window has focus
+        # Using the walrus operator to assign and check the value of the current focused instance
+        if (instance := self.get_focus_instance(event)) is not None:
+            # Check if the focused widget is the canvas
+            # Get the current scroll position
+            current_scroll_position = instance.canvas.yview()
 
-        # Calculate the new scroll position based on mouse wheel delta
-         # Adjust sensitivity by changing /10
-        new_scroll_position = current_scroll_position[0] + (-1 * (event.delta / 120) / 10) 
+            # Limit values, e.g., preventing the upper scroll to be less than 0.1 (10% down from top)
+            min_scroll = 0   # Set your desired upper limit
+            max_scroll = 1.0   # Maximum scroll value corresponds to the bottom-most position
 
-        # Check and enforce the scroll limits
-        if new_scroll_position < min_scroll:
-            self.canvas.yview_moveto(min_scroll)
-        elif new_scroll_position > max_scroll:
-            self.canvas.yview_moveto(max_scroll)
-        else:
-            self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            # Calculate the new scroll position based on mouse wheel delta
+            new_scroll_position = current_scroll_position[0] + (-1 * (event.delta / 120) / 10)
 
+            # Check and enforce the scroll limits
+            if new_scroll_position < min_scroll:
+                instance.canvas.yview_moveto(min_scroll)
+            elif new_scroll_position > max_scroll:
+                instance.canvas.yview_moveto(max_scroll)
+            else:
+                instance.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+    
+    def get_focus_instance(self, event):
+        for window_id, instance in all_program_instances.items():
+            if instance.master == event.widget.winfo_toplevel():
+                return instance
+            
+        return None
+    
     def update_ui_elements(self):
         self.row_slider.set(self.L.size.length)
         self.col_slider.set(self.L.size.width)
@@ -1178,13 +1189,13 @@ class App:
 #############
 def start(root):
     """Start the Playerless Core Tools program."""
-    
+    global program_window_counter
+    program_window_counter += 1
     child = tk.Toplevel(root)
     set_title_and_icon(child, "Playerless Core Tools")
 
     child.configure(bg=colours.bg)
     child.size = (int(RSF*1), int(RSF*1))
-
     # Get the root window's position and size
     root_x = root.winfo_x()
     root_y = root.winfo_y()
@@ -1207,5 +1218,7 @@ def start(root):
         run_time=DEFAULT_RUN_TIME,
         additional_property=False
     )
-    app = App(child, L)
+    app = App(child, program_window_counter, L)  # Pass the unique ID to the instance
+    all_program_instances[program_window_counter] = app  # Track the instance
+
     child.mainloop()

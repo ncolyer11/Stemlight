@@ -21,6 +21,8 @@ try:
 except:
     pass
 
+program_window_counter = 0
+all_program_instances = {}
 
 VALID_ENCODING_BLOCKS = {'minecraft:red_concrete', 'minecraft:blue_concrete',
                          'minecraft:cyan_concrete','minecraft:light_blue_concrete'}

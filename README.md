@@ -11,4 +11,4 @@ Layout of some of the programs runnable with this:
 
 ![image](https://github.com/ncolyer11/Stemlight/assets/90807490/2277bc32-0f45-4e13-8f6d-13b68fc4a7b4)
 
-- Stemlight currently runs on 3.5k lines of written code (6.4k total)
+- Stemlight currently runs on 5.7k lines of written code (9.3k in total)
