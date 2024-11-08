@@ -20,34 +20,17 @@ MAX_ALL_AVG_NUM_DISPS = 15
 def selection_chance(x1, y1):
     """Calculates the probability of a block being selected for 
     foliage generation given its offset from a dispenser"""
-    # Selection values derived from little formula cooked up on Desmos
-    P = [
-        0.10577931226910778, 0.20149313967509574,
-        0.28798973593014715, 0.3660553272880777,
-        0.4997510328685407, 0.6535605838853813
-    ]
-    # Integer equivalent weights (multiply by 81^9/[1,2,3,4,6,9])
-    I = [
-        15876907296999121, 15121519657190401,
-        14408571461238171, 13735735211956921,
-        12501658169617041, 10899548609196681
-    ]
-    # Foliage is centrally distributed around the dispenser
-    selection_cache = np.array([
-        [P[5], P[4], P[2]],
-        [P[4], P[3], P[1]],
-        [P[2], P[1], P[0]],
-    ])
-    # Normalising
     x1 = np.abs(x1).astype(int)
     y1 = np.abs(y1).astype(int)
     # Need to take min of x1 and y1 to avoid index out of bounds as numpy evaluates both branches
-    return np.where((x1 > 2) | (y1 > 2), 0, selection_cache[np.minimum(x1, 2), np.minimum(y1, 2)])
+    return np.where((x1 > 2) | (y1 > 2), 0, NETHER_FOLIAGE_SEL_CACHE[np.minimum(x1, 2),
+                                                                     np.minimum(y1, 2)])
 
 def calculate_distribution(L: PlayerlessCore) -> PlayerlessCoreDistOutput:
     """Calculates the distribution of foliage and fungi on a custom size grid of nylium"""
     fungi_weight = WARP_FUNG_CHANCE if L.nylium_type == WARPED else CRMS_FUNG_CHANCE
     sprouts_grid = np.zeros((L.size.length, L.size.width))
+    twisting_grid = np.zeros((L.size.length, L.size.width))
     # 4D array for storing distribution of foliage for all dispensers and cycles
     disp_foliage_grids = np.zeros((L.num_disps, L.cycles, L.size.length, L.size.width))
     # 2D array for storing distribution of all the foliage
@@ -75,12 +58,22 @@ def calculate_distribution(L: PlayerlessCore) -> PlayerlessCoreDistOutput:
             disp_foliage_grids[disp_n][cycle] = (1 - total_foliage_grid) * foliage_chance
             total_foliage_grid += disp_foliage_grids[disp_n][cycle]
             
-            # If warped nylium, generate sprouts
+            # If warped nylium, generate sprouts and twisting vines
             if L.nylium_type == WARPED:
                 sprouts_chance = (1 - total_foliage_grid) * foliage_chance
                 disp_foliage_grids[disp_n][cycle] += sprouts_chance
                 total_foliage_grid += sprouts_chance
                 sprouts_grid += sprouts_chance
+                
+                # Math for this was kinda fun actually
+                disp_row, disp_col = L.disp_coords[disp_n].row, L.disp_coords[disp_n].col
+                new_disp_chance = 1 - total_foliage_grid[disp_row, disp_col]
+                twisting_chance = (1 - total_foliage_grid) * TWISTING_SEL_CHANCE \
+                                  * np.where((row == disp_row) & (col == disp_col),
+                                             1, new_disp_chance)
+                disp_foliage_grids[disp_n][cycle] += twisting_chance
+                total_foliage_grid += twisting_chance
+                twisting_grid += twisting_chance
         
         # Replicate triggering pistons to clear foliage on top of selected dispensers
         for disp in L.disp_coords:
@@ -93,6 +86,7 @@ def calculate_distribution(L: PlayerlessCore) -> PlayerlessCoreDistOutput:
                 disp_des_fungi_grids[:, :, disp_row, disp_col] = 0
                 if L.nylium_type == WARPED:
                     sprouts_grid[disp_row, disp_col] = 0
+                    twisting_grid[disp_row, disp_col] = 0
     
     return PlayerlessCoreDistOutput(
         total_foliage_grid=total_foliage_grid,
@@ -100,6 +94,7 @@ def calculate_distribution(L: PlayerlessCore) -> PlayerlessCoreDistOutput:
         disp_foliage_grids=disp_foliage_grids,
         disp_des_fungi_grids=disp_des_fungi_grids,
         sprouts_grid=sprouts_grid,
+        twisting_grid=twisting_grid,
         bm_for_prod=bm_for_prod
     )
 
@@ -116,11 +111,15 @@ def generate_foliage(disp_coords, foliage_grid, bm_for_prod, disp_n, row,
                      * selection_chance(row - disp_row, col - disp_col)
     return foliage_chance, bm_for_prod
 
-def get_totals(des_fungi_grid, foliage_grid, sprouts_grid):
+def get_totals(D: PlayerlessCoreDistOutput) -> Tuple[float, float, float]:
     """Calculates the total amount of foliage, fungi and bone meal required to grow the fungi"""
-    total_fungi = np.sum(des_fungi_grid)
-    # Total foliage EXCLUDES desired fungi and sprouts
-    total_foliage = np.sum(foliage_grid) - total_fungi - np.sum(sprouts_grid)
+    total_fungi = np.sum(D.total_des_fungi_grid)
+    # Total foliage EXCLUDES desired fungi and sprouts, and 2 / 3 of twisting vines don't drop
+    print(f"total_foliage: {np.sum(D.total_foliage_grid)}")
+    print(f"twisting: {np.sum(D.twisting_grid)}")
+    total_foliage = np.sum(D.total_foliage_grid - D.sprouts_grid
+                           - 2 * D.twisting_grid / 3) - total_fungi
+    print(f"new total_foliage: {total_foliage}")
     bm_for_grow = AVG_BM_TO_GROW_FUNG * total_fungi
 
     return total_fungi, total_foliage, bm_for_grow
@@ -131,13 +130,10 @@ def calculate_fungus_distribution(L: PlayerlessCore) -> PlayerlessCoreOutput:
 
     out = calculate_distribution(L)
     # Total foliage EXCLUDES desired fungi and sprouts
-    total_des_fungi, total_foliage, bm_for_grow = get_totals(out.total_des_fungi_grid, 
-                                                             out.total_foliage_grid,
-                                                             out.sprouts_grid)
+    total_des_fungi, total_foliage, bm_for_grow = get_totals(out)
 
-    # Subtract the bit of bone meal retrieved from composting the excess foliage at 75% efficiency
-    composted_foliage = total_foliage
-    bm_from_compost = (FOLIAGE_COLLECTION_EFFIC * composted_foliage) / FOLIAGE_PER_BM
+    # Subtract the bit of bone meal retrieved from composting the excess foliage at 82.5% efficiency
+    bm_from_compost = (FOLIAGE_COLLECTION_EFFIC * total_foliage) / FOLIAGE_PER_BM
     
     return PlayerlessCoreOutput(
         total_foliage=total_foliage,

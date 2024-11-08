@@ -6,12 +6,6 @@ import numpy as np
 from src.Assets.constants import *
 from src.Assets.heatmap_data import heatmap_array_xyz
 
-# Selection cache
-selection_cache = np.array([
-    [0.6535605838853813, 0.4997510328685407, 0.28798973593014715],
-    [0.4997510328685407, 0.3660553272880777, 0.20149313967509574],
-    [0.28798973593014715, 0.20149313967509574, 0.10577931226910778],
-])
 
 # The following functions are designed to have little to no looped function calls,
 # resulting in some repetitive code
@@ -36,7 +30,7 @@ def fast_calc_fung_dist(length, width, nylium_type, disp_coords, cycles, blocked
             col1 = np.abs(col - disp_col).astype(int)
             
             sel_chance = np.where((row1 > 2) | (col1 > 2), 0,
-                                selection_cache[np.minimum(row1, 2), np.minimum(col1, 2)])
+                                NETHER_FOLIAGE_SEL_CACHE[np.minimum(row1, 2), np.minimum(col1, 2)])
             for row2, col2 in blocked_blocks:
                 sel_chance[row2, col2] = 0
 
@@ -52,10 +46,9 @@ def fast_calc_fung_dist(length, width, nylium_type, disp_coords, cycles, blocked
             if disp.cleared == CLEARED:
                 foliage_grid[disp.row, disp.col] = 0
 
-
     total_folige = np.sum(foliage_grid)
-    compost = (8 / 9 * np.sum(foliage_grid)) / FOLIAGE_PER_BM
-    return total_folige / 9, bm_for_prod - compost
+    bm_from_compost = (8 / 9 * np.sum(foliage_grid)) / FOLIAGE_PER_BM
+    return total_folige / 9, bm_for_prod - bm_from_compost
 
 def warped_calc_fung_dist(length, width, disp_coords, cycles, blocked_blocks):
     """Calculate the distribution of foliage for warped separately to crimson as it's slower"""
@@ -68,6 +61,7 @@ def warped_calc_fung_dist(length, width, disp_coords, cycles, blocked_blocks):
     bm_for_prod = 0.0
     # Keep track of sprouts to deduct later from foliage compost total
     sprouts_grid = np.zeros((length, width))
+    twisting_grid = np.zeros((length, width))
     row, col = np.ogrid[:length, :width]
     for _ in range(cycles):
         for disp in disp_coords:
@@ -76,7 +70,8 @@ def warped_calc_fung_dist(length, width, disp_coords, cycles, blocked_blocks):
             row1 = np.abs(row - disp_row).astype(int)
             col1 = np.abs(col - disp_col).astype(int)
             sel_chance = np.where((row1 > 2) | (col1 > 2), 0,
-                                selection_cache[np.minimum(row1, 2), np.minimum(col1, 2)])
+                                  NETHER_FOLIAGE_SEL_CACHE[np.minimum(row1, 2),
+                                                           np.minimum(col1, 2)])
             for row2, col2 in blocked_blocks:
                 sel_chance[row2, col2] = 0
             
@@ -93,6 +88,13 @@ def warped_calc_fung_dist(length, width, disp_coords, cycles, blocked_blocks):
             sprouts_chance = (1 - foliage_grid) * foliage_chance
             foliage_grid += sprouts_chance
             sprouts_grid += sprouts_chance
+            
+            # Also generate twisting vines, which may or may not have a significant effect
+            new_disp_chance = (1 - foliage_grid[disp_row, disp_col])
+            twisting_chance = (1 - foliage_grid) * TWISTING_SEL_CHANCE \
+                              * np.where(row1 + col1 == 0, 1, new_disp_chance)
+            foliage_grid += twisting_chance
+            twisting_grid += twisting_chance
 
         # Replicate triggering pistons to clear foliage on top of selected dispensers
         for disp in disp_coords:
@@ -100,10 +102,13 @@ def warped_calc_fung_dist(length, width, disp_coords, cycles, blocked_blocks):
                 foliage_grid[disp.row, disp.col] = 0
                 des_fungi_grid[disp.row, disp.col] = 0
                 sprouts_grid[disp.row, disp.col] = 0
+                twisting_grid[disp.row, disp.col] = 0
     
     total_des_fungi = np.sum(des_fungi_grid)
-    compost = (np.sum(foliage_grid) - total_des_fungi - np.sum(sprouts_grid)) / FOLIAGE_PER_BM
-    return total_des_fungi, bm_for_prod - compost
+    # Sprouts don't drop as an item here, and twisting vines only have a 1/3 chance of dropping
+    composted_plants = np.sum(foliage_grid - sprouts_grid - 2 * twisting_grid / 3) - total_des_fungi
+    bm_from_compost = composted_plants / FOLIAGE_PER_BM
+    return total_des_fungi, bm_for_prod - bm_from_compost
 
 def fast_calc_hf_dist(length, width, nylium_type, disp_coords, cycles, blocked_blocks):
     """Doesn't take into account stem occlusion (for speed), but should still optimise fine"""
@@ -124,7 +129,7 @@ def fast_calc_hf_dist(length, width, nylium_type, disp_coords, cycles, blocked_b
             col1 = np.abs(col - disp_col).astype(int)
             
             sel_chance = np.where((row1 > 2) | (col1 > 2), 0,
-                                selection_cache[np.minimum(row1, 2), np.minimum(col1, 2)])
+                                NETHER_FOLIAGE_SEL_CACHE[np.minimum(row1, 2), np.minimum(col1, 2)])
             for row2, col2 in blocked_blocks:
                 sel_chance[row2, col2] = 0
             
@@ -139,8 +144,8 @@ def fast_calc_hf_dist(length, width, nylium_type, disp_coords, cycles, blocked_b
             if disp.cleared == CLEARED:
                 foliage_grid[disp.row, disp.col] = 0
     
-    compost_from_foliage = (8 / 9 * np.sum(foliage_grid)) / FOLIAGE_PER_BM
-    bm_for_prod -= compost_from_foliage
+    bm_from_compost = (8 / 9 * np.sum(foliage_grid)) / FOLIAGE_PER_BM
+    bm_for_prod -= bm_from_compost
 
     hf_width = NT_MAX_RAD + p_width + NT_MAX_RAD
     hf_length = NT_MAX_RAD + p_length + NT_MAX_RAD
@@ -189,7 +194,8 @@ def warped_calc_hf_dist(p_length, p_width, disp_coords, cycles, blocked_blocks):
             row1 = np.abs(row - disp_row).astype(int)
             col1 = np.abs(col - disp_col).astype(int)
             sel_chance = np.where((row1 > 2) | (col1 > 2), 0,
-                                selection_cache[np.minimum(row1, 2), np.minimum(col1, 2)])
+                                NETHER_FOLIAGE_SEL_CACHE[np.minimum(row1, 2),
+                                                               np.minimum(col1, 2)])
             for row2, col2 in blocked_blocks:
                 sel_chance[row2, col2] = 0
 
@@ -205,6 +211,13 @@ def warped_calc_hf_dist(p_length, p_width, disp_coords, cycles, blocked_blocks):
             sprouts_chance = (1 - foliage_grid) * foliage_chance
             foliage_grid += sprouts_chance
             sprouts_grid += sprouts_chance
+            
+            # Also generate twisting vines, which may or may not have a significant effect
+            new_disp_chance = (1 - foliage_grid[disp_row, disp_col])
+            twisting_chance = (1 - foliage_grid) * TWISTING_SEL_CHANCE \
+                              * np.where(row1 + col1 == 0, 1, new_disp_chance)
+            foliage_grid += twisting_chance
+            twisting_grid += twisting_chance
 
         # Replicate triggering pistons to clear foliage on top of selected dispensers
         for disp in disp_coords:
@@ -213,9 +226,9 @@ def warped_calc_hf_dist(p_length, p_width, disp_coords, cycles, blocked_blocks):
                 foliage_grid[disp.row, disp.col] = 0
                 des_fungi_grid[disp.row, disp.col] = 0
                 sprouts_grid[disp.row, disp.col] = 0
+                twisting_grid[disp.row, disp.col] = 0
    
-    total_des_fungi = np.sum(des_fungi_grid)
-    compost = (np.sum(foliage_grid) - total_des_fungi - np.sum(sprouts_grid)) / FOLIAGE_PER_BM
+    bm_from_compost = (np.sum(foliage_grid - des_fungi_grid - sprouts_grid)) / FOLIAGE_PER_BM
 
     width = NT_MAX_RAD + p_width + NT_MAX_RAD
     length = NT_MAX_RAD + p_length + NT_MAX_RAD
@@ -240,4 +253,4 @@ def warped_calc_hf_dist(p_length, p_width, disp_coords, cycles, blocked_blocks):
         hf_grid[y, nylium_z_curr + z, nylium_x_curr + x] += (1 - curr) * weighted_chance
 
     total_wb = np.sum(hf_grid)
-    return total_wb, bm_for_prod - compost
+    return total_wb, bm_for_prod - bm_from_compost

@@ -69,3 +69,16 @@ FUNG_SPREAD_RAD = 3
 FUNG_SPREAD_DIA = 5
 CRMS_FUNG_CHANCE = 11 / 99
 WARP_FUNG_CHANCE = 13 / 100
+NETHER_FOLIAGE_SEL_CACHE = np.array([
+    [0.6535605838853813, 0.4997510328685407, 0.28798973593014715],
+    [0.4997510328685407, 0.3660553272880777, 0.20149313967509574],
+    [0.28798973593014715, 0.20149313967509574, 0.10577931226910778],
+])
+# Chance of each block offset from the origin nylium block being picked for new foliage
+NETHER_FOLIAGE_SEL_CACHE = np.array([
+    [1 - (1 - 9 / 81) ** 9, 1 - (1 - 6 / 81) ** 9, 1 - (1 - 3 / 81) ** 9],
+    [1 - (1 - 6 / 81) ** 9, 1 - (1 - 4 / 81) ** 9, 1 - (1 - 2 / 81) ** 9],
+    [1 - (1 - 3 / 81) ** 9, 1 - (1 - 2 / 81) ** 9, 1 - (1 - 1 / 81) ** 9],
+])
+# Per cycle chance = (1 / 7) * (1 / 7) * (2 / 3), 9 cycles, 1 / 8 chance of trying to grow initially
+TWISTING_SEL_CHANCE = (1 - (1 - 2 / 147) ** 9) / 8 

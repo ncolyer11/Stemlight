@@ -109,6 +109,7 @@ class PlayerlessCoreDistOutput:
     disp_foliage_grids: np.ndarray
     disp_des_fungi_grids: np.ndarray
     sprouts_grid: np.ndarray
+    twisting_grid: np.ndarray
     bm_for_prod: float
 
 @dataclass
