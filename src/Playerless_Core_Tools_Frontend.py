@@ -24,7 +24,8 @@ from src.Stochastic_Optimisation import start_optimisation
 #   does or does not include cleare dispensers
 
 # TODO:
-# fix bug where worst case without caring about order takes into account all layouts, not strictly different orderings
+# fix bug where worst case without caring about order takes into account all layouts, not strictly 
+# different orderings
 # move nylium switch and reset button to be on the same level as the optimise and heatmap button
 # move calibrate run time into the file menu and maybe consider a new algo for it
 # run time and blast effic labels dont show upon start and after importing
@@ -341,8 +342,8 @@ class App:
 
         self.wb_per_fungus_slider = self.create_slider(
             self.slider_frame, "Wart Blocks/Fungus:", 2, 1, 20, 120, 120, 
-            "Restrict optimal solutions to require a certain bone meal\n(or ~8 composted wart blocks) "
-            "per fungus produced efficiency.",
+            "Restrict optimal solutions to require a certain bone meal\n"
+            "(or ~8 composted wart blocks) per fungus produced efficiency.",
             resolution=0.1
         )
 
@@ -366,6 +367,8 @@ class App:
             run_time=self.L.run_time,
             additional_property=False
         )
+        # TODO Run this on a separate thread and progessively return make more optimised layouts
+        # to animate them SEE TEST.PY
         optimal_coords, optimal_value, iterations = start_optimisation(L_optimise)
 
         if optimal_coords == -1:
@@ -826,7 +829,7 @@ class App:
             # Get the current scroll position
             current_scroll_position = instance.canvas.yview()
 
-            # Limit values, e.g., preventing the upper scroll to be less than 0.1 (10% down from top)
+            # Limit values, e.g. preventing the upper scroll to be less than 0.1 (10% down from top)
             min_scroll = 0
             max_scroll = 1.0
 
@@ -1098,7 +1101,8 @@ class App:
     def create_slider(self, parent, label_text, row, col, from_value, to_value, default_value,
                     tooltip_text=None, resolution=1):
         """Creates a slider widget with a label and binds it to the callback function."""
-        label = tk.Label(parent, text=label_text, bg=colours.bg, fg=colours.fg, font=font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9)))
+        label = tk.Label(parent, text=label_text, bg=colours.bg, fg=colours.fg,
+                         font=font.Font(family='Segoe UI Semibold', size=int((RSF**NLS)*9)))
         label.grid(row=row, column=col, padx=5, pady=0, sticky="nsew")
         
         if tooltip_text:

@@ -13,6 +13,9 @@ from src.Assets.helpers import resource_path
 from src.Assets.data_classes import *
 from src.Fast_Dispenser_Distribution import fast_calc_fung_dist
 
+# TODO Investigate adaptive cooling rates, 
+# and different cooling schedules (balance exploration and exploitation)
+# optimsie generate neighbour function to use problem specific knowledge
 
 ACCEPTANCE_RATE = 0.995
 REJECTION_POINT = 0.1

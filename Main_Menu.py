@@ -19,6 +19,7 @@ from src import (
 # TODO:
 # Convert *all* programs to use classes for their program structure and also ahh do more
 # refactoring using dataclasses like you done already with the playerless core tools frontend
+# add linting and some other github workflow or whatever
 
 # Program class to cleanly store program data
 class Program:
