@@ -30,6 +30,9 @@ from src.Stochastic_Optimisation import start_optimisation
 # move calibrate run time into the file menu and maybe consider a new algo for it
 # run time and blast effic labels dont show upon start and after importing
 #   - this doesn't matter too much though as these will become message boxes in the future probs
+# Add option to literally simulate a layout to a desired confidence interval
+# undo redo command just for the fun challenge of it :)
+
 
 #################
 ### CONSTANTS ###
