@@ -1,0 +1,215 @@
+%--------------------
+% Packages
+% -------------------
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+%\usepackage{gentium}
+\usepackage{XCharter}
+
+\usepackage[pdftex]{graphicx} % Required for including pictures
+\usepackage[pdftex,linkcolor=black,pdfborder={0 0 0}]{hyperref} % Format links for pdf
+\usepackage{calc} % To reset the counter in the document after title page
+\usepackage{enumitem} % Includes lists
+
+\frenchspacing % No double spacing between sentences
+\linespread{1.2} % Set linespace
+\usepackage[a4paper, lmargin=0.1666\paperwidth, rmargin=0.1666\paperwidth, tmargin=0.1111\paperheight, bmargin=0.1111\paperheight]{geometry} %margins
+%\usepackage{parskip}
+
+\usepackage[all]{nowidow} % Tries to remove widows
+\usepackage[protrusion=true,expansion=true]{microtype} % Improves typography, load after fontpackage is selected
+
+\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
+
+%-----------------------
+% Set pdf information and add title, fill in the fields
+%-----------------------
+\hypersetup{ 	
+    pdfsubject = {Technical Minecraft},
+    pdftitle = {A Novel and Statistical Analysis of
+Huge Fungi Farming in Minecraft},
+    pdfauthor = {ncolyer}
+}
+
+%-----------------------
+% Begin document
+%-----------------------
+\begin{document}
+
+%-----------------------
+% Title Page
+%-----------------------
+\begin{titlepage}
+    \begin{center}
+        \vspace*{1cm}
+        
+        \Huge
+        \textbf{A Novel and Statistical Analysis of Huge Fungi Farming in Minecraft}
+        
+        \vspace{0.5cm}
+        \LARGE
+        From a player-based viewpoint to a computational-based one and beyond
+        
+        \vspace{1.5cm}
+        
+        \textbf{ncolyer}
+        
+        \vfill
+        
+        \vspace{0.8cm}
+        
+        \Large
+
+        xx/xx/20xx
+        
+    \end{center}
+\end{titlepage}
+
+%-----------------------
+% Table of Contents
+%-----------------------
+\newpage
+\tableofcontents
+\newpage
+
+\section*{Preface}
+\addcontentsline{toc}{section}{Preface}
+\lipsum[3]
+\newpage
+
+\section{What You Can Find in Survival}
+    \subsection{Exploring the Nether}
+Crimson and warped forests, natural generation (3x3s have 6\% chance)
+    \lipsum[6]
+    \subsection{Manual Harvesting Methods}
+    \lipsum[7]
+
+\section{First Steps Towards Automation}
+    \subsection{Noticing Patterns}
+Tall huge fungi grow quite rarely, most hat blocks generate in ring 2, shroomlights in the inside in ring 1.
+    \lipsum[8]
+    \subsection{Dispensers, Pistons, and TNT}
+    \lipsum[9]
+    \subsection{Nylium Mechanics and Replenishment}
+    \lipsum[9]
+    
+\section{How Huge Fungi Generate}
+% can write an overview below the main section, i.e. you don't need to write only in subsections
+    \subsection{Trunk and Hat Generation} % and the fringe
+    \lipsum[10]
+    \subsection{The Seven-ish Regions of a Huge Fungus}
+    \lipsum[10]
+    \subsection{Vines Region Manipulation}
+    \lipsum[10]
+    \subsection{Block Type Distribution}
+    \lipsum[10]
+    \subsection{The Vines We Don't Care About}
+Weeping vines of course.
+    \lipsum[10]
+
+\section{The Heatmaps}
+    \subsection{Finding the 'Average' Huge Fungus}
+    \lipsum[11]
+    \subsection{SSS Vid}
+Supplimentary material.
+    \lipsum[12]
+    \subsection{Custom Heatmaps from Foliage Distribution}
+    \lipsum[16]
+
+\section{How Little Fungi Generate}
+    \subsection{Continuous Fungus Farms}
+    \lipsum[14]
+    \subsection{Foliage Distribution on Nylium}
+    \lipsum[17]
+    \subsubsection{Nether Sprouts and Twisting Vines}
+    \lipsum[13]
+    \subsection{Multiple Growth Sources and Attempts}
+    \lipsum[14]
+
+
+\section{Stemlight \& Other Development Software}
+    \subsection{Early Tools}
+    \lipsum[13]
+    \subsection{Stemlight Guide}
+    \lipsum[14]
+    \subsection{The Programming of Stemlight}
+    \lipsum[14]
+    \subsubsection{A Not So Brief Brief Dive into Machine Learning}
+    \lipsum[11]
+
+\section{The Limits of Theory}
+    \subsection{Dynamic VRM's}
+    \lipsum[15]
+    \subsection{Playerless Designs}
+    \lipsum[16]
+    \subsubsection{Dependent Probabilities}
+    \lipsum[21]
+    \subsection{A Brief Look Into TNT}
+    \lipsum[16]
+
+\section{Engi-nearing Optimal Designs}
+    \subsection{Meeting Bone Meal Requirements}
+    \lipsum[8]
+    \subsection{The Playerful Approach}
+    \lipsum[8]
+    \subsection{The Playerless Approach}
+    \lipsum[9]
+    \subsection{An Aside on Block36 and Lazy TNT}
+    \lipsum[8]
+
+\section{Modding Huge Fungus Generation}
+    \subsection{Testing and Troubleshooting}
+    \lipsum[15]
+    \subsection{Benefits of Generalisation}
+    \lipsum[16]
+
+\section{The Exotic Few}
+    \subsection{Before We Move On...} % a disclaimer
+    \lipsum[17]
+    \subsection{N-core}
+    \lipsum[18]
+    \subsection{3x3 Huge Fungi}
+    \lipsum[18]
+    \subsection{RNG Manipulation}
+    \lipsum[18]
+    \subsection{The Rarest World Generation Has to Offer}
+    \lipsum[18]
+
+\section{What's Left?}
+    \subsection{1gt and Complimentary Probability Cores}
+    \lipsum[19]
+    \subsection{Max Speed Self-sustaining Playerless}
+    \lipsum[20]
+    \subsection{The Implications of Autocrafting}
+    \lipsum[20]
+    \subsection{What if the Code Changes?}
+    \lipsum[20]
+    \subsection{'Completing' a Field of Technical Minecraft}
+    \lipsum[20]
+
+
+%-----------------------
+% Acknowledgements
+%-----------------------
+\newpage
+\section*{Acknowledgements}
+\addcontentsline{toc}{section}{Acknowledgements}
+%-----------------------
+% Index
+%-----------------------
+\newpage
+\section*{Index}
+\addcontentsline{toc}{section}{Index}
+% Include index entries here
+
+%-----------------------
+% Appendix
+%-----------------------
+\newpage
+\section*{Appendix}
+\addcontentsline{toc}{section}{Appendix}
+% Include additional details or supplementary information here
+
+
+\end{document}

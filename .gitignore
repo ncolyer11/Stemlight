@@ -7373,3 +7373,10 @@ poetry.lock
 simulation_results.xlsx
 formatted_simulation_results.xlsx
 crimson_simulation_results.xlsx
+thesis/the_paper.aux
+thesis/the_paper.fdb_latexmk
+thesis/the_paper.fls
+thesis/the_paper.log
+thesis/the_paper.out
+thesis/the_paper.synctex.gz
+thesis/the_paper.toc
