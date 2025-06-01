@@ -292,10 +292,22 @@ def export_alt_placements(size: Dimensions, metrics, optimal_value, worst_value,
     f.write(f"Max efficiency loss without caring about order: {worst_loss}% ({lost_f} fungi/cycle)\n\n")
     for i, (total_des_fungi, bm_for_prod, placements) in enumerate(metrics, start=1):
         coords = [[pos[0], pos[1]] for pos in placements]
+        coords_str = '['
+        for i, (row, col) in enumerate(coords):
+            if [row, col, CLEARED] in placements:
+                coords_str += '{' + str(row) + ', ' + str(col) + '}'
+            else:
+                coords_str += '[' + str(row) + ', ' + str(col) + ']'
+            
+            if i != len(coords) - 1:
+                coords_str += ', '
+            else:
+                coords_str += ']'
+            
         f.write(f"#{i}:\n")
         f.write(f"Desired Fungi: {round(total_des_fungi, 5)}\n"
                 f"Bone Meal Used: {round(bm_for_prod, 5)}\n")
-        f.write(f"Coords: {coords}\n")
+        f.write(f"Coords: {coords_str}\n")
         for row in range(size.length):
             for col in range(size.width):
                 if [row, col, UNCLEARED] in placements:

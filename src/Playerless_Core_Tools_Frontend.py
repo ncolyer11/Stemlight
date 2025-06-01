@@ -737,6 +737,7 @@ class App:
             start_time = time.time()
             f = open(resource_path("cpu_benchmark.txt"), "r+")
             L_calibrate = PlayerlessCore(
+                num_disps=4,
                 disp_coords=disp_coords,
                 size=Dimensions(5, 5),
                 nylium_type=WARPED,
@@ -763,10 +764,10 @@ class App:
         """Export custom heatmaps based on the fungus distribution of the nylium grid"""
         # Calculate fungus distribution     
         disp_des_fungi_grids = calculate_fungus_distribution(self.L).disp_des_fungi_grids
+        platform_dims = Dimensions(self.col_slider.get(), self.row_slider.get())
 
         result = export_custom_heatmaps(
-            self.col_slider.get(),
-            self.row_slider.get(),
+            platform_dims,
             np.sum(disp_des_fungi_grids, axis=(0,1))
         )
 

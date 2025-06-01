@@ -61,6 +61,7 @@ class PlayerlessCore:
             data = yaml.load(file, Loader=yaml.FullLoader)
             # Convert the dictionary to the original dataclass format
             return cls.from_dict(data)
+
     @classmethod
     def from_dict(cls, data):
         # Convert nested dictionaries if needed
@@ -142,7 +143,8 @@ class DisplayInfo:
 @dataclass
 class SimAnnealingParams:
     optimise_func: Callable
-    optimal_value: float
+    current_energy: float
+    optimal_energy: float
     initial_solution: Any
     current_solution: Any
     best_solution: Any

@@ -35,19 +35,17 @@ def start_optimisation(L: PlayerlessCore) -> Tuple[List[Dispenser], float, int]:
     init_sol = [Dispenser(-1, -1, NULL_TIME, UNCLEARED) for _ in range(L.num_disps)]
     S = SimAnnealingParams(
         optimise_func=optimise_func,
-        optimal_value=0,
+        current_energy=0,
+        optimal_energy=0,
         initial_solution=init_sol,
-        current_solution=None,
-        best_solution=None,
+        current_solution=init_sol, # Start with the worst case solution
+        best_solution=init_sol,
         start_temp=temps[0],               
         end_temp=temps[1],  
         cooling_rate=calculate_cooling_rate(temps[0], temps[1], L.run_time),
         max_iterations=MAX_ITERATIONS
     )
-    S.current_solution = S.initial_solution # Start with the worst case solution
-    S.best_solution = S.initial_solution
-    optimise_func = fast_calc_fung_dist
-    start_time = time.time()
+    start_time = time.time_ns()
    
     iterations = math.floor(math.log(S.end_temp / S.start_temp) / math.log(S.cooling_rate)) + 1
     print(f"\nStarting temp: {S.start_temp}",
@@ -57,9 +55,9 @@ def start_optimisation(L: PlayerlessCore) -> Tuple[List[Dispenser], float, int]:
 
     out = simulated_annealing(L, S, has_cleared)
     
-    print("Time taken to optimise:", time.time() - start_time, "seconds")
+    print("Time taken to optimise:", (time.time_ns() - start_time )/ 1e9, "seconds")
 
-    return out.best_solution, out.optimal_value, iterations
+    return out.best_solution, out.optimal_energy, iterations
 
 def simulated_annealing(
     L: PlayerlessCore,
@@ -68,28 +66,25 @@ def simulated_annealing(
 ) -> SimAnnealingParams:
     """Simulated annealing algorithm for discrete optimisation of fungus distribution."""
     temperature = S.start_temp
-    S.optimal_value = 0
+    S.optimal_energy = 0
     for _ in range(S.max_iterations):
         if temperature < S.end_temp:
             break
-        neighbour_sol = generate_neighbour(S.current_solution, L.size, has_cleared,
-                                           L.blocked_blocks)
+        neighbour_sol = generate_neighbour(S.current_solution, L.size, has_cleared, L.blocked_blocks)
         # Either desired fungi produced, or potential wart blocks generated
-        current_energy = S.optimise_func(L.size.length, L.size.width, L.nylium_type,
-                                         S.current_solution, L.cycles, L.blocked_blocks)[0]
         neighbour_energy, bm_for_prod = S.optimise_func(L.size.length, L.size.width, L.nylium_type,
                                                         neighbour_sol, L.cycles, L.blocked_blocks)
         bm_req = bm_for_prod < L.wb_per_fungus / WARTS_PER_BM - AVG_BM_TO_GROW_FUNG
-        if neighbour_energy > current_energy and bm_req or \
-           np.random.rand() < acceptance_probability(current_energy, neighbour_energy, temperature):
+        if neighbour_energy > S.current_energy and bm_req or \
+           np.random.rand() < acceptance_probability(S.current_energy, neighbour_energy, temperature):
             S.current_solution = neighbour_sol
-            if bm_req and neighbour_energy > S.optimal_value:
+            S.current_energy = neighbour_energy
+            if bm_req and neighbour_energy > S.optimal_energy:
                 S.best_solution = neighbour_sol
-                S.optimal_value = S.optimise_func(L.size.length, L.size.width, L.nylium_type,
-                                                  S.best_solution, L.cycles, L.blocked_blocks)[0]
+                S.optimal_energy = neighbour_energy
 
         temperature *= S.cooling_rate
-    S.optimal_value
+    S.optimal_energy
     return S
 
 def acceptance_probability(current_energy, neighbour_energy, temperature):

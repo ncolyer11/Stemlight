@@ -1,0 +1,30 @@
+Starting temp: 176.61468576167118 
+Ending temp: 0.38447591002223075
+Cooling rate: 0.9998978411421084
+Iterations: 60000
+
+Time taken to optimise: 28.468982458114624 seconds
+Calibration loop 0 run time misalignment: 92.29227066040039%
+Iteration time: 0.000480730676651001
+
+
+Starting temp: 173.75753834133877 
+Ending temp: 0.37825613079060827
+Cooling rate: 0.9998035656733193
+Iterations: 31203
+
+Time taken to optimise: 14.76757287979126 secondsCalibration loop 1 run time misalignment: 0.764171282450358%
+Iteration time: 0.0004843965545738408
+
+
+Starting temp: 177.65079266655266 
+Ending temp: 0.38673143109295405
+Cooling rate: 0.9998020678845867
+Iterations: 30967
+
+Time taken to optimise: 14.61521053314209 secondsCalibration loop 2 run time misalignment: -0.19073168436686197%
+Iteration time: 0.0004834627263650005
+
+
+
+// with speed improvements:
