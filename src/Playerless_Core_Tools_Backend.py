@@ -293,13 +293,13 @@ def export_alt_placements(size: Dimensions, metrics, optimal_value, worst_value,
     for i, (total_des_fungi, bm_for_prod, placements) in enumerate(metrics, start=1):
         coords = [[pos[0], pos[1]] for pos in placements]
         coords_str = '['
-        for i, (row, col) in enumerate(coords):
+        for j, (row, col) in enumerate(coords):
             if [row, col, CLEARED] in placements:
                 coords_str += '{' + str(row) + ', ' + str(col) + '}'
             else:
                 coords_str += '[' + str(row) + ', ' + str(col) + ']'
             
-            if i != len(coords) - 1:
+            if j != len(coords) - 1:
                 coords_str += ', '
             else:
                 coords_str += ']'
